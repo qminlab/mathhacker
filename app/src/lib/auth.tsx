@@ -1,6 +1,7 @@
 // 로그인 상태
 import type { Session } from "@supabase/supabase-js"
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react"
 import { env } from "./env"
 import { supabase } from "./supabase"
 
@@ -15,6 +16,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(
     env.demo ? { session: DEMO_SESSION, loading: false, demo: true } : { session: null, loading: true, demo: false }
   )
+
+  // 다른 사람이 로그인하거나 로그아웃하면 앞 사람의 캐시를 남기지 않는다
+  const qc = useQueryClient()
+  const lastUser = useRef<string | null | undefined>(undefined)
+  const userId = state.session?.user.id ?? null
+  useEffect(() => {
+    if (lastUser.current !== undefined && lastUser.current !== userId) qc.clear()
+    lastUser.current = userId
+  }, [userId, qc])
 
   useEffect(() => {
     if (env.demo) return

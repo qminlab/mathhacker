@@ -45,6 +45,7 @@ function memoryRepo(session: Partial<IngestSession>) {
     async downloadOriginal() { return new Uint8Array([37, 80, 68, 70]) },
     async createWorkbook() { const id = state.workbooks.length + 10; state.workbooks.push({ id }); return id },
     async setWorkbookTotals(id, t) { Object.assign(state.workbooks.find((w) => w.id === id)!, t) },
+    async deleteWorkbook(id) { state.workbooks = state.workbooks.filter((w) => w.id !== id) },
     async deleteProblemsOnPage(wb, page) {
       state.problems = state.problems.filter((p) => !(p.workbook_id === wb && p.page === page))
     },
@@ -60,9 +61,9 @@ function memoryRepo(session: Partial<IngestSession>) {
     async setAnswers(updates) {
       updates.forEach((u) => Object.assign(state.problems.find((p) => p.id === u.id)!, { answer: u.answer, answer_source: "ocr" }))
     },
-    async pendingAttempts() {
-      return state.attempts.filter((a) => a.result === "pending").map((a) => ({
-        id: a.id, user_answer: a.user_answer, answer: state.problems.find((p) => p.id === a.problem_id)?.answer ?? null,
+    async attemptsForProblems(ids) {
+      return state.attempts.filter((a) => ids.includes(a.problem_id) && a.result !== "gave_up").map((a) => ({
+        id: a.id, user_answer: a.user_answer, result: a.result, answer: state.problems.find((p) => p.id === a.problem_id)?.answer ?? null,
       }))
     },
     async setAttemptResults(updates) {
@@ -72,11 +73,15 @@ function memoryRepo(session: Partial<IngestSession>) {
   return { state, repo }
 }
 
-function deps(repo: IngestRepo, opts: { pages: number; ocr: (page: number) => MathpixResult; failOnPage?: number }): EngineDeps {
+function deps(
+  repo: IngestRepo,
+  opts: { pages: number; ocr: (page: number) => MathpixResult; failOnPage?: number; stopAfterPages?: number }
+): EngineDeps {
   let current = 0
+  let rendered = 0
   const pdf: PdfDoc = {
     pageCount: opts.pages,
-    async render(page) { current = page; return { png: Buffer.from(`page${page}`), width: 1000, height: 1400 } },
+    async render(page) { current = page; rendered++; return { png: Buffer.from(`page${page}`), width: 1000, height: 1400 } },
     async close() {},
   }
   return {
@@ -87,7 +92,10 @@ function deps(repo: IngestRepo, opts: { pages: number; ocr: (page: number) => Ma
       return opts.ocr(current)
     },
     crop: async (png, box) => Buffer.from(`${png.toString()}:${box.top}-${box.bottom}`),
-    randomId: () => "r",
+    // stopAfterPages만큼 그린 뒤에는 시간이 다 된 것으로 본다
+    get deadline() {
+      return opts.stopAfterPages !== undefined && rendered >= opts.stopAfterPages ? 0 : undefined
+    },
   }
 }
 
@@ -102,7 +110,7 @@ describe("문제지 처리", () => {
     expect(state.problems.map((p) => [p.page, p.workbook_number])).toEqual([[1, 10], [1, 11], [2, 20], [2, 21]])
     expect(state.problems[0].score).toBe(3)
     expect(state.problems[0].unit).toBe("지수")
-    expect([...state.images.keys()][0]).toBe("u1/10/p1-c0-q10-r.png")
+    expect([...state.images.keys()][0]).toBe("u1/10/p1-c0-q10-0.png")
     expect(state.workbooks[0].total_problems).toBe(4)
   })
 
@@ -119,11 +127,25 @@ describe("문제지 처리", () => {
     expect(state.workbooks).toHaveLength(1)
   })
 
-  it("문제 번호를 하나도 못 찾으면 이유와 함께 실패", async () => {
+  it("문제 번호를 하나도 못 찾으면 이유와 함께 실패하고 빈 문제집은 지운다", async () => {
     const { state, repo } = memoryRepo({})
     await runIngest(1, deps(repo, { pages: 1, ocr: () => ({ image_width: 10, image_height: 10, line_data: [] }) }))
     expect(state.session.status).toBe("failed")
     expect(state.session.error).toContain("문제 번호를 찾지 못했습니다")
+    expect(state.workbooks).toHaveLength(0)
+    expect(state.session.workbook_id).toBeNull()
+  })
+
+  it("시간이 다 되면 멈추고(paused), 다음 실행이 남은 페이지부터 이어서 한다", async () => {
+    const { state, repo } = memoryRepo({})
+    const first = await runIngest(1, deps(repo, { pages: 3, ocr: (p) => pageOcr(p * 10), stopAfterPages: 1 }))
+    expect(first).toBe("paused")
+    expect(state.session.status).toBe("processing")
+    expect(state.session.processed_pages).toBe(1)
+
+    const second = await runIngest(1, deps(repo, { pages: 3, ocr: (p) => pageOcr(p * 10) }))
+    expect(second).toBe("done")
+    expect(state.problems.map((p) => p.workbook_number)).toEqual([10, 11, 20, 21, 30, 31])
   })
 })
 
@@ -150,6 +172,28 @@ describe("답지 처리", () => {
     expect(state.problems.map((p) => p.answer)).toEqual(["3", "2", "5"])
     expect(state.attempts.map((a) => a.result)).toEqual(["correct", "wrong"])
     expect(state.session.result).toEqual({ matched: 2, missing: [], regraded: 2 })
+  })
+
+  it("중간에 끊겨도 이미 읽은 페이지 텍스트로 이어서 정답을 만든다", async () => {
+    const { state, repo } = memoryRepo({ kind: "answers", workbook_id: 10 })
+    state.workbooks.push({ id: 10 })
+    await repo.insertProblems([11, 12].map((n) => ({ workbook_id: 10, workbook_number: n, page: 1 }) as NewProblem))
+    const texts = ["011 ③", "012 12"]
+    const ocr = (p: number) => ({ image_width: 1, image_height: 1, text: texts[p - 1] })
+
+    expect(await runIngest(1, deps(repo, { pages: 2, ocr, stopAfterPages: 1 }))).toBe("paused")
+    expect(state.session.page_texts).toEqual(["011 ③"])
+    expect(await runIngest(1, deps(repo, { pages: 2, ocr }))).toBe("done")
+    expect(state.problems.map((p) => p.answer)).toEqual(["3", "12"])
+  })
+
+  it("정답이 바뀌면 이미 채점된 풀이도 다시 채점한다", async () => {
+    const { state, repo } = memoryRepo({ kind: "answers", workbook_id: 10 })
+    await repo.insertProblems([{ workbook_id: 10, workbook_number: 11, page: 1 } as NewProblem])
+    state.problems[0].answer = "1"
+    state.attempts.push({ id: 1, problem_id: state.problems[0].id, user_answer: "3", result: "wrong" })
+    await runIngest(1, deps(repo, { pages: 1, ocr: () => ({ image_width: 1, image_height: 1, text: "011 ③" }) }))
+    expect(state.attempts[0].result).toBe("correct")
   })
 
   it("정답을 못 찾으면 실패", async () => {

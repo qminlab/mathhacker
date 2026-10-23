@@ -150,7 +150,7 @@ export const supabaseBackend: Backend = {
     return check(
       await supabase
         .from("ingest_sessions")
-        .select("id, kind, workbook_id, title, status, page_count, processed_pages, problem_count, error, result, created_at")
+        .select("id, kind, workbook_id, title, status, page_count, processed_pages, problem_count, error, result, created_at, updated_at")
         .order("created_at", { ascending: false })
         .limit(20)
     ) as IngestSession[]

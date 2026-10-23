@@ -26,10 +26,12 @@ export type IngestSession = {
   processed_pages: number
   problem_count: number
   status: IngestStatus
+  /** 답지: 페이지별 OCR 텍스트 (끊겨도 이어서 하려고 모아 둔다) */
+  page_texts?: string[] | null
 }
 
 export type SessionPatch = Partial<
-  Pick<IngestSession, "workbook_id" | "page_count" | "processed_pages" | "problem_count" | "status">
+  Pick<IngestSession, "workbook_id" | "page_count" | "processed_pages" | "problem_count" | "status" | "page_texts">
 > & { error?: string | null; result?: Record<string, unknown> | null }
 
 export type NewProblem = {
@@ -54,7 +56,7 @@ export type NewProblem = {
   image_path: string
 }
 
-export type PendingAttempt = { id: number; user_answer: string; answer: string | null }
+export type GradableAttempt = { id: number; user_answer: string; result: string; answer: string | null }
 
 export interface IngestRepo {
   getSession(id: number): Promise<IngestSession>
@@ -68,13 +70,15 @@ export interface IngestRepo {
     total_pages: number
   }): Promise<number>
   setWorkbookTotals(workbookId: number, totals: { total_problems: number }): Promise<void>
+  deleteWorkbook(workbookId: number): Promise<void>
   deleteProblemsOnPage(workbookId: number, page: number): Promise<void>
   insertProblems(rows: NewProblem[]): Promise<void>
   uploadProblemImage(path: string, png: Buffer): Promise<void>
   listProblems(workbookId: number): Promise<{ id: string; workbook_number: number | null; answer_source: string | null }[]>
   setAnswers(updates: { id: string; answer: string }[]): Promise<void>
-  pendingAttempts(workbookId: number): Promise<PendingAttempt[]>
-  setAttemptResults(updates: { id: number; result: "correct" | "wrong" }[]): Promise<void>
+  /** 이 문제들의 풀이 기록 (포기한 것 제외) */
+  attemptsForProblems(problemIds: string[]): Promise<GradableAttempt[]>
+  setAttemptResults(updates: { id: number; result: "correct" | "wrong" | "pending" }[]): Promise<void>
 }
 
 export type PdfDoc = {
@@ -88,9 +92,11 @@ export type EngineDeps = {
   openPdf(bytes: Uint8Array): Promise<PdfDoc>
   ocr(png: Buffer, opts: { lineData: boolean }): Promise<MathpixResult>
   crop(png: Buffer, box: Box): Promise<Buffer>
-  /** 이미지 파일 이름 충돌 방지용 (테스트에서 고정값으로 바꾼다) */
-  randomId?: () => string
+  /** 이 시각(ms)이 지나면 다음 페이지를 시작하지 않고 멈춘다 (함수 시간 제한 대비) */
+  deadline?: number
 }
+
+export type RunOutcome = "done" | "failed" | "paused"
 
 export class IngestError extends Error {}
 
@@ -103,10 +109,10 @@ function friendlyError(e: unknown) {
   return "처리 중 오류가 발생했습니다. 다시 시도해 주세요."
 }
 
-export async function runIngest(sessionId: number, deps: EngineDeps): Promise<void> {
+export async function runIngest(sessionId: number, deps: EngineDeps): Promise<RunOutcome> {
   const { repo } = deps
   const session = await repo.getSession(sessionId)
-  if (session.status === "done") return
+  if (session.status === "done") return "done"
 
   await repo.updateSession(sessionId, { status: "processing", error: null })
 
@@ -116,22 +122,27 @@ export async function runIngest(sessionId: number, deps: EngineDeps): Promise<vo
     pdf = await deps.openPdf(await repo.downloadOriginal(session.original_file_path))
     const pageCount = Math.min(pdf.pageCount, MAX_PAGES)
 
-    if (session.kind === "answers") {
-      await runAnswers(session, pdf, pageCount, deps)
-    } else {
-      await runProblems(session, pdf, pageCount, deps)
-    }
+    return session.kind === "answers"
+      ? await runAnswers(session, pdf, pageCount, deps)
+      : await runProblems(session, pdf, pageCount, deps)
   } catch (e) {
     console.error(`[ingest ${sessionId}] failed`, e)
     await repo.updateSession(sessionId, { status: "failed", error: friendlyError(e) })
+    return "failed"
   } finally {
     await pdf?.close().catch(() => {})
   }
 }
 
-async function runProblems(session: IngestSession, pdf: PdfDoc, pageCount: number, deps: EngineDeps) {
+const outOfTime = (deps: EngineDeps) => deps.deadline !== undefined && Date.now() > deps.deadline
+
+async function runProblems(
+  session: IngestSession,
+  pdf: PdfDoc,
+  pageCount: number,
+  deps: EngineDeps
+): Promise<RunOutcome> {
   const { repo } = deps
-  const rand = deps.randomId ?? (() => Math.random().toString(36).slice(2, 8))
 
   let workbookId = session.workbook_id
   if (!workbookId) {
@@ -149,18 +160,23 @@ async function runProblems(session: IngestSession, pdf: PdfDoc, pageCount: numbe
   let problemCount = session.problem_count
 
   for (let page = session.processed_pages + 1; page <= pageCount; page++) {
+    if (outOfTime(deps)) {
+      await repo.updateSession(session.id, { status: "processing" })
+      return "paused"
+    }
     const rendered = await pdf.render(page)
     const ocr = await deps.ocr(rendered.png, { lineData: true })
     const found = extractProblems(ocr, page)
 
-    // 재시도할 때 같은 페이지가 두 번 들어가지 않게 먼저 지운다
+    // 재시도할 때 같은 페이지가 두 번 들어가지 않게 먼저 지운다.
+    // 이미지 이름은 페이지·단·번호·순서로 정해져 있어서 다시 올리면 덮어쓴다.
     await repo.deleteProblemsOnPage(workbookId, page)
 
     const rows: NewProblem[] = []
-    for (const p of found) {
+    for (const [k, p] of found.entries()) {
       const box = paddedBox(p.bbox, rendered.width, rendered.height)
       const image = await deps.crop(rendered.png, box)
-      const imagePath = `${folder}/${workbookId}/p${page}-c${p.column}-q${p.workbookNumber}-${rand()}.png`
+      const imagePath = `${folder}/${workbookId}/p${page}-c${p.column}-q${p.workbookNumber}-${k}.png`
       await repo.uploadProblemImage(imagePath, image)
       rows.push({
         workbook_id: workbookId,
@@ -190,58 +206,78 @@ async function runProblems(session: IngestSession, pdf: PdfDoc, pageCount: numbe
     await repo.updateSession(session.id, { processed_pages: page, problem_count: problemCount })
   }
 
-  await repo.setWorkbookTotals(workbookId, { total_problems: problemCount })
-
   if (problemCount === 0) {
+    // 빈 문제집이 목록에 남지 않게 지운다
+    await repo.deleteWorkbook(workbookId)
+    await repo.updateSession(session.id, { workbook_id: null, processed_pages: 0, problem_count: 0 })
     throw new IngestError("문제 번호를 찾지 못했습니다. 문제 번호가 011처럼 숫자만 적힌 문제지인지 확인해 주세요.")
   }
+
+  await repo.setWorkbookTotals(workbookId, { total_problems: problemCount })
   await repo.updateSession(session.id, {
     status: "done",
     result: { problems: problemCount, pages: pageCount, truncated: pdf.pageCount > pageCount },
   })
+  return "done"
 }
 
-async function runAnswers(session: IngestSession, pdf: PdfDoc, pageCount: number, deps: EngineDeps) {
+async function runAnswers(
+  session: IngestSession,
+  pdf: PdfDoc,
+  pageCount: number,
+  deps: EngineDeps
+): Promise<RunOutcome> {
   const { repo } = deps
   if (!session.workbook_id) throw new IngestError("답지를 연결할 문제집이 없습니다.")
   await repo.updateSession(session.id, { page_count: pageCount })
 
-  const problems = await repo.listProblems(session.workbook_id)
-  const known = new Set(problems.map((p) => p.workbook_number).filter((n): n is number => n != null))
-
-  const texts: string[] = []
-  for (let page = session.processed_pages + 1; page <= pageCount; page++) {
+  // 이미 읽은 페이지의 텍스트는 세션에 저장돼 있다
+  const texts = [...(session.page_texts ?? [])].slice(0, session.processed_pages)
+  for (let page = texts.length + 1; page <= pageCount; page++) {
+    if (outOfTime(deps)) {
+      await repo.updateSession(session.id, { status: "processing" })
+      return "paused"
+    }
     const rendered = await pdf.render(page)
     const ocr = await deps.ocr(rendered.png, { lineData: false })
     texts.push(ocr.text ?? "")
-    await repo.updateSession(session.id, { processed_pages: page })
+    await repo.updateSession(session.id, { processed_pages: page, page_texts: texts })
   }
 
+  const problems = await repo.listProblems(session.workbook_id)
+  const known = new Set(problems.map((p) => p.workbook_number).filter((n): n is number => n != null))
   const key = parseAnswerKey(texts.join("\n"), known)
+  if (key.size === 0) {
+    throw new IngestError("답지에서 정답을 찾지 못했습니다. 문제 번호와 정답이 함께 적힌 빠른정답 페이지인지 확인해 주세요.")
+  }
+
   const updates = problems
     .filter((p) => p.workbook_number != null && key.has(p.workbook_number) && p.answer_source !== "manual")
     .map((p) => ({ id: p.id, answer: key.get(p.workbook_number!)! }))
   if (updates.length) await repo.setAnswers(updates)
 
-  const regraded = await regradePending(session.workbook_id, repo)
+  const regraded = await regradeProblems(
+    updates.map((u) => u.id),
+    repo
+  )
   const missing = [...known].filter((n) => !key.has(n)).sort((a, b) => a - b)
 
-  if (key.size === 0) {
-    throw new IngestError("답지에서 정답을 찾지 못했습니다. 문제 번호와 정답이 함께 적힌 빠른정답 페이지인지 확인해 주세요.")
-  }
   await repo.updateSession(session.id, {
     status: "done",
     problem_count: updates.length,
     result: { matched: updates.length, missing, regraded },
   })
+  return "done"
 }
 
-/** 정답이 생긴 문제의 '채점 대기' 풀이를 다시 채점한다 */
-export async function regradePending(workbookId: number, repo: IngestRepo): Promise<number> {
-  const pending = await repo.pendingAttempts(workbookId)
-  const updates = pending
-    .map((a) => ({ id: a.id, result: grade(a.user_answer, a.answer) }))
-    .filter((u): u is { id: number; result: "correct" | "wrong" } => u.result !== "pending")
+/** 정답이 바뀐 문제들의 풀이를 다시 채점한다 (포기한 풀이는 그대로) */
+export async function regradeProblems(problemIds: string[], repo: IngestRepo): Promise<number> {
+  if (!problemIds.length) return 0
+  const attempts = await repo.attemptsForProblems(problemIds)
+  const updates = attempts
+    .map((a) => ({ id: a.id, from: a.result, result: grade(a.user_answer, a.answer) }))
+    .filter((u) => u.result !== u.from)
+    .map(({ id, result }) => ({ id, result }))
   if (updates.length) await repo.setAttemptResults(updates)
   return updates.length
 }

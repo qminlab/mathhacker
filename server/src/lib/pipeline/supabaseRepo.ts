@@ -50,6 +50,10 @@ export function supabaseRepo(): IngestRepo {
       must(await db.from("workbooks").update(totals).eq("id", workbookId), "workbooks 갱신")
     },
 
+    async deleteWorkbook(workbookId) {
+      must(await db.from("workbooks").delete().eq("id", workbookId), "빈 문제집 삭제")
+    },
+
     async deleteProblemsOnPage(workbookId, page) {
       must(await db.from("problems").delete().eq("workbook_id", workbookId).eq("page", page), "problems 삭제")
     },
@@ -86,20 +90,31 @@ export function supabaseRepo(): IngestRepo {
       }
     },
 
-    async pendingAttempts(workbookId) {
-      const rows = must(
-        await db
-          .from("attempts")
-          .select("id, user_answer, problems!inner(answer, workbook_id)")
-          .eq("result", "pending")
-          .eq("problems.workbook_id", workbookId),
-        "채점 대기 조회"
-      ) as unknown as { id: number; user_answer: string; problems: { answer: string | null } }[]
-      return rows.map((r) => ({ id: r.id, user_answer: r.user_answer, answer: r.problems.answer }))
+    async attemptsForProblems(problemIds) {
+      const out: { id: number; user_answer: string; result: string; answer: string | null }[] = []
+      // in() 목록이 너무 길지 않게 나눠서, 한 번에 최대 1000행씩
+      for (let i = 0; i < problemIds.length; i += 100) {
+        const chunk = problemIds.slice(i, i + 100)
+        for (let from = 0; ; from += 1000) {
+          const rows = must(
+            await db
+              .from("attempts")
+              .select("id, user_answer, result, problems!inner(answer)")
+              .in("problem_id", chunk)
+              .neq("result", "gave_up")
+              .order("id")
+              .range(from, from + 999),
+            "풀이 기록 조회"
+          ) as unknown as { id: number; user_answer: string; result: string; problems: { answer: string | null } }[]
+          for (const r of rows) out.push({ id: r.id, user_answer: r.user_answer, result: r.result, answer: r.problems.answer })
+          if (rows.length < 1000) break
+        }
+      }
+      return out
     },
 
     async setAttemptResults(updates) {
-      for (const result of ["correct", "wrong"] as const) {
+      for (const result of ["correct", "wrong", "pending"] as const) {
         const ids = updates.filter((u) => u.result === result).map((u) => u.id)
         if (ids.length) must(await db.from("attempts").update({ result }).in("id", ids), "재채점 저장")
       }
@@ -122,6 +137,6 @@ export async function cropPng(png: Buffer, box: { left: number; top: number; rig
     .toBuffer()
 }
 
-export function productionDeps(): EngineDeps {
-  return { repo: supabaseRepo(), openPdf, ocr: ocrPage, crop: cropPng }
+export function productionDeps(deadline?: number): EngineDeps {
+  return { repo: supabaseRepo(), openPdf, ocr: ocrPage, crop: cropPng, deadline }
 }

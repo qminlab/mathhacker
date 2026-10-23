@@ -96,7 +96,14 @@ function initialProgress(bundle: SessionBundle, startAt?: string) {
     const a = done.get(p.id)
     states[p.id] = {
       ...initialState(p),
-      ...(a ? { answer: a.user_answer, submitted: { result: a.result, correctAnswer: null, userAnswer: a.user_answer } } : {}),
+      ...(a
+        ? {
+            answer: a.user_answer,
+            elapsedSec: a.time_spent_sec,
+            hintUsed: a.hint_used,
+            submitted: { result: a.result, correctAnswer: p.answer, userAnswer: a.user_answer },
+          }
+        : {}),
     }
   }
   const firstTodo = bundle.problems.findIndex((p) => !done.has(p.id))
@@ -186,11 +193,14 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
     }
   }
 
+  /** 다음 안 푼 문제로 (뒤에 없으면 앞에서 건너뛴 문제로). 다 풀었으면 결과로. */
   function goNext() {
-    const nextTodo = problems.findIndex((p, i) => i > index && !states[p.id]?.submitted)
-    if (nextTodo >= 0) setIndex(nextTodo)
-    else if (problems.every((p, i) => i === index || states[p.id]?.submitted)) finish()
-    else if (index < problems.length - 1) setIndex(index + 1)
+    const isOpen = (i: number) => i !== index && !states[problems[i].id]?.submitted
+    const after = problems.findIndex((_, i) => i > index && isOpen(i))
+    const before = problems.findIndex((_, i) => i < index && isOpen(i))
+    const target = after >= 0 ? after : before
+    if (target >= 0) setIndex(target)
+    else finish()
   }
 
   function finish() {

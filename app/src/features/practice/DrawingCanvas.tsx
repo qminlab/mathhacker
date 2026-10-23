@@ -79,7 +79,11 @@ export function DrawingCanvas({ strokes, onChange, tool, penColor, penWidth, sty
         }
         return true
       })
-      if (next.length !== strokesRef.current.length) onChange(next)
+      if (next.length !== strokesRef.current.length) {
+        // 같은 프레임에 지우기가 여러 번 와도 앞의 결과 위에서 이어 지우도록 바로 반영
+        strokesRef.current = next
+        onChange(next)
+      }
     },
     [size, onChange]
   )
@@ -124,7 +128,11 @@ export function DrawingCanvas({ strokes, onChange, tool, penColor, penWidth, sty
     onFinalize: () => {
       const s = live.current
       live.current = null
-      if (s && s.points.length >= 2) onChange([...strokesRef.current, s])
+      if (s && s.points.length >= 2) {
+        const next = [...strokesRef.current, s]
+        strokesRef.current = next
+        onChange(next)
+      }
       setLiveView(null)
     },
   })

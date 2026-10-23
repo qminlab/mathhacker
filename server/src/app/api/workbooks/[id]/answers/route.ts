@@ -1,10 +1,10 @@
 // PUT /api/workbooks/{id}/answers — 정답 직접 입력·수정 (내 문제집만)
 // body: { answers: [{ problemId, answer }] }  answer가 빈 문자열이면 정답을 지운다.
-// 저장한 뒤 그 문제들의 '채점 대기' 풀이를 다시 채점한다.
+// 저장한 뒤 그 문제들의 풀이를 다시 채점한다.
 import { requireUser, HttpError } from "@/lib/auth"
 import { normalizeAnswer } from "@/lib/grading"
 import { handler, json, preflight } from "@/lib/http"
-import { regradePending } from "@/lib/pipeline/engine"
+import { regradeProblems } from "@/lib/pipeline/engine"
 import { supabaseRepo } from "@/lib/pipeline/supabaseRepo"
 
 export const runtime = "nodejs"
@@ -26,7 +26,7 @@ export const PUT = handler(async (req: Request, ctx: { params: Promise<{ id: str
   if (!items.length) throw new HttpError(400, "바꿀 정답이 없습니다.")
 
   // RLS(문제집 주인만 update)가 걸린 사용자 클라이언트로 저장한다
-  let saved = 0
+  const savedIds: string[] = []
   for (let i = 0; i < items.length; i += 20) {
     const results = await Promise.all(
       items.slice(i, i + 20).map((a) => {
@@ -41,10 +41,11 @@ export const PUT = handler(async (req: Request, ctx: { params: Promise<{ id: str
     )
     for (const r of results) {
       if (r.error) throw new HttpError(500, "정답을 저장하지 못했습니다.")
-      saved += r.data?.length ?? 0
+      for (const row of r.data ?? []) savedIds.push(row.id as string)
     }
   }
 
-  const regraded = await regradePending(workbookId, supabaseRepo())
-  return json({ saved, regraded })
+  // 정답이 바뀐 문제는 이미 채점된 풀이까지 다시 채점한다 (정답을 지우면 '채점 대기'로)
+  const regraded = await regradeProblems(savedIds, supabaseRepo())
+  return json({ saved: savedIds.length, regraded })
 })

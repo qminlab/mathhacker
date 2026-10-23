@@ -133,6 +133,21 @@ create table if not exists public.problems (
   created_at      timestamptz not null default now()
 );
 
+-- 주인 계정이 지워지면 문제집도 지운다 (owner_id가 비면 '공용'이 되므로 set null이면 안 된다)
+do $$
+declare c text;
+begin
+  for c in
+    select con.conname from pg_constraint con
+    join pg_attribute att on att.attrelid = con.conrelid and att.attnum = any (con.conkey)
+    where con.conrelid = 'public.workbooks'::regclass and con.contype = 'f' and att.attname = 'owner_id'
+  loop
+    execute format('alter table public.workbooks drop constraint %I', c);
+  end loop;
+end $$;
+alter table public.workbooks
+  add constraint workbooks_owner_id_fkey foreign key (owner_id) references auth.users (id) on delete cascade;
+
 -- v0.2: 비공개 이미지 경로, 정답 출처, 힌트
 alter table public.problems add column if not exists image_path    text;
 alter table public.problems add column if not exists answer_source text
@@ -162,6 +177,14 @@ create table if not exists public.practice_sessions (
 
 create index if not exists practice_sessions_user_day_idx
   on public.practice_sessions (user_id, mode, day);
+
+-- 동시에 두 번 만들어지지 않게 데일리 세트는 사용자·날짜마다 하나 (예전 중복은 최신 것만 남긴다)
+delete from public.practice_sessions a
+using public.practice_sessions b
+where a.mode = 'daily' and b.mode = 'daily'
+  and a.user_id = b.user_id and a.day = b.day and a.id < b.id;
+create unique index if not exists practice_sessions_one_daily
+  on public.practice_sessions (user_id, day) where mode = 'daily';
 
 create table if not exists public.attempts (
   id             bigint generated always as identity primary key,
@@ -212,6 +235,8 @@ alter table public.ingest_sessions add column if not exists problem_count   int 
 alter table public.ingest_sessions add column if not exists error           text;
 alter table public.ingest_sessions add column if not exists result          jsonb;
 alter table public.ingest_sessions add column if not exists updated_at      timestamptz not null default now();
+-- 답지는 페이지별 OCR 텍스트를 모아 두고 마지막에 한꺼번에 정답을 뽑는다 (중간에 끊겨도 이어서)
+alter table public.ingest_sessions add column if not exists page_texts      jsonb not null default '[]'::jsonb;
 
 -- ═════════════════════════════════════════════
 -- 5. RLS
@@ -338,6 +363,8 @@ as $$
 declare
   v_today date := (now() at time zone 'Asia/Seoul')::date;
   v_count int;
+  v_ids uuid[];
+  v_exists boolean;
   v_session public.practice_sessions;
 begin
   if auth.uid() is null then
@@ -345,21 +372,16 @@ begin
   end if;
 
   select * into v_session from practice_sessions
-  where user_id = auth.uid() and mode = 'daily' and day = v_today
-  order by id desc limit 1;
-  if found and cardinality(v_session.problem_ids) > 0 then
+  where user_id = auth.uid() and mode = 'daily' and day = v_today;
+  v_exists := found;
+  if v_exists and cardinality(v_session.problem_ids) > 0 then
     return v_session;
-  end if;
-  -- 오늘 세트가 비어 있으면(그때는 문제가 없었으면) 지우고 다시 뽑는다
-  if found then
-    delete from practice_sessions where id = v_session.id;
   end if;
 
   select coalesce((select daily_count from user_settings where user_id = auth.uid()), 10)
   into v_count;
 
-  insert into practice_sessions (user_id, mode, problem_ids, day)
-  select auth.uid(), 'daily', coalesce(array_agg(id), '{}'), v_today
+  select coalesce(array_agg(id), '{}') into v_ids
   from (
     select p.id
     from problems p
@@ -370,9 +392,29 @@ begin
       )
     order by random()
     limit v_count
-  ) picked
+  ) picked;
+
+  if v_exists then
+    -- 오늘 세트가 비어 있었으면(그때는 문제가 없었으면) 새로 뽑은 문제로 채운다
+    update practice_sessions set problem_ids = v_ids
+    where id = v_session.id and cardinality(problem_ids) = 0
+    returning * into v_session;
+    if not found then
+      select * into v_session from practice_sessions where id = v_session.id;
+    end if;
+    return v_session;
+  end if;
+
+  insert into practice_sessions (user_id, mode, problem_ids, day)
+  values (auth.uid(), 'daily', v_ids, v_today)
+  on conflict (user_id, day) where mode = 'daily' do nothing
   returning * into v_session;
 
+  -- 같은 순간에 다른 요청이 먼저 만들었으면 그것을 쓴다
+  if not found then
+    select * into v_session from practice_sessions
+    where user_id = auth.uid() and mode = 'daily' and day = v_today;
+  end if;
   return v_session;
 end;
 $$;
@@ -392,6 +434,7 @@ as $$
   from problems p
   left join my_latest_attempts la on la.problem_id = p.id
   where public.can_view_workbook(p.workbook_id)
+    and p.image_path is not null
     and (p_workbook_id is null or p.workbook_id = p_workbook_id)
     and case p_mode
       when 'sequence' then la.problem_id is null
@@ -506,9 +549,14 @@ $$;
 --   uploads  : 원본 PDF (비공개, 서버만 접근)
 --   problems : 잘라낸 문제 이미지 (비공개, 경로 첫 폴더 = 주인 id 또는 shared)
 -- ═════════════════════════════════════════════
-insert into storage.buckets (id, name, public)
-values ('uploads', 'uploads', false), ('problems', 'problems', false)
-on conflict (id) do update set public = false;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values
+  ('uploads', 'uploads', false, 52428800, array['application/pdf']),
+  ('problems', 'problems', false, 5242880, array['image/png'])
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "problem images read" on storage.objects;
 create policy "problem images read" on storage.objects

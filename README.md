@@ -126,7 +126,7 @@ eas env:create --environment production --name EXPO_PUBLIC_SUPABASE_ANON_KEY --v
 eas env:create --environment production --name EXPO_PUBLIC_API_URL --value https://<배포한 서버> --visibility plaintext
 
 eas build --platform all --profile production
-eas submit --platform ios       # App Store Connect에 앱을 먼저 만들고 eas.json의 ascAppId를 채운다
+eas submit --platform ios       # Apple 계정으로 로그인하면 App Store Connect 앱을 찾거나 만들어 준다
 eas submit --platform android   # Play Console 앱 + 서비스 계정 키 필요, 처음엔 internal 트랙
 ```
 

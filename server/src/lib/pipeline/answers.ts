@@ -69,9 +69,10 @@ export function parseAnswerKey(text: string, knownNumbers?: Iterable<number>): M
       continue
     }
 
-    // 한 줄 나열: 번호 바로 다음 칸이 답
+    // 한 줄 나열: 번호 바로 다음 칸이 답. 번호·답을 짝으로 소비하므로
+    // "012 12 013 14"처럼 답이 다른 문제 번호와 같은 숫자여도 밀리지 않는다.
     for (let i = 0; i < row.length - 1; i++) {
-      if (isNumber(row[i], known) && isAnswer(row[i + 1]) && !isNumber(row[i + 1], known)) {
+      if (isNumber(row[i], known) && isAnswer(row[i + 1])) {
         put(row[i], row[i + 1])
         i++
       }

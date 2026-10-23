@@ -30,6 +30,16 @@ describe("parseAnswerKey", () => {
     expect(asObject(parseAnswerKey("011. ④  012) 5  013: (1)"))).toEqual({ 11: "4", 12: "5", 13: "1" })
   })
 
+  it("주관식 답이 다른 문제 번호와 같은 숫자여도 짝이 밀리지 않는다", () => {
+    const text = "011 ③ 012 12 013 14 014 ②"
+    expect(asObject(parseAnswerKey(text, [11, 12, 13, 14]))).toEqual({ 11: "3", 12: "12", 13: "14", 14: "2" })
+  })
+
+  it("표에서 답 행이 숫자뿐이어도 번호 행과 짝짓는다", () => {
+    const text = "| 011 | 012 | 013 |\n| 12 | 13 | 5 |"
+    expect(asObject(parseAnswerKey(text, [11, 12, 13]))).toEqual({ 11: "12", 12: "13", 13: "5" })
+  })
+
   it("같은 번호가 두 번 나오면 처음 것", () => {
     expect(asObject(parseAnswerKey("011 ③ 011 ①"))).toEqual({ 11: "3" })
   })

@@ -73,7 +73,10 @@ export function useSessionBundle(id: number) {
     queryKey: keys.session(id),
     queryFn: () => backend.sessionBundle(id),
     enabled: Number.isFinite(id),
-    staleTime: Infinity, // 풀이 중에는 화면 상태가 기준이다
+    // 풀이 중에는 화면 상태가 기준이라 다시 읽지 않고, 화면을 닫으면 캐시를 버려서
+    // 다음에 열 때 그사이 제출한 풀이까지 새로 읽는다
+    staleTime: Infinity,
+    gcTime: 0,
   })
 }
 

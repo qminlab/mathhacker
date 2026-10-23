@@ -49,7 +49,12 @@ export function IngestList({ limit = 3 }: { limit?: number }) {
     }
   }, [data, qc])
 
-  const [openedAt] = useState(() => Date.now())
+  // 1분마다 갱신되는 현재 시각 (멈춘 세션 판단용)
+  const [openedAt, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(t)
+  }, [])
   const recent = (data ?? []).filter((s) => openedAt - new Date(s.created_at).getTime() < 24 * 3600_000).slice(0, limit)
   if (!recent.length) return null
 
@@ -57,7 +62,11 @@ export function IngestList({ limit = 3 }: { limit?: number }) {
     <View style={{ gap: space.sm }}>
       {recent.map((s) => {
         const d = describe(s)
-        const busy = s.status === "processing" || s.status === "uploaded"
+        const quietFor = openedAt - new Date(s.updated_at ?? s.created_at).getTime()
+        // 처리 중인데 6분 넘게 진행이 없거나, 올리기만 하고 시작을 못 한 세션은 다시 시도할 수 있게
+        const stuck =
+          (s.status === "processing" && quietFor > 6 * 60_000) || (s.status === "uploaded" && quietFor > 60_000)
+        const busy = !stuck && (s.status === "processing" || s.status === "uploaded")
         return (
           <Sheet key={s.id} style={{ gap: space.sm }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
@@ -65,12 +74,12 @@ export function IngestList({ limit = 3 }: { limit?: number }) {
               <Text weight="bold" style={{ flex: 1 }} numberOfLines={1}>
                 {d.title}
               </Text>
-              {s.status === "failed" ? (
+              {s.status === "failed" || stuck ? (
                 <Button label="다시 시도" kind="secondary" size="sm" icon="refresh" loading={retry.isPending && retry.variables === s.id} onPress={() => retry.mutate(s.id)} />
               ) : null}
             </View>
             <Text variant="small" tone={s.status === "failed" ? "red" : s.status === "done" ? "mint" : "soft"}>
-              {d.body}
+              {stuck ? "진행이 멈췄어요. 다시 시도하면 읽은 쪽 다음부터 이어서 해요." : d.body}
             </Text>
             {busy && s.page_count ? <Progress value={s.processed_pages} total={s.page_count} height={4} /> : null}
           </Sheet>

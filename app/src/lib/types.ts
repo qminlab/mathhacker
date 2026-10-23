@@ -62,6 +62,7 @@ export type IngestSession = {
   error: string | null
   result: { problems?: number; matched?: number; missing?: number[]; truncated?: boolean } | null
   created_at: string
+  updated_at: string
 }
 
 export type PracticeSession = {
