@@ -1,6 +1,6 @@
 // 코드로 만드는 공용 문제 (저작권 걱정 없는 오리지널 문제)
 
-export const GRADES = ["k", "e1", "e2", "e3", "e4", "e5", "e6", "m1", "m2", "m3", "h1", "h2", "h3"] as const
+export const GRADES = ["k", "e1", "e2", "e3", "e4", "e5", "e6", "m1", "m2", "m3", "h1", "h2", "h3", "su"] as const
 export type Grade = (typeof GRADES)[number]
 
 export const GRADE_LABEL: Record<Grade, string> = {
@@ -17,6 +17,7 @@ export const GRADE_LABEL: Record<Grade, string> = {
   h1: "고1",
   h2: "고2",
   h3: "고3",
+  su: "수능",
 }
 
 export type Figure = { svg: string; width: number; height: number; align?: "left" | "center" }

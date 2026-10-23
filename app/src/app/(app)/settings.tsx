@@ -6,8 +6,8 @@ import { confirmAsync, notify } from "@/features/practice/useStartPractice"
 import { signOut, useAuth } from "@/lib/auth"
 import { backend, keys, useProfile, useSaveSettings, useSettings } from "@/lib/data"
 import { DEFAULT_SETTINGS, type Settings } from "@/lib/types"
-import { GradePicker } from "@/features/GradePicker"
-import { GRADE_LABEL } from "@/lib/grades"
+import { GradeChip, GradePicker } from "@/features/GradePicker"
+import { GRADE_LABEL, LEVEL_LABEL, LEVELS } from "@/lib/grades"
 import { Button, Field, Segmented, Sheet } from "@/ui/controls"
 import { Screen } from "@/ui/Screen"
 import { Text } from "@/ui/Text"
@@ -128,6 +128,20 @@ export default function SettingsScreen() {
             </Text>
           </View>
           <GradePicker value={s.grade} onChange={(g) => set({ grade: g })} />
+          {s.grade === "su" ? (
+            <View style={{ gap: space.sm, paddingTop: space.sm }}>
+              <Text weight="display">수능 난도</Text>
+              <Text variant="small" tone="soft">
+                대수·미적분Ⅰ·확률과 통계 (2028학년도 수능 범위). 고른 난도의 문제만 퀘스트에 나와요.
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }} accessibilityRole="radiogroup">
+                <GradeChip label="전부 섞기" selected={s.level === null} onPress={() => set({ level: null })} />
+                {LEVELS.map((l) => (
+                  <GradeChip key={l} label={LEVEL_LABEL[l]} selected={s.level === l} onPress={() => set({ level: l })} />
+                ))}
+              </View>
+            </View>
+          ) : null}
         </View>
         <Row title="오늘의 세트 문제 수" body="매일 안 푼 문제 중에서 이만큼 골라요. 바꾸면 내일 세트부터 적용돼요.">
           <Stepper value={s.daily_count} onChange={(v) => set({ daily_count: v })} min={1} max={50} step={1} unit="문제" />

@@ -158,7 +158,7 @@ alter table public.problems add column if not exists hint          text;
 alter table public.workbooks add column if not exists grade text;
 alter table public.workbooks drop constraint if exists workbooks_grade_check;
 alter table public.workbooks add constraint workbooks_grade_check
-  check (grade is null or grade in ('k','e1','e2','e3','e4','e5','e6','m1','m2','m3','h1','h2','h3'));
+  check (grade is null or grade in ('k','e1','e2','e3','e4','e5','e6','m1','m2','m3','h1','h2','h3','su'));
 create index if not exists workbooks_public_grade_idx on public.workbooks (grade) where owner_id is null;
 alter table public.problems drop constraint if exists problems_answer_source_check;
 alter table public.problems add constraint problems_answer_source_check
@@ -166,7 +166,17 @@ alter table public.problems add constraint problems_answer_source_check
 alter table public.user_settings add column if not exists grade text;
 alter table public.user_settings drop constraint if exists user_settings_grade_check;
 alter table public.user_settings add constraint user_settings_grade_check
-  check (grade is null or grade in ('k','e1','e2','e3','e4','e5','e6','m1','m2','m3','h1','h2','h3'));
+  check (grade is null or grade in ('k','e1','e2','e3','e4','e5','e6','m1','m2','m3','h1','h2','h3','su'));
+
+-- v0.5: 수능 문제 은행 (난도·해설)
+alter table public.workbooks add column if not exists level smallint;
+alter table public.workbooks drop constraint if exists workbooks_level_check;
+alter table public.workbooks add constraint workbooks_level_check check (level is null or level between 1 and 4);
+alter table public.problems add column if not exists solution_path text;
+alter table public.problems add column if not exists solution text;
+alter table public.user_settings add column if not exists level smallint;
+alter table public.user_settings drop constraint if exists user_settings_level_check;
+alter table public.user_settings add constraint user_settings_level_check check (level is null or level between 1 and 4);
 
 create index if not exists problems_workbook_idx
   on public.problems (workbook_id, workbook_number);
@@ -292,7 +302,13 @@ as $$
         w.owner_id = auth.uid()
         or (w.owner_id is null and (
           w.grade is null
-          or w.grade = (select s.grade from public.user_settings s where s.user_id = auth.uid())
+          or exists (
+            select 1 from public.user_settings s
+            where s.user_id = auth.uid()
+              and s.grade = w.grade
+              -- 수능 문제는 고른 난도만 (난도를 안 골랐으면 전부)
+              and (s.level is null or w.level is null or s.level = w.level)
+          )
         ))
       )
   );
@@ -543,7 +559,7 @@ drop function if exists public.my_workbooks();
 create or replace function public.my_workbooks()
 returns table (
   id bigint, title text, unit text, chapter text, is_mine boolean, created_at timestamptz,
-  total int, with_answer int, solved int, correct int, wrong int, grade text
+  total int, with_answer int, solved int, correct int, wrong int, grade text, level smallint
 )
 language sql
 stable
@@ -555,7 +571,7 @@ as $$
          count(la.problem_id)::int,
          count(la.problem_id) filter (where la.result = 'correct')::int,
          count(la.problem_id) filter (where la.result in ('wrong', 'gave_up'))::int,
-         w.grade
+         w.grade, w.level
   from workbooks w
   left join problems p on p.workbook_id = w.id
   left join my_latest_attempts la on la.problem_id = p.id
@@ -565,17 +581,19 @@ as $$
 $$;
 
 -- 문제집 안 문제 + 내 마지막 결과 (읽는 순서대로)
+drop function if exists public.workbook_problems(bigint);
 create or replace function public.workbook_problems(p_workbook_id bigint)
 returns table (
   id uuid, workbook_id bigint, workbook_number int, page int, score int, unit text,
-  raw_text text, image_path text, answer text, answer_source text, hint text, last_result text
+  raw_text text, image_path text, answer text, answer_source text, hint text, last_result text,
+  solution_path text
 )
 language sql
 stable
 security invoker set search_path = public
 as $$
   select p.id, p.workbook_id, p.workbook_number, p.page, p.score, p.unit,
-         p.raw_text, p.image_path, p.answer, p.answer_source, p.hint, la.result
+         p.raw_text, p.image_path, p.answer, p.answer_source, p.hint, la.result, p.solution_path
   from problems p
   left join my_latest_attempts la on la.problem_id = p.id
   where p.workbook_id = p_workbook_id and public.can_view_workbook(p_workbook_id)

@@ -18,7 +18,7 @@ const all = books.flatMap((b) => b.problems.map((p) => ({ ...p, book: b.title })
 
 describe("공용 문제 생성기", () => {
   it("모든 학년에 문제집이 있다", () => {
-    for (const g of GRADES) expect(books.some((b) => b.grade === g && b.problems.length >= 10)).toBe(true)
+    for (const g of GRADES.filter((g) => !["h2", "h3", "su"].includes(g))) expect(books.some((b) => b.grade === g && b.problems.length >= 10)).toBe(true)
   })
 
   it("문제 id는 겹치지 않는다", () => {

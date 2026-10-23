@@ -70,7 +70,7 @@ async function userId() {
 }
 
 const PROBLEM_COLUMNS =
-  "id, workbook_id, workbook_number, page, score, unit, raw_text, image_path, answer, answer_source, hint"
+  "id, workbook_id, workbook_number, page, score, unit, raw_text, image_path, answer, answer_source, hint, solution_path"
 
 async function fileBody(file: UploadInput["file"]): Promise<ArrayBuffer | File> {
   if (Platform.OS === "web" && file.file) return file.file
@@ -105,7 +105,7 @@ export const supabaseBackend: Backend = {
     const row = check(
       await supabase
         .from("user_settings")
-        .select("daily_count, time_per_problem_sec, grading_mode, stylus_only, grade")
+        .select("daily_count, time_per_problem_sec, grading_mode, stylus_only, grade, level")
         .eq("user_id", id)
         .maybeSingle()
     )

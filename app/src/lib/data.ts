@@ -47,7 +47,7 @@ export function useSaveSettings() {
     onError: (_e, _s, ctx) => ctx?.prev && qc.setQueryData(keys.settings, ctx.prev),
     // 학년을 바꾸면 오늘의 퀘스트(비어 있었다면)와 문제집 목록이 달라진다
     onSuccess: (_d, s, ctx) => {
-      if (ctx?.prev?.grade !== s.grade) {
+      if (ctx?.prev?.grade !== s.grade || ctx?.prev?.level !== s.level) {
         qc.invalidateQueries({ queryKey: keys.daily })
         qc.invalidateQueries({ queryKey: keys.workbooks })
       }

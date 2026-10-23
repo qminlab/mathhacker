@@ -14,6 +14,8 @@ export type Settings = {
   stylus_only: boolean
   /** 공용 문제를 받을 학년 (없으면 내 문제집만) */
   grade: Grade | null
+  /** 수능 문제 난도 1~4 (없으면 전부) */
+  level: 1 | 2 | 3 | 4 | null
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -22,6 +24,7 @@ export const DEFAULT_SETTINGS: Settings = {
   grading_mode: "instant",
   stylus_only: false,
   grade: null,
+  level: null,
 }
 
 export type WorkbookSummary = {
@@ -38,6 +41,8 @@ export type WorkbookSummary = {
   wrong: number
   /** 공용(코드로 만든) 문제집의 학년 */
   grade: string | null
+  /** 수능 문제집 난도 1~4 */
+  level?: number | null
 }
 
 export type Problem = {
@@ -52,6 +57,8 @@ export type Problem = {
   answer: string | null
   answer_source: "ocr" | "manual" | "generated" | null
   hint: string | null
+  /** 해설 그림 (수능 문제 은행) */
+  solution_path?: string | null
 }
 
 export type ProblemWithStatus = Problem & { last_result: Result | null }

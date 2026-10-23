@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { AnswerPad } from "@/features/practice/AnswerPad"
 import { DrawingCanvas, type Tool } from "@/features/practice/DrawingCanvas"
 import { PEN_COLORS, PenToolbar } from "@/features/practice/PenToolbar"
+import { SolutionSheet } from "@/features/practice/SolutionSheet"
 import { notify, useStartPractice } from "@/features/practice/useStartPractice"
 import { displayAnswer, formatDuration, isChoiceProblem } from "@/lib/answers"
 import { backend, invalidateProgress, keys, useImageSources, useProgress, useSessionBundle, useSettings } from "@/lib/data"
@@ -119,7 +120,8 @@ function initialProgress(bundle: SessionBundle, startAt?: string) {
 function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; settings: Settings; startAt?: string }) {
   const color = useColors()
   const id = bundle.session.id
-  const images = useImageSources(bundle.problems.map((p) => p.image_path))
+  const images = useImageSources(bundle.problems.flatMap((p) => [p.image_path, p.solution_path]))
+  const [solutionOpen, setSolutionOpen] = useState(false)
   const qc = useQueryClient()
   const insets = useSafeAreaInsets()
   const { form, landscape, isPhone } = useFormFactor()
@@ -338,6 +340,7 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
           popKey={lastGain.key}
           last={allSubmitted}
           onNext={allSubmitted ? finish : goNext}
+          onSolution={problem.solution_path ? () => setSolutionOpen(true) : undefined}
         />
       ) : st.submitted ? (
         <Sheet style={{ gap: space.md }}>
@@ -377,6 +380,14 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
         </>
       )}
     </View>
+  )
+
+  const solutionSheet = (
+    <SolutionSheet
+      visible={solutionOpen && !!problem.solution_path}
+      source={problem.solution_path ? images.data?.[problem.solution_path] : undefined}
+      onClose={() => setSolutionOpen(false)}
+    />
   )
 
   const imageWidth: number | `${number}%` = isPhone ? `${Math.round(Math.min(100, 92 * imageScale))}%` : (sidePanel ? 560 : 520) * imageScale
@@ -454,6 +465,7 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
   if (sidePanel) {
     return (
       <View style={{ flex: 1, backgroundColor: color.bg }}>
+        {solutionSheet}
         {header}
         <View style={{ flex: 1, flexDirection: "row" }}>
           {board}
@@ -483,6 +495,7 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
+      {solutionSheet}
       {header}
       {board}
       <View
@@ -508,6 +521,7 @@ function ResultCard({
   popKey,
   last,
   onNext,
+  onSolution,
 }: {
   submitted: Submitted
   choice: boolean
@@ -515,6 +529,7 @@ function ResultCard({
   popKey: number
   last: boolean
   onNext: () => void
+  onSolution?: () => void
 }) {
   const tones = useTones()
   const answer = displayAnswer(submitted.correctAnswer, choice)
@@ -553,13 +568,17 @@ function ResultCard({
           <XpPop key={popKey} amount={gain} visible={popKey > 0} />
         </View>
       </View>
-      <Button
-        label={last ? "결과 보기" : "계속"}
-        kind={r === "correct" ? "success" : r === "pending" ? "primary" : "primary"}
-        size="lg"
-        icon="chevronRight"
-        onPress={onNext}
-      />
+      <View style={{ flexDirection: "row", gap: space.sm }}>
+        {onSolution ? <Button label="해설" kind="secondary" size="lg" icon="hint" onPress={onSolution} /> : null}
+        <Button
+          label={last ? "결과 보기" : "계속"}
+          kind={r === "correct" ? "success" : "primary"}
+          size="lg"
+          icon="chevronRight"
+          onPress={onNext}
+          style={{ flex: 1 }}
+        />
+      </View>
     </View>
   )
 }

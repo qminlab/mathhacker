@@ -1,9 +1,10 @@
 // 공용 문제 전체 목록: 단원(문제집)마다 템플릿 × perTemplate 문제
-import { createHash } from "node:crypto"
 import { elementary, kindergarten } from "./curriculum/elementary"
 import { high } from "./curriculum/high"
 import { middle } from "./curriculum/middle"
 import { hashSeed, rng } from "./lib"
+import { stableUuid } from "./stable"
+export { stableUuid }
 import { GRADE_LABEL, type GeneratedProblem, type Unit } from "./types"
 
 export const UNITS: Unit[] = [...kindergarten, ...elementary, ...middle, ...high]
@@ -12,12 +13,6 @@ export const DEFAULT_PER_TEMPLATE = 20
 
 export type BuiltProblem = GeneratedProblem & { id: string; number: number; templateId: string }
 export type BuiltWorkbook = { key: string; title: string; grade: Unit["grade"]; unit: string; problems: BuiltProblem[] }
-
-/** 같은 키면 같은 uuid (다시 넣어도 문제 id와 풀이 기록이 유지된다) */
-export function stableUuid(key: string) {
-  const h = createHash("sha1").update(`mathhacker:${key}`).digest("hex")
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${((parseInt(h[16], 16) & 3) | 8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`
-}
 
 export function buildAll(perTemplate = DEFAULT_PER_TEMPLATE): BuiltWorkbook[] {
   return UNITS.map((u) => {

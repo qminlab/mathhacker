@@ -5,7 +5,7 @@ import { Pressable, ScrollView, View } from "react-native"
 import { GradeChip } from "@/features/GradePicker"
 import { IngestList } from "@/features/IngestList"
 import { useSettings, useWorkbooks } from "@/lib/data"
-import { GRADE_LABEL, gradeOrder, GRADES, type Grade } from "@/lib/grades"
+import { GRADE_LABEL, gradeOrder, GRADES, LEVEL_LABEL, LEVELS, type Grade } from "@/lib/grades"
 import type { WorkbookSummary } from "@/lib/types"
 import { Button, Empty, ErrorNote, Progress } from "@/ui/controls"
 import { Grid } from "@/ui/Grid"
@@ -95,7 +95,8 @@ export default function LibraryScreen() {
   const sharedGrades = GRADES.filter((g) => shared.some((w) => w.grade === g))
   const [picked, setPicked] = useState<Grade | null>(null)
   const grade: Grade | undefined = picked ?? (settings.data?.grade && sharedGrades.includes(settings.data.grade) ? settings.data.grade : sharedGrades[0])
-  const gradeBooks = shared.filter((w) => w.grade === grade)
+  const [levelPick, setLevelPick] = useState<number | null>(null)
+  const gradeBooks = shared.filter((w) => w.grade === grade && (grade !== "su" || levelPick === null || w.level === levelPick))
 
   return (
     <Screen
@@ -126,6 +127,14 @@ export default function LibraryScreen() {
               <GradeChip key={g} label={GRADE_LABEL[g]} selected={g === grade} onPress={() => setPicked(g)} />
             ))}
           </ScrollView>
+          {grade === "su" ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, paddingBottom: 4 }}>
+              <GradeChip label="전체 난도" selected={levelPick === null} onPress={() => setLevelPick(null)} />
+              {LEVELS.map((l) => (
+                <GradeChip key={l} label={LEVEL_LABEL[l]} selected={levelPick === l} onPress={() => setLevelPick(l)} />
+              ))}
+            </ScrollView>
+          ) : null}
           <Grid items={gradeBooks} minWidth={280} gap={space.lg} keyOf={(w) => w.id} render={(w) => <WorkbookCard w={w} />} />
         </>
       ) : null}

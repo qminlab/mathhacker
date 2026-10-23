@@ -142,7 +142,16 @@ function drawPlaced(ctx: SKRSContext2D, l: Layout, left: number, top: number) {
 
 const CIRCLED = ["①", "②", "③", "④", "⑤"]
 
-export async function renderProblem(p: GeneratedProblem, number: number): Promise<Buffer> {
+/** 해설 그림: 머리에 "해설  정답 ③" */
+export async function renderSolution(solution: string, answerLabel: string): Promise<Buffer> {
+  return renderProblem({ text: solution, answer: "" }, 0, { header: `해설   정답 ${answerLabel}`, headerColor: "#0E9A6E", headerSize: 34 })
+}
+
+export async function renderProblem(
+  p: Pick<GeneratedProblem, "text" | "choices" | "figure" | "answer">,
+  number: number,
+  opts: { header?: string; headerColor?: string; headerSize?: number } = {}
+): Promise<Buffer> {
   ensureFonts()
   const measure = createCanvas(10, 10).getContext("2d")
   measure.font = `${SIZE}px PlexKR`
@@ -181,9 +190,9 @@ export async function renderProblem(p: GeneratedProblem, number: number): Promis
   ctx.fillStyle = "#FFFFFF"
   ctx.fillRect(0, 0, WIDTH, height)
 
-  ctx.fillStyle = NUMBER
-  ctx.font = `44px PlexKRBold`
-  ctx.fillText(String(number).padStart(3, "0"), PAD, PAD + 40)
+  ctx.fillStyle = opts.headerColor ?? NUMBER
+  ctx.font = `${opts.headerSize ?? 44}px PlexKRBold`
+  ctx.fillText(opts.header ?? String(number).padStart(3, "0"), PAD, PAD + 40)
 
   ctx.fillStyle = INK
   ctx.font = `${SIZE}px PlexKR`
