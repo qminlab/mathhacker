@@ -126,7 +126,9 @@ async function main() {
     const workbookId = await upsertWorkbook(db, b)
     const rows: Record<string, unknown>[] = []
     await pool(b.problems, 8, async (p) => {
-      const folder = `shared/gen/${b.key}`
+      // Storage 경로는 영문·숫자만 받는다 (한글·공백 불가) → 학년 코드 폴더 + 문제 uuid
+      const folder = `shared/gen/${b.grade}`
+      if (/[^A-Za-z0-9/_.-]/.test(folder)) throw new Error(`Storage 경로에 쓸 수 없는 글자: ${folder}`)
       const imagePath = `${folder}/${p.id}.png`
       await upload(db, imagePath, await p.draw())
       let solutionPath: string | null = null
