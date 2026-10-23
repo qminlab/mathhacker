@@ -759,7 +759,7 @@ const diceCond: SuTemplate<{ E: DEv; F: DEv }> = {
       solution: lines(
         `${condEvText(E)}${condEvText(E).endsWith("$") ? " " : ""}인 사건을 $E$, ${targetText(F)}${targetText(F).endsWith("$") ? " " : ""}인 사건을 $F$ 라 하면 구하는 확률은 $P(F \\mid E) = \\frac{n(E \\cap F)}{n(E)}$ 이다.`,
         eList.length <= 15 ? `$E$ 의 원소는 $${listTex(eList)}$ 로 $${eList.length}$ 개이다.` : `$E$ 의 원소를 $a$ 의 값별로 세면 ${DICE.map((a) => `$${DICE.filter((b) => ev(a, b)).length}$`).join(", ")} 개이므로 $n(E) = ${eList.length}$ 이다.`,
-        ef.length <= 15 ? `이 중 $F$ 에도 속하는 것은 $${listTex(ef)}$ 로 $${ef.length}$ 개이다.` : `이 중 $F$ 에도 속하는 것을 $a$ 의 값별로 세면 ${DICE.map((a) => `$${DICE.filter((b) => ev(a, b) && tg(a, b)).length}$`).join(", ")} 개이므로 $n(E \\cap F) = ${ef.length}$ 이다.`,
+        ef.length <= 15 ? `그중 $F$ 에도 속하는 것은 $${listTex(ef)}$ 로 $${ef.length}$ 개이다.` : `그중 $F$ 에도 속하는 것을 $a$ 의 값별로 세면 ${DICE.map((a) => `$${DICE.filter((b) => ev(a, b) && tg(a, b)).length}$`).join(", ")} 개이므로 $n(E \\cap F) = ${ef.length}$ 이다.`,
         `따라서 $P(F \\mid E) = ${fracEq(ef.length, eList.length)}$ 이고, $p + q = ${ans.d} + ${ans.n} = ${ans.n + ans.d}$`
       ),
       score: 3,

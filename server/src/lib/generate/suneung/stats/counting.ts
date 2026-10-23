@@ -379,7 +379,7 @@ const digitCond: SuTemplate<{ zero: boolean; m: number; k: number; cond: number 
       condText = `숫자 $${special}$ 을 적어도 하나 포함하는 수`
       sol = [
         `만들 수 있는 ${DIGIT_WORD[k]} 자리 자연수는 ${zero ? `맨 앞자리에 $0$ 이 올 수 없으므로 $${m} \\times ${N}^{${k - 1}} = ${total}$` : `$${N}^{${k}} = ${total}$`} 개이다.`,
-        `이 중 숫자 $${special}$ 을 하나도 포함하지 않는 수는 $${special}$ 을 뺀 $${N - 1}$ 개의 숫자로 만든 수이므로 $${N - 1}^{${k}} = ${none}$ 개이다.`,
+        `그중 숫자 $${special}$ 을 하나도 포함하지 않는 수는 $${special}$ 을 뺀 $${N - 1}$ 개의 숫자로 만든 수이므로 $${N - 1}^{${k}} = ${none}$ 개이다.`,
         `따라서 여사건을 이용하면 $${total} - ${none} = ${ans}$`,
       ]
     }
@@ -857,7 +857,7 @@ const samePermCond: SuTemplate<{ cnts: number[]; kind: number }> = {
       text = `${lead} $a$ 끼리는 서로 이웃하지 않도록 나열하는 경우의 수`
       sol = [
         `먼저 $a$ 를 뺀 $${no}$ 개의 문자를 나열하는 경우의 수는 $\\frac{${no}!}{${facts(others)}} = ${arr}$`,
-        `이 문자들의 사이사이와 양 끝, 모두 $${no + 1}$ 개의 자리 중 $${ca}$ 개를 골라 $a$ 를 하나씩 넣으면 $a$ 끼리 이웃하지 않는다. 이 경우의 수는 $${nC(no + 1, ca)} = ${C(no + 1, ca)}$`,
+        `나열한 문자들의 사이사이와 양 끝, 모두 $${no + 1}$ 개의 자리 중 $${ca}$ 개를 골라 $a$ 를 하나씩 넣으면 $a$ 끼리 이웃하지 않는다. 이 경우의 수는 $${nC(no + 1, ca)} = ${C(no + 1, ca)}$`,
         `따라서 구하는 경우의 수는 $${arr} \\times ${C(no + 1, ca)} = ${ans}$`,
       ]
     }
@@ -1065,7 +1065,7 @@ const pathAvoid: SuTemplate<{ a: number; b: number; P: [number, number]; Q: [num
       text = `${lead} 점 $\\mathrm{P}${ptT(P)}$${eun(P)} 지나고 점 $\\mathrm{Q}${ptT(Q)}$${eun(Q)} 지나지 않는 경로의 수를 구하시오.`
       sol = [
         `$\\mathrm{P}$ 를 지나는 경로의 수는 $${pathC(P[0], P[1])} \\times ${pathC(a - P[0], b - P[1])} = ${vP}$ 이다.`,
-        `이 중 $\\mathrm{Q}$ 도 지나는 경로를 빼야 한다.`,
+        `그중 $\\mathrm{Q}$ 도 지나는 경로를 빼야 한다.`,
         pqLine,
         `따라서 구하는 경로의 수는 $${vP} - ${vPQ} = ${ans}$`,
       ]

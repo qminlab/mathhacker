@@ -148,6 +148,28 @@ describe("수능 문제 은행", () => {
         expect(s, where(p)).not.toMatch(/\$\s?가(다|고|므로|며|면|지만|어야)(?![가-힣])/)
   })
 
+  it("객관식 정답 번호가 한쪽으로 몰리지 않는다", () => {
+    const per = new Map<string, number[]>()
+    const bySubject: Record<string, number[]> = {}
+    for (const p of all.filter((x) => x.choices)) {
+      const i = Number(p.answer) - 1
+      const k = `${p.template.subject}/${p.template.id}`
+      const a = per.get(k) ?? [0, 0, 0, 0, 0]
+      a[i]++
+      per.set(k, a)
+      ;(bySubject[p.template.subject] ??= [0, 0, 0, 0, 0])[i]++
+    }
+    for (const [k, a] of per) {
+      const n = a.reduce((x, y) => x + y, 0)
+      if (n >= 20) expect(Math.max(...a) / n, `${k} 정답 번호 분포 ${a}`).toBeLessThanOrEqual(0.45)
+    }
+    for (const [k, a] of Object.entries(bySubject)) {
+      const n = a.reduce((x, y) => x + y, 0)
+      for (const c of a) expect(c / n, `${k} 정답 번호 분포 ${a}`).toBeGreaterThanOrEqual(0.12)
+      for (const c of a) expect(c / n, `${k} 정답 번호 분포 ${a}`).toBeLessThanOrEqual(0.28)
+    }
+  })
+
   it("수식($...$) 안에 한글이 없다 (그림에서 글자가 빠진다)", () => {
     for (const p of all)
       for (const s of [p.text, ...(p.choices ?? []), p.solution, p.hint ?? ""])

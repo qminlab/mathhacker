@@ -7,6 +7,7 @@ const UNIT = "통계"
 const S = "확률과 통계" as const
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i)
 const Z_STEPS = [-3, -2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3]
+const Z_ASK = [-2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5]
 const ZPOS = [0.5, 1, 1.5, 2, 2.5, 3]
 const sgnZ = (z: number) => (z < 0 ? `- ${z === -1 ? "" : zt(-z)}` : `+ ${z === 1 ? "" : zt(z)}`)
 /** 표에 보일 z: 필요한 값 + 채워서 4개 */
@@ -1015,8 +1016,8 @@ const normalMax: SuTemplate<{ m: number; s: number; L: number; zk: number; z1: n
     const L = r.int(1, 4) * 2
     const zk = r.pick(Z_STEPS)
     if (!Number.isInteger(m + zk * s)) return null
-    let z1: number | null = r.pick(Z_STEPS)
-    let z2: number | null = r.pick(Z_STEPS)
+    let z1: number | null = r.pick(Z_ASK)
+    let z2: number | null = r.pick(Z_ASK)
     const k = r.int(0, 2)
     if (k === 0) z1 = null
     else if (k === 1) z2 = null
@@ -1155,7 +1156,7 @@ function cardAns(cnt: number[], n: number) {
   return n === 2 ? q(2 * a * c + b * b, N * N) : q(6 * a * b * c + b * b * b, N * N * N)
 }
 
-const sampleCond: SuTemplate<{ m: number; h: number; s: number; k: number; dist: number; z: number }> = {
+const sampleCond: SuTemplate<{ m: number; h: number; s: number; k: number; dist: number; z: number; z2: number | null }> = {
   id: "s4-sample-cond",
   subject: S,
   unit: UNIT,
@@ -1168,14 +1169,17 @@ const sampleCond: SuTemplate<{ m: number; h: number; s: number; k: number; dist:
     const k = r.int(2, 6)
     const s = k * r.pick([1, 2, 2, 4, 4, 6])
     const dist = r.int(1, 3) * (s / k) // m - a
-    const z = r.pick(Z_STEPS)
+    const z = r.pick(Z_ASK)
     if (!Number.isInteger(dist) || !Number.isInteger(m + (z * s) / k)) return null
     // 묻는 확률이 (나)의 좌변(또는 그 대칭)과 같으면 n 을 구하지 않아도 답이 나오므로 거른다
     if (Math.abs(Math.abs(z) - (dist * k) / s) < 1e-9) return null
     if (dist * k > 60) return null
-    return { m, h, s, k, dist, z }
+    // 절반은 구간 확률로 묻는다
+    const z2 = r.chance(0.5) ? r.pick(Z_ASK) : null
+    if (z2 !== null && (z2 <= z || !Number.isInteger(m + (z2 * s) / k))) return null
+    return { m, h, s, k, dist, z, z2 }
   },
-  build: ({ m, h, s, k, dist, z }, r) => {
+  build: ({ m, h, s, k, dist, z, z2 }, r) => {
     const n = k * k
     const c = m - h
     const d = m + h
@@ -1183,24 +1187,26 @@ const sampleCond: SuTemplate<{ m: number; h: number; s: number; k: number; dist:
     const b = m + k * dist
     const se = s / k
     const e = m + z * se
-    const ask = z > 0 ? `P(\\overline{X} \\ge ${e})` : `P(\\overline{X} \\le ${e})`
-    const pr = z > 0 ? zProb(z, null) : zProb(null, z)
+    const e2 = z2 === null ? 0 : m + z2 * se
+    const ask = z2 !== null ? `P(${e} \\le \\overline{X} \\le ${e2})` : z > 0 ? `P(\\overline{X} \\ge ${e})` : `P(\\overline{X} \\le ${e})`
+    const zAsk = z2 !== null ? `P\\left(\\frac{${e} - ${m}}{${num(se)}} \\le Z \\le \\frac{${e2} - ${m}}{${num(se)}}\\right) = P(${zt(z)} \\le Z \\le ${zt(z2)})` : `P\\left(Z ${z > 0 ? "\\ge" : "\\le"} \\frac{${e} - ${m}}{${num(se)}}\\right) = P(Z ${z > 0 ? "\\ge" : "\\le"} ${zt(z)})`
+    const pr = z2 !== null ? zProb(z, z2) : z > 0 ? zProb(z, null) : zProb(null, z)
     return {
       text: `정규분포 $\\mathrm{N}(m, ${s}^{2})$ 을 따르는 모집단의 확률변수를 $X$ 라 하고, 이 모집단에서 크기가 $n$ 인 표본을 임의추출하여 구한 표본평균을 $\\overline{X}$ 라 하자. 두 조건\n(가) $P(X \\le ${c}) + P(X \\le ${d}) = 1$\n(나) $P(\\overline{X} \\le ${a}) = P(X \\ge ${b})$\n를 만족시킬 때, $${ask}$ 의 값을 오른쪽 표준정규분포표를 이용하여 구한 것은?`,
-      figure: tableFor(z),
-      ...decMc(r, pr.value, [r4(1 - pr.value), T(z), r4(0.5 + T(z)) === pr.value ? r4(0.5 - T(z)) : r4(0.5 + T(z)), ...(inTableZ(z / k) ? [r4(0.5 - T(z / k))] : []), ...(inTableZ(z * k) ? [r4(0.5 - T(z * k))] : [])]),
+      figure: tableFor(z, ...(z2 === null ? [] : [z2])),
+      ...decMc(r, pr.value, z2 !== null ? wrongsFor(z, z2, pr.value) : [r4(1 - pr.value), T(z), r4(0.5 + T(z)) === pr.value ? r4(0.5 - T(z)) : r4(0.5 + T(z)), ...(inTableZ(z / k) ? [r4(0.5 - T(z / k))] : []), ...(inTableZ(z * k) ? [r4(0.5 - T(z * k))] : [])]),
       solution: lines(
         `(가)에서 $P(X \\le ${d}) = 1 - P(X \\le ${c}) = P(X \\ge ${c})$ 이므로 정규분포 곡선의 대칭성에 의하여 $m = \\frac{${c} + ${d}}{2} = ${m}$`,
         `$\\overline{X}$ 는 정규분포 $\\mathrm{N}\\left(${m}, \\frac{${s}^{2}}{n}\\right)$ 을 따르므로 (나)의 좌변은 $P\\left(Z \\le \\frac{${a} - ${m}}{${s} / \\sqrt{n}}\\right) = P\\left(Z \\le -\\frac{${dist}\\sqrt{n}}{${s}}\\right)$, 우변은 $P\\left(Z \\ge \\frac{${b} - ${m}}{${s}}\\right) = P\\left(Z \\ge ${q(b - m, s).tex()}\\right) = P\\left(Z \\le -${q(b - m, s).tex()}\\right)$`,
         `$\\frac{${dist}\\sqrt{n}}{${s}} = ${q(b - m, s).tex()}$ 이어야 하므로 $\\sqrt{n} = ${k}$, 즉 $n = ${n}$`,
-        `$\\sigma(\\overline{X}) = \\frac{${s}}{${k}} = ${num(se)}$ 이므로 $${ask} = P\\left(Z ${z > 0 ? "\\ge" : "\\le"} \\frac{${e} - ${m}}{${num(se)}}\\right) = P(Z ${z > 0 ? "\\ge" : "\\le"} ${zt(z)})$`,
+        `$\\sigma(\\overline{X}) = \\frac{${s}}{${k}} = ${num(se)}$ 이므로 $${ask} = ${zAsk}$`,
         `$= ${pr.tex}$`
       ),
       score: 4,
     }
   },
   // m 은 (가)를 수치로 풀어서, n 은 (나)를 1~400 대입으로 찾은 뒤 계산
-  verify: ({ m, h, s, k, dist, z }) => {
+  verify: ({ m, h, s, k, dist, z, z2 }) => {
     const c = m - h
     const d = m + h
     const rs = roots((mm) => phi((c - mm) / s) + phi((d - mm) / s) - 1, 0, 300, 1200)
@@ -1214,6 +1220,7 @@ const sampleCond: SuTemplate<{ m: number; h: number; s: number; k: number; dist:
     const se = s / Math.sqrt(ns[0])
     const e = m + (z * s) / k
     const zz = snap((e - mm) / se)
+    if (z2 !== null) return tableBetween(zz, snap((m + (z2 * s) / k - mm) / se))
     return z > 0 ? tableTail(zz) : r4(1 - tableTail(zz))
   },
 }

@@ -1,6 +1,7 @@
 // 예시 템플릿 (다른 템플릿을 쓸 때 이 모양을 따른다)
-import { ints, intChoice, lines, mc, q, qChoice, short, term, texPoly } from "../kit"
+import { ints, intChoice, lines, q, qChoice, short, term, texPoly } from "../kit"
 import type { SuTemplate } from "../types"
+import { mcBal } from "./helpers"
 
 /** 기초: 로그의 성질로 계산 (객관식) */
 const logSum: SuTemplate<{ b: number; m: number; k: number }> = {
@@ -21,7 +22,7 @@ const logSum: SuTemplate<{ b: number; m: number; k: number }> = {
     const ans = m - k
     return {
       text: `$\\log_{${b}} ${b ** m} - \\log_{${b}} ${b ** k}$ 의 값은?`,
-      ...mc(r, intChoice(ans), ints(m + k, m * k, ans + 1, ans - 1, m), undefined),
+      ...mcBal(r, intChoice(ans), ints(m + k, m * k, ans + 1, ans - 1, m), undefined),
       solution: lines(
         `로그의 성질 $\\log_a x - \\log_a y = \\log_a \\frac{x}{y}$ 를 이용하면`,
         `$\\log_{${b}} ${b ** m} - \\log_{${b}} ${b ** k} = \\log_{${b}} \\frac{${b ** m}}{${b ** k}} = \\log_{${b}} ${b ** (m - k)} = ${ans}$`
@@ -157,7 +158,7 @@ const geoRatio: SuTemplate<{ a: number; rN: number; rD: number; k: number }> = {
     const ans = ak
     return {
       text: `첫째항이 $${a}$ 이고 공비가 $${ratio.tex()}$ 인 등비수열 $\\{a_n\\}$ 에 대하여 $a_{${k}}$ 의 값은?`,
-      ...mc(r, qChoice(ans), [qChoice(ratio.pow(k).mul(a)), qChoice(ratio.pow(k - 2).mul(a)), qChoice(ans.mul(2)), qChoice(ans.div(2))]),
+      ...mcBal(r, qChoice(ans), [qChoice(ratio.pow(k).mul(a)), qChoice(ratio.pow(k - 2).mul(a)), qChoice(ans.mul(2)), qChoice(ans.div(2))]),
       solution: lines(`$a_n = ${a} \\times \\left(${ratio.tex()}\\right)^{n-1}$ 이므로`, `$a_{${k}} = ${a} \\times \\left(${ratio.tex()}\\right)^{${k - 1}} = ${ans.tex()}$`),
       score: 2,
     }
