@@ -3,19 +3,22 @@
 </p>
 
 <p align="center">
+  <a href="https://expo.dev"><img alt="Expo SDK 58" src="https://img.shields.io/badge/Expo-SDK_58-000020?logo=expo&logoColor=white"></a>
+  <img alt="iPadOS · iOS · Android · Web" src="https://img.shields.io/badge/iPad%20%7C%20iOS%20%7C%20Android%20%7C%20Web-2443A8">
   <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white"></a>
-  <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white"></a>
+  <a href="https://supabase.com"><img alt="Supabase" src="https://img.shields.io/badge/Supabase-Auth%20%7C%20Postgres%20%7C%20Storage-3FCF8E?logo=supabase&logoColor=white"></a>
   <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white"></a>
-  <a href="https://supabase.com"><img alt="Supabase" src="https://img.shields.io/badge/Supabase-Auth%20·%20Postgres%20·%20Storage-3FCF8E?logo=supabase&logoColor=white"></a>
-  <a href="https://tailwindcss.com"><img alt="Tailwind CSS 4" src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white"></a>
-  <a href="https://www.python.org"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white"></a>
   <img alt="status: MVP" src="https://img.shields.io/badge/status-MVP-f59e0b">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-64748b"></a>
 </p>
 
 <p align="center">
   <b>문제집은 많은데, 오늘 뭘 풀지 고르는 데만 10분.</b><br>
-  가진 문제지를 한 번 올려 두면, 문제 하나하나가 카드처럼 쌓여서 매일 골라 풀고 기록이 남습니다.
+  가진 문제지를 한 번 올려 두면 문제가 한 장씩 잘려 쌓이고, 매일 몇 문제씩 꺼내 펜으로 풀고 채점까지 됩니다.
+</p>
+
+<p align="center">
+  <img src="docs/preview.png" alt="패드·폰·컴퓨터 화면 미리보기 (체험 모드의 예제 문제)" width="100%">
 </p>
 
 ---
@@ -24,149 +27,154 @@
 
 | | |
 | --- | --- |
-| 📄 **PDF 한 번 업로드** | 문제지 PDF를 올리면 원본은 비공개 저장소에 보관됩니다. |
-| 🔍 **수식까지 읽는 OCR** | [Mathpix](https://mathpix.com)로 페이지를 읽어 LaTeX 수식과 줄 좌표를 뽑습니다. |
-| ✂️ **문제 단위 자동 분리** | 2단 레이아웃과 문제 번호(`011`, `012` …)를 찾아 문제마다 영역을 잘라 이미지로 저장합니다. |
-| 🗂️ **문제 DB** | 문제집 → 문제 구조로 쌓이고, 배점·단원·OCR 텍스트가 함께 저장됩니다. |
-| ✍️ **풀이 기록** | 문제를 열고 답을 내면, 걸린 시간과 함께 내 기록으로 남습니다. |
-| 🔐 **내 것만 보이게** | Supabase RLS로 내가 올린 문제집과 내 풀이 기록만 조회됩니다. |
+| 📄 **문제지 한 번 올리기** | PDF를 올리면 서버가 페이지를 읽고(Mathpix OCR) 문제 번호를 찾아 문제마다 이미지로 잘라 둡니다. |
+| 🔑 **답지로 자동 채점** | 빠른정답 PDF를 올리면 번호별 정답을 뽑아 넣고, 잘못 읽은 정답은 앱에서 바로 고칩니다. |
+| ✍️ **펜으로 푸는 풀이판** | 문제는 왼쪽 위에, 나머지는 전부 모눈 풀이판. 애플펜슬·S펜 필압, 펜만 인식, 지우개, 되돌리기. |
+| ⏱️ **시험처럼, 혹은 연습처럼** | 문제당 제한 시간(+1분), 힌트, 포기, 문제마다 바로 채점 또는 다 풀고 한꺼번에 채점. |
+| ⭕ **빨간펜 채점** | 맞으면 동그라미, 틀리면 빗금. 선생님이 긋듯이 그려집니다. |
+| 📅 **오늘의 세트** | 매일 안 푼 문제 중에서 정해 둔 개수만큼 골라 줍니다. 순서대로 풀기도 됩니다. |
+| 📝 **오답노트** | 틀리거나 포기한 문제가 모이고, 다시 맞히면 빠집니다. |
+| 📊 **기록** | 날짜별로 푼 양, 단원별 정답률(약한 단원부터), 공부한 시간. |
 
-## 🧭 어떻게 동작하나요
+화면은 **패드 → 폰 → 컴퓨터** 순서로 설계했습니다. 패드와 컴퓨터는 왼쪽 레일과 넓은 풀이판, 폰은 아래 탭 막대와 아래쪽 답 패널을 씁니다.
+
+## 🧭 구조
 
 ```mermaid
 flowchart LR
-    subgraph Web["🌐 웹 (Next.js)"]
-        U["문제 넣기<br/>/upload/problems"]
-        P["문제 풀기<br/>/practice/…"]
+    subgraph App["📱 app/ (Expo: iOS · Android · Web)"]
+        U["PDF 올리기"]
+        P["풀이 화면"]
+        R["오늘 · 문제집 · 오답 · 기록"]
     end
 
     subgraph SB["🟢 Supabase"]
-        ST[("Storage<br/>uploads · problems")]
-        DB[("Postgres + RLS<br/>workbooks · problems<br/>attempts · ingest_sessions")]
+        ST[("Storage<br/>uploads · problems (비공개)")]
+        DB[("Postgres + RLS")]
     end
 
-    subgraph PY["🐍 파이프라인 (Python)"]
-        O["Mathpix OCR"] --> X["단·문제 번호 검출"] --> C["문제별 crop"]
+    subgraph SV["⚙️ server/ (Next.js API)"]
+        I["/api/ingest"]
+        G["/api/attempts (채점)"]
+        E["PDF 렌더 → Mathpix OCR → 문제 검출 → crop"]
     end
 
-    U -- "PDF" --> ST
-    U -- "세션 생성" --> DB
-    ST -- "ingest_session_run.py" --> O
-    C -- "이미지" --> ST
-    C -- "문제 row" --> DB
-    DB --> P
-    P -- "답 · 풀이 시간" --> DB
+    U -- "서명된 URL로 직접 업로드" --> ST
+    U -- "처리 시작" --> I --> E
+    E -- "문제 이미지" --> ST
+    E -- "문제 · 정답" --> DB
+    R -- "사용자 토큰으로 읽기 (RLS)" --> DB
+    P -- "답 제출" --> G --> DB
 ```
 
-1. **업로드** — 웹에서 PDF를 올리면 `uploads` 버킷에 저장되고 `ingest_sessions`에 세션이 생깁니다.
-2. **분리** — `scripts/ingest_session_run.py --session-id N`이 OCR → 문제 검출 → 이미지 crop → DB 적재를 순서대로 실행합니다.
-3. **풀이** — 웹에서 문제를 열어 답을 내면 `attempts`에 기록됩니다.
-
-## 🛠 기술 스택
-
-- **Web** · Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind CSS 4
-- **Backend** · Supabase — Auth(쿠키 세션, `@supabase/ssr`), Postgres + Row Level Security, Storage
-- **Pipeline** · Python · Mathpix OCR API · pdf2image · Pillow
+- **앱**은 읽기를 Supabase에 사용자 토큰으로 직접 하고(RLS가 내 것만 보여 줌), 업로드 처리·채점·삭제처럼 권한이 필요한 일만 서버 API에 맡깁니다.
+- **서버**는 화면 없이 API만 있습니다. 처리는 페이지 단위로 저장해서, 중간에 끊겨도 다시 시작하면 남은 페이지부터 이어서 합니다.
+- **채점**은 서버에서만 합니다. `③ = (3) = 3`, `0.75 = 3/4` 같은 표기 차이를 같은 답으로 봅니다.
 
 ## 🚀 시작하기
 
-### 1. Supabase 준비
+필요한 것: Node.js 20+, [Supabase](https://supabase.com) 프로젝트(무료), [Mathpix](https://mathpix.com) API 키(OCR, 페이지당 과금).
 
-1. [Supabase](https://supabase.com)에서 새 프로젝트를 만듭니다.
-2. **SQL Editor**에 [`supabase/schema.sql`](supabase/schema.sql) 전체를 붙여넣고 실행합니다.
-   테이블·RLS 정책·회원가입 트리거·Storage 버킷이 한 번에 만들어지고, 여러 번 실행해도 안전합니다.
-3. **Authentication → Sign In / Providers**에서 **Confirm email**을 끄면 메일 인증 없이 바로 가입됩니다. (선택)
+### 1. Supabase
 
-### 2. 웹 앱
+1. 프로젝트를 만들고 **SQL Editor**에 [`supabase/schema.sql`](supabase/schema.sql) 전체를 붙여넣어 실행합니다.
+   처음 설치와 업그레이드 모두 이 파일 하나로 하며, 여러 번 실행해도 안전합니다.
+2. **Authentication → Sign In / Providers → Email**에서 **Confirm email**을 끄면 메일 인증 없이 바로 가입됩니다.
+3. (선택) 가입한 뒤 관리자로 지정하면 모든 문제집을 볼 수 있습니다.
+   ```sql
+   update public.profiles set role = 'admin'
+   where id = (select id from auth.users where email = 'you@example.com');
+   ```
+
+### 2. 서버 (`server/`)
 
 ```bash
-git clone https://github.com/qminlab/mathhacker.git
-cd mathhacker
+cd server
 npm install
-cp .env.example .env.local
-npm run dev
+cp .env.example .env.local     # SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, MATHPIX_APP_ID/KEY
+npm run dev                    # http://localhost:3000/api/health
 ```
 
-`.env.local`에 Supabase **Project Settings → API**의 값을 채운 뒤 <http://localhost:3000>을 엽니다.
+배포는 [Vercel](https://vercel.com)에 `server/`를 Root Directory로 지정하고 같은 환경변수를 넣으면 됩니다. 처리 함수는 최대 300초로 설정돼 있습니다.
 
-| 변수 | 값 |
-| --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon (publishable) key |
-| `SUPABASE_SERVICE_ROLE_KEY` | service_role (secret) key — 서버 전용, 절대 공개 금지 |
-
-### 3. 관리자 지정 (선택)
-
-가입 후 SQL Editor에서 한 번 실행하면 `/admin/workbooks`에서 모든 문제집을 볼 수 있습니다.
-
-```sql
-update public.profiles set role = 'admin'
-where id = (select id from auth.users where email = 'you@example.com');
-```
-
-### 4. 파이프라인
+### 3. 앱 (`app/`)
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r scripts/requirements.txt        # pdf2image는 poppler 필요: brew install poppler
-cp .env.example .env                            # SUPABASE_URL · SERVICE_ROLE_KEY · MATHPIX 키
-
-# 웹에서 업로드하고 받은 세션 번호로 실행
-python3 scripts/ingest_session_run.py --session-id 1 \
-  --source "내 문제집 SET 01" --unit "지수함수와 로그함수"
+cd app
+npm install
+cp .env.example .env.local     # EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_API_URL
+npx expo start                 # i: iOS 시뮬레이터, a: 안드로이드, w: 웹
 ```
 
-<details>
-<summary>단계별 스크립트</summary>
+- 서버 없이 화면만 보려면 `npm run demo` (예제 문제로 도는 체험 모드).
+- 실제 폰·패드에서 개발 서버에 붙이려면 `EXPO_PUBLIC_API_URL`을 맥의 같은 와이파이 주소(예: `http://192.168.0.10:3000`)로 둡니다.
+- 펜 필기·문서 선택 같은 네이티브 기능은 Expo Go 대신 개발 빌드(`eas build --profile development`)에서 확인하는 게 정확합니다.
 
-| 스크립트 | 하는 일 |
-| --- | --- |
-| `ocr_import.py` | PDF → 페이지 PNG → Mathpix OCR JSON |
-| `extract_problems_from_json.py` | 줄 좌표로 단·문제 번호를 찾아 문제별 영역 JSON 생성 |
-| `crop_problems_and_add_image_file.py` | 페이지 이미지에서 문제 영역을 잘라 PNG로 저장 |
-| `import_problems_to_supabase.py` | `workbooks` / `problems`에 insert (업로드한 사용자가 주인) |
-| `upload_problem_images_to_storage.py` | 잘라낸 이미지를 Storage에 올리고 `full_image_url` 채우기 |
-| `ingest_session_run.py` | 위 단계를 세션 하나에 대해 순서대로 실행 |
+## 📦 스토어 출시 (EAS)
 
-중간 결과물은 `work/`에 쌓이며 git에는 올라가지 않습니다.
-</details>
+앱 ID는 iOS `com.qminlab.mathhacker`, Android `com.qminlab.mathhacker`입니다 ([`app/app.json`](app/app.json)).
+
+```bash
+cd app
+npm i -g eas-cli
+eas login
+eas init                                       # Expo 프로젝트 연결 (app.json에 projectId가 들어감)
+
+# 빌드에 들어갈 환경변수 (EXPO_PUBLIC_ 값은 앱에 그대로 포함되니 공개 키만)
+eas env:create --environment production --name EXPO_PUBLIC_SUPABASE_URL --value https://xxxx.supabase.co --visibility plaintext
+eas env:create --environment production --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <anon key> --visibility plaintext
+eas env:create --environment production --name EXPO_PUBLIC_API_URL --value https://<배포한 서버> --visibility plaintext
+
+eas build --platform all --profile production
+eas submit --platform ios       # App Store Connect에 앱을 먼저 만들고 eas.json의 ascAppId를 채운다
+eas submit --platform android   # Play Console 앱 + 서비스 계정 키 필요, 처음엔 internal 트랙
+```
+
+심사 전에 준비할 것:
+
+- **개인정보처리방침 URL**: 이메일, 올린 PDF, 풀이 기록을 저장한다는 내용. 두 스토어 모두 필수입니다.
+- **심사용 테스트 계정**: 문제집이 하나 이상 들어 있는 계정을 App Review 정보에 적어 둡니다.
+- **계정 삭제**는 앱 안 설정 화면에 있습니다 (Apple 가이드라인 5.1.1(v)).
+- 스크린샷: 12.9·13인치 iPad, 6.9인치 iPhone, 안드로이드 폰·태블릿.
 
 ## 📁 프로젝트 구조
 
 ```
-src/
-├─ app/
-│  ├─ (auth)/            로그인 · 회원가입
-│  ├─ (app)/             대시보드 · 문제 넣기 · 풀기 · 통계 · 설정 · 내 정보
-│  ├─ admin/             관리자 전용 (role = admin)
-│  ├─ practice/…         문제 풀이 화면
-│  └─ api/               ingest/pdf · attempts · profile
-├─ lib/supabase/         서버 · 브라우저 클라이언트
-└─ proxy.ts              세션 갱신 + 로그인 필요 경로 보호
-scripts/                 OCR · 문제 분리 파이프라인 (Python)
-supabase/schema.sql      테이블 · RLS · 트리거 · 버킷
+app/                         Expo 앱 (iOS · Android · Web)
+├─ src/app/                  화면 (expo-router)
+│  ├─ (auth)/                로그인 · 가입
+│  ├─ (app)/                 오늘 · 문제집 · 오답노트 · 기록 · 설정 (레일 / 탭 막대)
+│  ├─ practice/[sessionId]   풀이 화면
+│  └─ upload                 PDF 올리기
+├─ src/features/             풀이판, 답 패드, 차트, 업로드 상태 …
+├─ src/lib/                  Supabase · API · 데이터 훅 · 체험 모드
+└─ src/ui/                   디자인 토큰, 모눈종이, 채점 표시, 기본 컨트롤
+server/                      Next.js API
+├─ src/app/api/              ingest · attempts · workbooks · account · health
+└─ src/lib/pipeline/         PDF 렌더, Mathpix, 문제 검출, 답지 파서, 처리 엔진
+supabase/schema.sql          테이블 · RLS · 함수 · Storage 정책
 ```
+
+테스트: `cd server && npm test` (채점 규칙, 답지 파서, 문제 검출, 처리 엔진 재시도).
 
 ## 🗺 로드맵
 
-- [x] 회원가입 · 로그인 (쿠키 세션)
-- [x] PDF 업로드 → 세션 생성
-- [x] OCR → 문제 분리 → crop → DB 적재 *(현재 PDF 1페이지)*
-- [x] 문제 보기 · 답 제출 · 풀이 시간 기록
-- [x] 대시보드 · 관리자 문제집 목록
-- [ ] 업로드 후 파이프라인 자동 실행
-- [ ] 여러 페이지 처리
-- [ ] 답지 업로드 → 자동 채점
-- [ ] 데일리 / 순서대로 출제 모드 · 타이머
-- [ ] 설정 저장 · 통계 그래프
-- [ ] 풀이 영역 필기(그림판)
+- [x] 문제지 PDF → 문제 자동 분리 (40쪽까지, 서버에서)
+- [x] 빠른정답 OCR + 직접 수정, 자동 재채점
+- [x] 오늘의 세트 · 순서대로 · 오답노트
+- [x] 펜 풀이판, 타이머, 힌트, 포기, 즉시 / 일괄 채점
+- [x] 기록 (일별, 단원별)
+- [x] iPad · iPhone · Android · 웹, 앱 안 계정 삭제
+- [ ] 문제 번호 형식이 다른 문제지 (①, 1., 예제 1 …)
+- [ ] 해설지 PDF로 문제별 힌트·해설
+- [ ] 풀이판 필기 다시 보기
+- [ ] 오프라인에서 풀고 나중에 동기화
 
 ## ⚖️ 저작권 안내
 
-Math Hacker는 **본인이 가진 문제지를 개인 학습용으로 정리하는 도구**입니다.
-시중 문제집 PDF나 그 OCR 결과를 다른 사람과 공유하거나 공개 배포하지 마세요. 이 레포에는 예제 문제지를 포함하지 않습니다.
+Math Hacker는 **본인이 가진 문제지를 개인 학습용으로 정리하는 도구**입니다. 올린 문제지와 잘라 낸 문제 이미지는 올린 사람만 볼 수 있습니다.
+시중 문제집 PDF나 그 OCR 결과를 다른 사람과 공유하거나 공개 배포하지 마세요. 이 레포의 예제 문제(`app/assets/demo`)는 직접 만든 문제입니다.
 
-## 📜 라이선스
+## 라이선스
 
-코드는 [MIT License](LICENSE)로 공개합니다. 자유롭게 쓰고 고치고 배포할 수 있으며, 저작권 표시만 남겨 주세요.
-(위 저작권 안내대로, 앱으로 정리한 문제지 콘텐츠는 이 라이선스에 포함되지 않습니다.)
+[MIT](LICENSE)
