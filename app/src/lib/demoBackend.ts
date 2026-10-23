@@ -48,7 +48,7 @@ const mine: Problem[] = [
 }))
 
 // 공용(코드로 만든) 문제집 몇 개: server의 npm run export:demo 로 만든다
-const publicBooks = (demoGenerated as { key: string; title: string; grade: string; unit: string; problems: { file: string; number: number; raw_text: string; answer: string; hint: string | null }[] }[]).map(
+const publicBooks = (demoGenerated as { key: string; title: string; grade: string; unit: string; problems: { file: string; solution?: string; unit?: string; number: number; raw_text: string; answer: string; hint: string | null }[] }[]).map(
   (b, i) => ({
     id: 100 + i,
     title: b.title,
@@ -61,9 +61,10 @@ const publicBooks = (demoGenerated as { key: string; title: string; grade: strin
         workbook_number: p.number,
         page: 1,
         score: null,
-        unit: b.unit,
+        unit: p.unit ?? b.unit,
         raw_text: p.raw_text,
         image_path: `gen/${p.file}`,
+        solution_path: p.solution ? `gen/${p.solution}` : null,
         answer: p.answer,
         answer_source: "generated",
         hint: p.hint,
@@ -76,7 +77,7 @@ const IMAGE_ALL: Record<string, number> = { ...IMAGES, ...GEN_IMAGES }
 
 const state = {
   nickname: "체험생",
-  settings: { ...DEFAULT_SETTINGS, daily_count: 4, grade: "h2" } as Settings,
+  settings: { ...DEFAULT_SETTINGS, daily_count: 4, grade: "su" } as Settings,
   attempts: [] as Attempt[],
   sessions: [] as PracticeSession[],
   workbookTitle: "지수와 로그 예제 문제집",

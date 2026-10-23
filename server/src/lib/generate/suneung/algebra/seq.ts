@@ -12,6 +12,8 @@ const sumTo = (n: number, f: (k: number) => number, from = 1) => {
 }
 const pr = (n: number) => (n < 0 ? `(${n})` : String(n))
 const seqName = "수열 $\\{a_n\\}$"
+/** a_i + … + a_j (세 항 이하면 나열) */
+const span = (i: number, j: number, v = "a") => (j - i <= 2 ? Array.from({ length: j - i + 1 }, (_, t) => `${v}_{${i + t}}`).join(" + ") : `${v}_{${i}} + ${v}_{${i + 1}} + \\cdots + ${v}_{${j}}`)
 
 // ═════════ 1단계 ═════════
 
@@ -263,7 +265,7 @@ const means: SuTemplate<{ g: number; u: number; v: number; swap: boolean }> = {
 // ═════════ 2단계 ═════════
 
 /** S_n 과 a_n 의 관계 */
-const snToAn: SuTemplate<{ p: number; qq: number; c: number; m: number; both: boolean }> = {
+const snToAn: SuTemplate<{ kind: "poly" | "geo"; p: number; qq: number; c: number; m: number; ask: "one" | "both" | "pair" }> = {
   id: "seq-sn-to-an",
   subject: "대수",
   unit: U,
@@ -271,35 +273,47 @@ const snToAn: SuTemplate<{ p: number; qq: number; c: number; m: number; both: bo
   level: 2,
   count: 70,
   params: (r) => {
-    const p = r.pick([-3, -2, -1, 1, 2, 3, 4])
-    const qq = r.int(-8, 8)
-    const c = r.int(-6, 6)
-    const both = c !== 0 && r.chance(0.7)
-    return { p, qq, c, m: r.int(4, 12), both }
+    const kind = r.chance(0.65) ? "poly" : "geo"
+    // poly: S_n = p n² + qq n + c,  geo: S_n = p·qq^n + c (qq = 2, 3)
+    const p = kind === "poly" ? r.pick([-3, -2, -1, 1, 2, 3, 4, 5]) : r.pick([-3, -2, -1, 1, 2, 3])
+    const qq = kind === "poly" ? r.int(-9, 9) : r.pick([2, 3])
+    const c = r.int(-7, 7)
+    const m = kind === "poly" ? r.int(3, 14) : r.int(2, qq === 2 ? 7 : 5)
+    const ask = c !== 0 && r.chance(0.6) ? "both" : r.pick(["one", "pair"] as const)
+    return { kind, p, qq, c, m, ask }
   },
-  build: ({ p, qq, c, m, both }, r) => {
-    const Sn = (n: number) => p * n * n + qq * n + c
-    const am = 2 * p * m - p + qq
+  build: ({ kind, p, qq, c, m, ask }, r) => {
+    const Sn = (n: number) => (kind === "poly" ? p * n * n + qq * n + c : p * qq ** n + c)
+    const gen = (n: number) => (kind === "poly" ? 2 * p * n - p + qq : p * (qq - 1) * qq ** (n - 1))
     const a1 = Sn(1)
-    const ans = both ? a1 + am : am
-    const poly = texPoly([p, qq, c], "n")
-    const wrong1 = p + qq + am // a1 을 일반항으로 잘못 구한 경우
+    const ans = ask === "both" ? a1 + gen(m) : ask === "pair" ? gen(m) + gen(m + 1) : gen(m)
+    const sTex = kind === "poly" ? texPoly([p, qq, c], "n") : `${term(p, `${qq}^{n}`, true)}${c ? ` ${signed(c)}` : ""}`
+    const gTex = kind === "poly" ? texPoly([2 * p, -p + qq], "n") : `${term(p * (qq - 1), `${qq}^{n-1}`, true)}`
+    const target = ask === "both" ? `a_1 + a_{${m}}` : ask === "pair" ? `a_{${m}} + a_{${m + 1}}` : `a_{${m}}`
+    const wrong1 = ask === "both" ? gen(1) + gen(m) : ans + p
     return {
-      text: `수열 $\\{a_n\\}$ 의 첫째항부터 제$n$항까지의 합 $S_n$ 이 $S_n = ${poly}$ 일 때, $${both ? `a_1 + a_{${m}}` : `a_{${m}}`}$ 의 값${isShortOk(ans) ? "을 구하시오." : "은?"}`,
-      ...autoInt(r, ans, [wrong1, Sn(m), Sn(m) - Sn(m - 2), ans + 2 * p, ans - c]),
+      text: `수열 $\\{a_n\\}$ 의 첫째항부터 제$n$항까지의 합 $S_n$ 이 $S_n = ${sTex}$ 일 때, $${target}$ 의 값${isShortOk(ans) ? "을 구하시오." : "은?"}`,
+      ...autoInt(r, ans, [wrong1, Sn(m), Sn(m + 1) - Sn(m - 1) + 1, ans + 2 * p, ans - c]),
       solution: sol(
-        `$n \\ge 2$ 일 때 $a_n = S_n - S_{n-1} = ${texPoly([2 * p, -p + qq], "n")}$`,
-        `$a_{${m}} = ${am}$`,
-        both ? `$a_1 = S_1 = ${a1}$ (${c ? `상수항이 있으므로 $a_1$ 은 위의 식과 다르다` : "위의 식과 같다"})` : null,
-        both ? `따라서 $a_1 + a_{${m}} = ${a1} ${signed(am)} = ${ans}$` : `따라서 구하는 값은 $${ans}$`
+        `$n \\ge 2$ 일 때 $a_n = S_n - S_{n-1} = ${gTex}$`,
+        ask === "both"
+          ? `$a_1 = S_1 = ${a1}$ (${c ? "상수항 때문에 $a_1$ 은 위의 식에 $n = 1$ 을 넣은 값과 다르다" : "위의 식에 $n = 1$ 을 넣은 값과 같다"})`
+          : ask === "pair"
+            ? `$a_{${m}} + a_{${m + 1}} = S_{${m + 1}} - S_{${m - 1}}$ 으로 구해도 된다.`
+            : `$${m} \\ge 2$ 이므로 위의 식을 쓸 수 있다.`,
+        ask === "both"
+          ? `$a_{${m}} = ${gen(m)}$ 이므로 $a_1 + a_{${m}} = ${a1} ${signed(gen(m))} = ${ans}$`
+          : ask === "pair"
+            ? `$a_{${m}} = ${gen(m)}$, $a_{${m + 1}} = ${gen(m + 1)}$ 이므로 구하는 값은 $${ans}$`
+            : `따라서 $a_{${m}} = ${ans}$`
       ),
       score: 3,
     }
   },
-  verify: ({ p, qq, c, m, both }) => {
-    const Sn = (n: number) => p * n * n + qq * n + c
+  verify: ({ kind, p, qq, c, m, ask }) => {
+    const Sn = (n: number) => (kind === "poly" ? p * n * n + qq * n + c : p * qq ** n + c)
     const a = (n: number) => (n === 1 ? Sn(1) : Sn(n) - Sn(n - 1))
-    return both ? a(1) + a(m) : a(m)
+    return ask === "both" ? a(1) + a(m) : ask === "pair" ? a(m) + a(m + 1) : a(m)
   },
 }
 
@@ -329,16 +343,16 @@ const geoSum: SuTemplate<{ a: number; r: number; k: number; ask: "s3" | "tail" }
     const t = rr ** k
     const s3 = Sk * (1 + t + t * t)
     const ans = ask === "s3" ? s3 : Sk * t * t
-    const target = ask === "s3" ? `S_{${3 * k}}` : `a_{${2 * k + 1}} + a_{${2 * k + 2}} + \\cdots + a_{${3 * k}}`
+    const target = ask === "s3" ? `S_{${3 * k}}` : span(2 * k + 1, 3 * k)
     return {
       text: `등비수열 $\\{a_n\\}$ 의 첫째항부터 제$n$항까지의 합을 $S_n$ 이라 하자. $S_{${k}} = ${Sk}$, $S_{${2 * k}} = ${S2}$ 일 때, $${target}$ 의 값${isShortOk(ans) ? "을 구하시오." : "은?"}`,
       ...autoInt(r, ans, [S2 * t, Sk * t, s3 - Sk, S2 + Sk * t, ans + Sk]),
       solution: sol(
-        `공비를 $r$ 라 하면 $${k === 2 ? "a_{3} + a_{4}" : `a_{${k + 1}} + \\cdots + a_{${2 * k}}`} = r^{${k}}(${k === 2 ? "a_1 + a_2" : `a_1 + \\cdots + a_{${k}}`})$ 이므로 $S_{${2 * k}} - S_{${k}} = r^{${k}} S_{${k}}$`,
+        `공비를 $r$ 라 하면 $${span(k + 1, 2 * k)} = r^{${k}}(${span(1, k)})$ 이므로 $S_{${2 * k}} - S_{${k}} = r^{${k}} S_{${k}}$`,
         `$${S2 - Sk} = ${pr(Sk)} r^{${k}}$ 에서 $r^{${k}} = ${t}$`,
         ask === "s3"
           ? `$S_{${3 * k}} = S_{${2 * k}} + r^{${2 * k}} S_{${k}} = ${S2} ${signed(t * t * Sk)} = ${ans}$`
-          : `$a_{${2 * k + 1}} + \\cdots + a_{${3 * k}} = r^{${2 * k}} S_{${k}} = ${t * t} \\times ${pr(Sk)} = ${ans}$`
+          : `$${span(2 * k + 1, 3 * k)} = r^{${2 * k}} S_{${k}} = ${t * t} \\times ${pr(Sk)} = ${ans}$`
       ),
       score: 3,
     }
@@ -563,7 +577,7 @@ const arithCond: SuTemplate<{ a: number; d: number; i: number; j: number; k: num
       text: `등차수열 $\\{a_n\\}$ 에 대하여 $a_{${i}} + a_{${j}} = ${X}$, $a_{${k}} = ${Y}$ 일 때, $${S(n, "a_k")}$ 의 값${isShortOk(s) ? "을 구하시오." : "은?"}`,
       ...autoInt(r, s, [s + n * d, s - n * d, n * t(n), s + a, ((n + 1) * (2 * a + n * d)) / 2].filter(Number.isInteger)),
       solution: sol(
-        `첫째항을 $a$, 공차를 $d$ 라 하면 $2a + ${i + j - 2}d = ${X}$, $a + ${k - 1}d = ${Y}$`,
+        `첫째항을 $a$, 공차를 $d$ 라 하면 $2a${term(i + j - 2, "d")} = ${X}$, $a${term(k - 1, "d")} = ${Y}$`,
         `두 식을 연립하면 $a = ${a}$, $d = ${d}$`,
         `$${S(n, "a_k")} = \\frac{${n}\\{2 \\times ${pr(a)} + ${n - 1} \\times ${pr(d)}\\}}{2} = ${s}$`
       ),
@@ -624,8 +638,8 @@ const absArith: SuTemplate<{ a: number; d: number; i: number; j: number; n: numb
       solution: sol(
         `공차를 $d$ 라 하면 $${j - i}d = ${t(j)} - ${pr(t(i))} = ${t(j) - t(i)}$ 이므로 $d = ${d}$, $a_1 = ${a}$, 즉 $a_n = ${texPoly([d, a - d], "n")}$`,
         `$a_n ${sg > 0 ? "\\ge" : "\\le"} 0$ 인 $n$ 은 $n \\le ${z}$ 이고, $n \\ge ${z + 1}$ 이면 $a_n ${sg > 0 ? "<" : ">"} 0$`,
-        `$${S(z, "a_k")} = ${Sz}$, $${S(n, "a_k")} = ${Sn}$ 이므로`,
-        `$${S(n, "|a_k|")} = ${sg > 0 ? `2 \\times ${Sz} - (${Sn})` : `${Sn} - 2 \\times (${Sz})`} = ${ans}$`
+        `$${z === 1 ? "a_1" : S(z, "a_k")} = ${Sz}$, $${S(n, "a_k")} = ${Sn}$ 이므로`,
+        `$${S(n, "|a_k|")} = ${sg > 0 ? `2 \\times ${pr(Sz)} - ${pr(Sn)}` : `${Sn} - 2 \\times ${pr(Sz)}`} = ${ans}$`
       ),
       score: 4,
     }
@@ -709,7 +723,7 @@ function traceSeq(rule: string, p: number, k: number, a1: number, N: number) {
 }
 
 /** 수학적 귀납법 증명의 빈칸 */
-const induction: SuTemplate<{ fam: "A" | "B"; c: number; x: number; y: number }> = {
+const induction: SuTemplate<{ fam: "A" | "B"; a: number; c: number; x: number; y: number }> = {
   id: "seq-induction-blank",
   subject: "대수",
   unit: U,
@@ -717,71 +731,80 @@ const induction: SuTemplate<{ fam: "A" | "B"; c: number; x: number; y: number }>
   level: 3,
   count: 60,
   params: (r) => {
-    const fam = r.chance(0.5) ? "A" : "B"
+    const fam = r.chance(0.55) ? "A" : "B"
+    const a = fam === "A" ? r.int(1, 3) : r.int(1, 2)
     const c = fam === "A" ? r.int(1, 7) : r.int(0, 5)
+    if (fam === "B" && c === a) return null
     const x = r.int(1, 5)
     const y = r.int(1, 5)
-    const v = indF(fam, c, x) + indG(fam, c, y)
+    const v = indF(fam, a, c, x) + indG(fam, a, c, y)
     if (!isShortOk(v)) return null
-    return { fam, c, x, y }
+    return { fam, a, c, x, y }
   },
-  build: ({ fam, c, x, y }) => {
-    const ans = indF(fam, c, x) + indG(fam, c, y)
+  build: ({ fam, a, c, x, y }) => {
+    const ans = indF(fam, a, c, x) + indG(fam, a, c, y)
+    const wrap = (t: string) => (t.includes(" ") ? `(${t})` : t)
     let stmt: string
     let proof: string[]
     let why: string[]
     if (fam === "A") {
-      stmt = `$${S("n", `k(k + ${c})`)} = \\frac{n(n + 1)(2n + ${1 + 3 * c})}{6}$`
+      const tk = `k(${texPoly([a, c], "k")})`
+      const L = (v: string) => texPoly([2 * a, a + 3 * c], v)
+      stmt = `$${S("n", tk)} = \\frac{n(n + 1)(${L("n")})}{6}$`
       proof = [
-        `(i) $n = 1$ 일 때, (좌변) $= ${1 + c}$, (우변) $= \\frac{1 \\times 2 \\times ${3 + 3 * c}}{6} = ${1 + c}$ 이므로 성립한다.`,
+        `(i) $n = 1$ 일 때, (좌변) $= ${a + c}$, (우변) $= \\frac{1 \\times 2 \\times ${3 * a + 3 * c}}{6} = ${a + c}$ 이므로 성립한다.`,
         `(ii) $n = m$ 일 때 성립한다고 가정하면`,
-        `$${S("m+1", `k(k + ${c})`)} = \\frac{m(m + 1)(2m + ${1 + 3 * c})}{6} +$ (가)`,
+        `$${S("m+1", tk)} = \\frac{m(m + 1)(${L("m")})}{6} +$ (가)`,
         `$= \\frac{m + 1}{6} \\times$ (나)`,
-        `$= \\frac{(m + 1)(m + 2)(2m + ${3 + 3 * c})}{6}$`,
+        `$= \\frac{(m + 1)(m + 2)(${texPoly([2 * a, 3 * a + 3 * c], "m")})}{6}$`,
         `이므로 $n = m + 1$ 일 때도 성립한다.`,
       ]
       why = [
-        `(가)는 $m + 1$ 번째 항이므로 $f(m) = (m + 1)(m + ${1 + c})$`,
-        `(나)는 $\\frac{m + 1}{6}$ 으로 묶고 남은 식 $m(2m + ${1 + 3 * c}) + 6(m + ${1 + c})$ 이므로`,
-        `$g(m) = ${texPoly([2, 7 + 3 * c, 6 + 6 * c], "m")} = (m + 2)(2m + ${3 + 3 * c})$`,
+        `(가)는 제$(m + 1)$항이므로 $f(m) = (m + 1)(${texPoly([a, a + c], "m")})$`,
+        `(나)는 $\\frac{m + 1}{6}$ 으로 묶고 남은 식 $m(${L("m")}) + 6(${texPoly([a, a + c], "m")})$ 이므로`,
+        `$g(m) = ${texPoly([2 * a, 7 * a + 3 * c, 6 * a + 6 * c], "m")} = (m + 2)(${texPoly([2 * a, 3 * a + 3 * c], "m")})$`,
       ]
     } else {
-      const k0 = 2 - 2 * c
-      stmt = `$${S("n", `${c ? `(k + ${c})` : "k"} \\times 2^{k}`)} = ${c === 1 ? "n" : `(${texPoly([1, c - 1], "n")})`} \\times 2^{n+1}${k0 ? ` ${signed(k0)}` : ""}$`
+      const k0 = 2 * a - 2 * c
+      const K = (t: string) => (k0 ? `${t} ${signed(k0)}` : t)
+      const tk = `${wrap(texPoly([a, c], "k"))} \\times 2^{k}`
+      const R = (v: string) => wrap(texPoly([a, c - a], v))
+      const rhs1 = c === 0 ? `${k0}` : K(`${4 * c}`)
+      stmt = `$${S("n", tk)} = ${K(`${R("n")} \\times 2^{n+1}`)}$`
       proof = [
-        `(i) $n = 1$ 일 때, (좌변) $= ${2 * (1 + c)}$, (우변) $= ${4 * c}${k0 ? ` ${signed(k0)}` : ""} = ${2 * (1 + c)}$ 이므로 성립한다.`,
+        `(i) $n = 1$ 일 때, (좌변) $= ${2 * (a + c)}$, (우변) $= ${rhs1 === String(2 * (a + c)) ? rhs1 : `${rhs1} = ${2 * (a + c)}`}$ 이므로 성립한다.`,
         `(ii) $n = m$ 일 때 성립한다고 가정하면`,
-        `$${S("m+1", `${c ? `(k + ${c})` : "k"} \\times 2^{k}`)} = ${c === 1 ? "m" : `(${texPoly([1, c - 1], "m")})`} \\times 2^{m+1}${k0 ? ` ${signed(k0)}` : ""} +$ (가)`,
+        `$${S("m+1", tk)} = ${K(`${R("m")} \\times 2^{m+1}`)} +$ (가)`,
         k0 ? `$= ${k0} + 2^{m+1} \\times$ (나)` : `$= 2^{m+1} \\times$ (나)`,
-        `$= (${texPoly([1, c], "m")}) \\times 2^{m+2}${k0 ? ` ${signed(k0)}` : ""}$`,
+        `$= ${K(`${wrap(texPoly([a, c], "m"))} \\times 2^{m+2}`)}$`,
         `이므로 $n = m + 1$ 일 때도 성립한다.`,
-      ].map((s) => s.replace("(m) \\times", "m \\times"))
+      ]
       why = [
-        `(가)는 $m + 1$ 번째 항이므로 $f(m) = (m + ${1 + c}) \\times 2^{m+1}$`,
-        `(나)는 $(${texPoly([1, c - 1], "m")}) + (m + ${1 + c}) = ${texPoly([2, 2 * c], "m")}$ 이므로 $g(m) = ${texPoly([2, 2 * c], "m")}$`,
+        `(가)는 제$(m + 1)$항이므로 $f(m) = (${texPoly([a, a + c], "m")}) \\times 2^{m+1}$`,
+        `(나)는 $2^{m+1}$ 으로 묶고 남은 식 $${R("m")} + (${texPoly([a, a + c], "m")})$ 이므로 $g(m) = ${texPoly([2 * a, 2 * c], "m")}$`,
       ]
     }
     return {
       text: `다음은 모든 자연수 $n$ 에 대하여\n${stmt}\n이 성립함을 수학적 귀납법으로 증명한 것이다.\n\n${proof.join("\n")}\n\n위의 (가), (나)에 알맞은 식을 각각 $f(m)$, $g(m)$ 이라 할 때, $f(${x}) + g(${y})$ 의 값을 구하시오.`,
       ...short(ans),
-      solution: sol(...why, `$f(${x}) = ${indF(fam, c, x)}$, $g(${y}) = ${indG(fam, c, y)}$ 이므로 구하는 값은 $${ans}$`),
+      solution: sol(...why, `$f(${x}) = ${indF(fam, a, c, x)}$, $g(${y}) = ${indG(fam, a, c, y)}$ 이므로 구하는 값은 $${ans}$`),
       score: 4,
     }
   },
   // (가)는 이웃한 합의 차, (나)는 합을 직접 계산해 거꾸로 구한다
-  verify: ({ fam, c, x, y }) => {
-    const term0 = (k: number) => (fam === "A" ? k * (k + c) : (k + c) * 2 ** k)
+  verify: ({ fam, a, c, x, y }) => {
+    const term0 = (k: number) => (fam === "A" ? k * (a * k + c) : (a * k + c) * 2 ** k)
     const Sm = (m: number) => sumTo(m, term0)
     const f = Sm(x + 1) - Sm(x)
-    const g = fam === "A" ? (6 * Sm(y + 1)) / (y + 1) : (Sm(y) + term0(y + 1) - (2 - 2 * c)) / 2 ** (y + 1)
+    const g = fam === "A" ? (6 * Sm(y + 1)) / (y + 1) : (Sm(y + 1) - (2 * a - 2 * c)) / 2 ** (y + 1)
     return f + g
   },
 }
-function indF(fam: string, c: number, m: number) {
-  return fam === "A" ? (m + 1) * (m + 1 + c) : (m + 1 + c) * 2 ** (m + 1)
+function indF(fam: string, a: number, c: number, m: number) {
+  return fam === "A" ? (m + 1) * (a * m + a + c) : (a * m + a + c) * 2 ** (m + 1)
 }
-function indG(fam: string, c: number, m: number) {
-  return fam === "A" ? (m + 2) * (2 * m + 3 + 3 * c) : 2 * m + 2 * c
+function indG(fam: string, a: number, c: number, m: number) {
+  return fam === "A" ? (m + 2) * (2 * a * m + 3 * a + 3 * c) : 2 * a * m + 2 * c
 }
 
 /** 양수 등비수열: 곱과 차의 조건 */
@@ -868,7 +891,7 @@ const snLinear: SuTemplate<{ ri: number; a1: number; k: number; askS: boolean }>
       solution: sol(
         `$n = 1$ 을 대입하면 $${v === 1 ? "" : v}a_1 = ${term(u, "a_1", true)}${w ? ` ${signed(w)}` : ""}$ 이므로 $a_1 = ${a1}$`,
         `$n \\ge 2$ 일 때 $${v === 1 ? "" : v}S_{n-1} = ${term(u, "a_{n-1}", true)}${w ? ` ${signed(w)}` : ""}$ 를 빼면 $${v === 1 ? "" : v}a_n = ${term(u, "a_n", true)}${term(-u, "a_{n-1}")}$`,
-        `정리하면 $a_n = ${rho.tex()}a_{n-1}$ 이므로 $\\{a_n\\}$ 은 첫째항이 $${a1}$, 공비가 $${rho.tex()}$ 인 등비수열이다.`,
+        `정리하면 $a_n = ${term(rho, "a_{n-1}", true)}$ 이므로 $\\{a_n\\}$ 은 첫째항이 $${a1}$, 공비가 $${rho.tex()}$ 인 등비수열이다.`,
         askS
           ? `$a_{${k}} = ${ak.tex()}$ 이고 $S_{${k}} = ${p.tex()} \\times ${ak.n < 0 ? `\\left(${ak.tex()}\\right)` : ak.tex()} ${signed(q(w, v))} = ${Sk.tex()}$`
           : `따라서 $a_{${k}} = ${a1} \\times \\left(${rho.tex()}\\right)^{${k - 1}} = ${ak.tex()}$`
@@ -1011,7 +1034,7 @@ const recurSum: SuTemplate<{ c: number; d: number; a1: number; N: number }> = {
         `차례로 구하면 ${st.seq.slice(0, st.mu + st.L + 1).map((v, i) => `$a_{${i + 1}} = ${v}$`).join(", ")}`,
         `$a_{${st.mu + st.L + 1}} = a_{${st.mu + 1}}$ 이므로 제${st.mu + 1}항부터 $${cyc.join(", ")}$ 가 반복되고, 한 주기의 합은 $${cs}$`,
         pre.length ? `처음 $${st.mu}$ 개 항의 합은 $${preS}$` : null,
-        `나머지 $${rest}$ 개 항은 주기 $${full}$ 번${rem ? `과 앞의 $${rem}$ 개 항 (합 $${remS}$)` : ""}이므로`,
+        `${pre.length ? `나머지 $${rest}$` : `$${N}$`} 개 항은 한 주기($${st.L}$ 개 항)가 $${full}$ 번 반복되고${rem ? ` 그 뒤에 주기의 앞 $${rem}$ 개 항 (합 $${remS}$)이 더해지므로` : " 끝나므로"}`,
         `구하는 합은 $${pre.length ? `${preS} + ` : ""}${pr(cs)} \\times ${full}${rem ? ` ${signed(remS)}` : ""} = ${tot}$`
       ),
       score: 4,

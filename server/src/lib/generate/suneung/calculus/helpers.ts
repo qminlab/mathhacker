@@ -163,20 +163,34 @@ export function numSound(num: string) {
 /** 숫자 뒤 조사 고르기: josa(3, "을") → "을", josa(2, "을") → "를" */
 export function josa(num: number | string, j: string) {
   const { batchim, rieul } = numSound(String(num))
-  const pairs: [string, string][] = [["을", "를"], ["은", "는"], ["이", "가"], ["과", "와"], ["이었", "였"]]
+  const pairs: [string, string][] = [["을", "를"], ["은", "는"], ["이", "가"], ["과", "와"], ["이었", "였"], ["이라", "라"]]
   if (j === "으로" || j === "로") return batchim && !rieul ? "으로" : "로"
   for (const [a, b] of pairs) if (j === a || j === b) return batchim ? a : b
   return j
 }
-/** 문장 안에서 숫자로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다 */
+/** 문장 안에서 숫자(또는 숫자로 끝나는 괄호)로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다 */
 export const fixJosa = (s: string) =>
-  s.replace(/(\d+(?:\.\d+)?)\$( ?)(으로|로|을|를|은|는|이었|였|이|가|과|와)(?=[\s,.)]|$)/g, (_m, n: string, sp: string, j: string) => `${n}$${sp}${josa(n, j)}`)
+  s.replace(/(\d+(?:\.\d+)?)((?:\)|\\right\))?)\$(\s?)(으로|로|을|를|은|는|이었|였|이라|라|이|가|과|와)(?=[\s,.)]|$)/g, (m0, n: string, par: string, sp: string, j: string, off: number) => {
+    // "(t > 0)$ 로" 처럼 괄호 안 조건 뒤의 조사는 앞 글자에 붙으므로 건드리지 않는다
+    const before = s.slice(Math.max(0, off - 20), off + n.length + 8)
+    if (/(>|<|\\ne|\\ge|\\le|\\geq|\\leq)\s*-?\d+(?:\.\d+)?\s*(\)|\\right\))\$/.test(before)) return m0
+    return `${n}${par}$${sp}${josa(n, j)}`
+  })
+/** 단답형은 '구하시오.', 객관식은 '?' 로 끝나게 맞춘다 */
+export const fixEnding = (text: string, isShort: boolean) => {
+  const m = text.match(/^([\s\S]*?)(\s*\(단,[^)]*\))?$/)!
+  let body = m[1]
+  const tail = m[2] ?? ""
+  if (isShort) body = body.replace(/(은|는)\?$/, (_x, j: string) => (j === "은" ? "을 구하시오." : "를 구하시오."))
+  else body = body.replace(/(을|를) 구하시오\.$/, (_x, j: string) => (j === "을" ? "은?" : "는?"))
+  return body + tail
+}
 /** 템플릿의 문제·보기·해설에 조사 교정을 적용 */
 export const withJosa = <P>(t: SuTemplate<P>): SuTemplate<P> => ({
   ...t,
   build: (p, r) => {
     const b = t.build(p, r)
-    return { ...b, text: fixJosa(b.text), solution: fixJosa(b.solution), ...(b.choices ? { choices: b.choices.map(fixJosa) } : {}) }
+    return { ...b, text: fixEnding(fixJosa(b.text), !b.choices), solution: fixJosa(b.solution), ...(b.choices ? { choices: b.choices.map(fixJosa) } : {}) }
   },
 })
 

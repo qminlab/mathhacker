@@ -254,16 +254,26 @@ const JOSA: [string, string][] = [
   ["을", "를"],
   ["은", "는"],
   ["이었", "였"],
+  ["이라", "라"],
   ["이", "가"],
   ["과", "와"],
 ]
-/** 숫자로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다 ("$9$ 을" → "$9$ 를") */
+/**
+ * 숫자로 끝나는 수식(괄호로 닫혀도 됨) 바로 뒤의 조사를 받침에 맞게 고친다
+ * ("$9$ 을" → "$9$ 를", "점 $(10, 5)$ 을" → "를", "$\log(t + 1)$ 를" → "을").
+ * "(t > 0)$ 로" 처럼 괄호 안 조건 뒤의 조사는 앞 글자에 붙으므로 건드리지 않는다.
+ */
 export function fixJosa(s: string) {
-  return s.replace(/(\d+(?:\.\d+)?)\$(\s?)(으로|로|을|를|은|는|이었|였|이|가|과|와)(?=[\s,.)]|$)/g, (m, num: string, sp: string, j: string) => {
-    const { batchim, rieul } = numSound(num)
-    let out = j
-    if (j === "으로" || j === "로") out = batchim && !rieul ? "으로" : "로"
-    else for (const [w, wo] of JOSA) if (j === w || j === wo) out = batchim ? w : wo
-    return `${num}$${sp}${out}`
-  })
+  return s.replace(
+    /(\d+(?:\.\d+)?)((?:\)|\\right\))?)\$(\s?)(으로|로|을|를|은|는|이었|였|이라|라|이|가|과|와)(?=[\s,.)]|$)/g,
+    (m, num: string, close: string, sp: string, j: string, off: number) => {
+      const before = s.slice(Math.max(0, off - 20), off + num.length + 8)
+      if (close && /(>|<|\\ne|\\ge|\\le|\\geq|\\leq)\s*-?\d+(?:\.\d+)?\s*(\)|\\right\))\$/.test(before)) return m
+      const { batchim, rieul } = numSound(num)
+      let out = j
+      if (j === "으로" || j === "로") out = batchim && !rieul ? "으로" : "로"
+      else for (const [w, wo] of JOSA) if (j === w || j === wo) out = batchim ? w : wo
+      return `${num}${close}$${sp}${out}`
+    }
+  )
 }

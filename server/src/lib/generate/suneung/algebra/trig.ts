@@ -197,16 +197,28 @@ const trigValues: SuTemplate<{ fam: 4 | 6; f1: string; m1: number; f2: string; m
     if (w1) wrongs.push(sdChoice(comb(w1, v2)))
     // 각을 줄이는 과정
     const reduce = (f: string, t: Q, v: Sd) => {
-      const k = Math.floor(t.value / 2)
-      const t0 = t.sub(2 * k)
-      const lead = k === 0 ? "" : `${fx(f, angleArg(t).trim())} = ${fx(f, angleArg(t0).trim())} = `
-      return `$${lead}${k === 0 ? `${fx(f, angleArg(t).trim())} = ` : ""}${sdTex(v)}$`
+      const neg = t.n < 0
+      const u = neg ? t.neg() : t
+      const k = Math.floor(u.value / 2)
+      const sg = neg && f !== "cos" ? "-" : ""
+      const parts = [fx(f, angleArg(t).trim())]
+      if (neg) parts.push(`${sg}${fx(f, angleArg(u).trim())}`)
+      if (k > 0) parts.push(`${sg}${fx(f, angleArg(u.sub(2 * k)).trim())}`)
+      parts.push(sdTex(v))
+      return `$${parts.join(" = ")}$`
     }
+    const big = [t1, t2].some((t) => Math.abs(t.value) >= 2)
+    const hasNeg = [t1, t2].some((t) => t.n < 0)
+    const intro = big
+      ? `$2n\\pi + \\alpha$ 꼴의 각은 $\\alpha$ 의 삼각함수 값과 같다${hasNeg ? "(음의 각은 $\\sin(-\\theta) = -\\sin\\theta$, $\\cos(-\\theta) = \\cos\\theta$, $\\tan(-\\theta) = -\\tan\\theta$ 를 먼저 이용)" : ""}.`
+      : hasNeg
+        ? `$\\sin(-\\theta) = -\\sin\\theta$, $\\cos(-\\theta) = \\cos\\theta$, $\\tan(-\\theta) = -\\tan\\theta$ 를 이용하고, 각이 속한 사분면에서의 부호를 생각한다.`
+        : `각이 속한 사분면에서의 부호를 생각한다.`
     return {
       text: `$${e1} ${opTex} ${e2}$ 의 값은?`,
       ...mc(r, sdChoice(ans), wrongs, sdFill(ans)),
       solution: sol(
-        `일반각을 $2n\\pi + \\alpha \\ (0 \\le \\alpha < 2\\pi)$ 꼴로 바꾸고, 각이 속한 사분면에서의 부호를 생각한다.`,
+        intro,
         `${reduce(f1, t1, v1)}, ${reduce(f2, t2, v2)}`,
         `따라서 구하는 값은 $${op === "*" ? `${sdTex(v1)} \\times ${sdTex(v2).startsWith("-") ? `\\left(${sdTex(v2)}\\right)` : sdTex(v2)}` : `${sdTex(v1)} ${op} ${sdTex(v2).startsWith("-") ? `\\left(${sdTex(v2)}\\right)` : sdTex(v2)}`} = ${sdTex(ans)}$`
       ),
@@ -1395,7 +1407,7 @@ const trigSym: SuTemplate<{ p: number; H: number; u: number; v: number; t: numbe
       how = `$\\sin ${arg} = ${sg.tex()}$ 의 해는 ${sg.n > 0 ? "최댓값" : "최솟값"}을 갖는 $x = ${centers(hs)}$ 이므로 합은 $${ans.tex()}$`
     } else {
       const hs = sg.n > 0 ? evens : odds
-      how = `$\\sin ${arg} = ${sg.tex()}$ 의 해는 $\\sin ${arg}$ 가 ${sg.n > 0 ? "양수" : "음수"}인 구간마다 직선 $x = ${centers(hs)}$ 에 대하여 대칭인 두 근씩 있으므로, 합은 $2 \\times (${centers(hs).replace(/, /g, " + ")}) = ${ans.tex()}$`
+      how = `$\\sin ${arg} = ${sg.tex()}$ 의 해는 $\\sin ${arg}$ 가 ${sg.n > 0 ? "양수" : "음수"}인 구간마다 직선 $x = ${centers(hs)}$ 에 대하여 대칭인 두 근씩 있으므로, 합은 $2 \\times ${hs.length === 1 ? centers(hs) : `\\left(${centers(hs).replace(/, /g, " + ")}\\right)`} = ${ans.tex()}$`
     }
     return {
       text: `함수 $f(x) = a\\sin ${arg} + c$ 가 $f\\left(${half.tex()}\\right) = ${u}$, $f\\left(${q(3 * p, 2).tex()}\\right) = ${v}$ 를 만족시킨다. $0 \\le x \\le ${L}$ 에서 방정식 $f(x) = ${t}$ 의 모든 실근의 합을 구하시오. (단, $a$, $c$ 는 상수이다.)`,

@@ -10,6 +10,8 @@ const powTex = (b: number, e: number) => (e >= 0 ? String(b ** e) : `\\frac{1}{$
 const rootTex = (n: number, inside: string) => (n === 2 ? `\\sqrt{${inside}}` : `\\sqrt[${n}]{${inside}}`)
 /** 지수 자리의 유리수 */
 const expTex = (x: Q) => x.tex()
+/** (x − a)(x − b) 꼴, 0 은 x 로 앞에 */
+const facx = (a: number, b: number) => (a === 0 ? `x(${texShift(b)})` : b === 0 ? `x(${texShift(a)})` : `(${texShift(a)})(${texShift(b)})`)
 const realRoot = (x: number, n: number) => (x < 0 ? -Math.pow(-x, 1 / n) : Math.pow(x, 1 / n))
 
 // ═════════ 1단계 ═════════
@@ -37,14 +39,14 @@ const expLaw: SuTemplate<{ b: number; n: number; a: number; c: number; div: bool
     const second = div ? `${b}^{-${expTex(cq)}}` : `${b}^{${expTex(cq)}}`
     const op = div ? "\\div" : "\\times"
     return {
-      text: `$${rootTex(n, `${b}^{${a}}`)} ${op} ${second}$ 의 값은?`,
+      text: `$${rootTex(n, a === 1 ? String(b) : `${b}^{${a}}`)} ${op} ${second}$ 의 값은?`,
       ...mc(r, intChoice(ans), ints(b ** (e + 1), b ** (e - 1), b * e, ans + b)),
       solution: sol(
-        `거듭제곱근을 지수로 나타내면 $${rootTex(n, `${b}^{${a}}`)} = ${b}^{${expTex(q(a, n))}}$ 이다.`,
+        `거듭제곱근을 지수로 나타내면 $${rootTex(n, a === 1 ? String(b) : `${b}^{${a}}`)} = ${b}^{${expTex(q(a, n))}}$ 이다.`,
         div
           ? `$${b}^{x} \\div ${b}^{-y} = ${b}^{x + y}$ 이므로 지수끼리 더한다.`
           : `$${b}^{x} \\times ${b}^{y} = ${b}^{x + y}$ 이므로 지수끼리 더한다.`,
-        `$${expTex(q(a, n))} + ${expTex(cq)} = ${e}$ 이므로 구하는 값은 $${b}^{${e}} = ${ans}$`
+        `$${expTex(q(a, n))} + ${expTex(cq)} = ${e}$ 이므로 구하는 값은 $${e === 1 ? ans : `${b}^{${e}} = ${ans}`}$`
       ),
       score: 2,
     }
@@ -117,7 +119,7 @@ const logCombo: SuTemplate<{ b: number; c1: number; x1: number; x2: number; x3: 
       solution: sol(
         c1 === 2 ? `$2\\log_{${b}} ${x1} = \\log_{${b}} ${x1}^{2} = \\log_{${b}} ${x1 ** 2}$ 이다.` : `로그의 덧셈은 진수의 곱, 뺄셈은 진수의 나눗셈이 된다.`,
         `(주어진 식) $= \\log_{${b}} \\frac{${x1 ** c1} \\times ${x2}}{${x3}} = \\log_{${b}} ${b ** e}$`,
-        `$${b ** e} = ${b}^{${e}}$ 이므로 구하는 값은 $${e}$`
+        e === 1 ? `따라서 구하는 값은 $1$` : `$${b ** e} = ${b}^{${e}}$ 이므로 구하는 값은 $${e}$`
       ),
       score: 2,
     }
@@ -339,7 +341,7 @@ const logEq: SuTemplate<{ b: number; a: number; c: number; N: number; asNum: boo
       solution: sol(
         `진수 조건에서 $x > ${a}$ 이고 $x > ${c}$ 이므로 $x > ${lo}$`,
         `로그의 성질에 의하여 $(${texShift(a)})(${texShift(c)}) = ${N}$, 즉 $${texPoly([1, -S, P])} = 0$`,
-        `$(x - ${x1})(${texShift(x2)}) = 0$ 에서 $x = ${x1}$ 또는 $x = ${x2}$`,
+        `$${facx(x1, x2)} = 0$ 에서 $x = ${x1}$ 또는 $x = ${x2}$`,
         `$x > ${lo}$ 이므로 구하는 해는 $x = ${x1}$`
       ),
       score: 3,
@@ -385,7 +387,7 @@ const expIneq: SuTemplate<{ b: number; m: number; n: number; strict: boolean; fo
         form === 0
           ? `$${inv}^{x^{2}} = ${b}^{-x^{2}}$ 이고 밑 $${b}$ 가 $1$ 보다 크므로 $-x^{2} ${op0} ${g}$`
           : `$${inv}^{${g}} = ${b}^{-(${g})}$ 이고 밑 $${b}$ 가 $1$ 보다 크므로 $x^{2} ${op1} -(${g})$`,
-        `정리하면 $${quad} ${strict ? "<" : "\\le"} 0$, 즉 $(${texShift(m)})(${texShift(n)}) ${strict ? "<" : "\\le"} 0$`,
+        `정리하면 $${quad} ${strict ? "<" : "\\le"} 0$, 즉 $${facx(m, n)} ${strict ? "<" : "\\le"} 0$`,
         `$${m} ${strict ? "<" : "\\le"} x ${strict ? "<" : "\\le"} ${n}$ 이므로 정수 $x$ 는 $${strict ? m + 1 : m}, ${strict ? m + 2 : m + 1}, \\cdots, ${strict ? n - 1 : n}$ 의 $${ans}$ 개`
       ),
       score: 3,
@@ -447,7 +449,7 @@ const logIneq: SuTemplate<{ b: number; a: number; i: number; j: number; ge: bool
           ? `$\\log_{\\frac{1}{${b}}} t = -\\log_{${b}} t$ 이므로 주어진 부등식은 $\\log_{${b}}(${texShift(a)})(${c} - x) ${op} ${k}$ 와 같다.`
           : `로그의 성질에 의하여 $\\log_{${b}}(${texShift(a)})(${c} - x) ${op} ${k}$`,
         `밑이 $1$ 보다 크므로 $(${texShift(a)})(${c} - x) ${op} ${b ** k}$, 정리하면 $${texPoly([1, -(a + c), a * c + b ** k])} ${ge ? "\\le" : "\\ge"} 0$`,
-        `$(${texShift(lo)})(${texShift(hi)}) ${ge ? "\\le" : "\\ge"} 0$ 이므로 ${ge ? `$${lo} \\le x \\le ${hi}$` : `$x \\le ${lo}$ 또는 $x \\ge ${hi}$`}`,
+        `$${facx(lo, hi)} ${ge ? "\\le" : "\\ge"} 0$ 이므로 ${ge ? `$${lo} \\le x \\le ${hi}$` : `$x \\le ${lo}$ 또는 $x \\ge ${hi}$`}`,
         ge
           ? `따라서 정수 $x$ 는 $${lo}$ 부터 $${hi}$ 까지 $${ans}$ 개`
           : `진수 조건과 함께 $${a} < x \\le ${lo}$ 또는 $${hi} \\le x < ${c}$ 이므로 정수 $x$ 는 $${y1} + ${y1} = ${ans}$ 개`
@@ -563,7 +565,7 @@ const commonLog: SuTemplate<{ ci: number; A: number; B: number; h: number; i: nu
       ...short(ans),
       solution: sol(
         `$${C.t} = ${t1}$ 일 때 $\\log ${10 ** i} = ${i}$, $${C.t} = ${t2}$ 일 때 $\\log ${10 ** j} = ${j}$ 이므로`,
-        `$${v1} = a${i === 0 ? "" : ` + ${i === 1 ? "" : i}b`}$, $${v2} = a + ${j === 1 ? "" : j}b$${i === 0 ? ` 에서 $a = ${A}$, $b = ${B}$` : ` 에서 두 식을 빼면 $${j - i}b = ${v2 - v1}$, 즉 $b = ${B}$, $a = ${A}$`}`,
+        `$${v1} = a${i === 0 ? "" : ` + ${i === 1 ? "" : i}b`}$, $${v2} = a + ${j === 1 ? "" : j}b$${i === 0 ? ` 에서 $a = ${A}$, $b = ${B}$` : ` 에서 두 식을 빼면 $${j - i === 1 ? "" : j - i}b = ${v2 - v1}$, 즉 $b = ${B}$, $a = ${A}$`}`,
         mode === "val"
           ? `$${C.t} = ${t3}$ 일 때 $\\log ${10 ** l} = ${l}$ 이므로 $${C.v} = ${A} ${signed(B)} \\times ${l} = ${v3}$`
           : `$${v3} = ${A} ${signed(B)}\\log(${C.t} + ${h})$ 에서 $\\log(${C.t} + ${h}) = ${l}$, 즉 $${C.t} + ${h} = ${10 ** l}$ 이므로 $${C.t} = ${t3}$`
@@ -623,7 +625,7 @@ const logPairs: SuTemplate<{ M: number; N: number }> = {
     const ans = groups.reduce((s, g) => s + (g.hi - g.lo + 1) * g.k, 0)
     const desc = groups.map((g) => {
       const range = g.lo === g.hi ? `$a = ${g.lo}$` : `$${g.lo} \\le a \\le ${g.hi}$`
-      return `${range} 일 때 $a^{${g.k}} \\le ${N} < a^{${g.k + 1}}$ 이므로 $b$ 는 $${g.k}$ 개씩, 합 $${(g.hi - g.lo + 1) * g.k}$`
+      return `${range} 일 때 $${g.k === 1 ? "a" : `a^{${g.k}}`} \\le ${N} < a^{${g.k + 1}}$ 이므로 ${g.lo === g.hi ? `$b$ 는 $${g.k}$ 개` : `$b$ 는 $${g.k}$ 개씩, 모두 $${(g.hi - g.lo + 1) * g.k}$ 개`}`
     })
     return {
       text: `$2 \\le a \\le ${M}$, $2 \\le b \\le ${N}$ 인 두 자연수 $a$, $b$ 에 대하여 $\\log_{a} b$ 의 값이 자연수가 되도록 하는 순서쌍 $(a, b)$ 의 개수를 구하시오.`,
@@ -676,7 +678,7 @@ const inverseLine: SuTemplate<{ v: 0 | 1; b: number; c: number; p: number }> = {
     const y = v === 0 ? b ** (p - c) : b ** p + c
     const k = p + y
     const f = v === 0 ? `y = ${b}^{${texShift(c)}}` : `y = ${b}^{x}${c === 0 ? "" : ` ${signed(c)}`}`
-    const g = v === 0 ? `y = \\log_{${b}} x${c === 0 ? "" : ` ${signed(c)}`}` : `y = \\log_{${b}}(${texShift(c)})`
+    const g = v === 0 ? `y = \\log_{${b}} x${c === 0 ? "" : ` ${signed(c)}`}` : c === 0 ? `y = \\log_{${b}} x` : `y = \\log_{${b}}(${texShift(c)})`
     const ans = 2 * (y - p) ** 2
     return {
       text: `직선 $y = -x ${signed(k)}$ 가 두 곡선 $${f}$, $${g}$ 와 만나는 점을 각각 $\\mathrm{A}$, $\\mathrm{B}$ 라 할 때, $\\overline{\\mathrm{AB}}^{2}$ 의 값을 구하시오.`,
@@ -685,7 +687,7 @@ const inverseLine: SuTemplate<{ v: 0 | 1; b: number; c: number; p: number }> = {
         `$${f}$ 에서 $x$ 와 $y$ 를 바꾸어 정리하면 $${g}$ 이므로 두 함수는 서로 역함수이고, 두 그래프는 직선 $y = x$ 에 대하여 대칭이다.`,
         `직선 $y = -x ${signed(k)}$ 는 직선 $y = x$ 와 수직이므로 점 $\\mathrm{A}(s, t)$ 에 대하여 $\\mathrm{B}(t, s)$ 이다.`,
         `점 $\\mathrm{A}$ 는 $${f}$ 위에 있고 $s + t = ${k}$ 이므로 $s + ${v === 0 ? `${b}^{${texShift(c, "s")}}` : `${b}^{s}${c === 0 ? "" : ` ${signed(c)}`}`} = ${k}$ 이다. 좌변은 $s$ 에 대하여 증가하므로 이 방정식의 해는 $s = ${p}$ 하나뿐이다.`,
-        `따라서 $\\mathrm{A}(${p}, ${y})$, $\\mathrm{B}(${y}, ${p})$ 이고 $\\overline{\\mathrm{AB}}^{2} = (${y} - ${p < 0 ? `(${p})` : p})^{2} \\times 2 = ${ans}$`
+        `따라서 $\\mathrm{A}(${p}, ${y})$, $\\mathrm{B}(${y}, ${p})$ 이고 $\\overline{\\mathrm{AB}}^{2} = 2 \\times ${p === 0 ? `${y}^{2}` : `(${y} - ${p < 0 ? `(${p})` : p})^{2}`} = ${ans}$`
       ),
       score: 4,
     }
@@ -805,7 +807,7 @@ const ineqParam: SuTemplate<{ p: number; qb: number; n: number; N: number; stric
     const ok = cand.filter((a) => a >= 1)
     const ans = ok.reduce((x, y) => x + y, 0)
     return {
-      text: `자연수 $a$ 에 대하여 $x$ 에 대한 부등식\n$(${p}^{x} - ${p}^{a})(\\log_{${qb}} x - ${n}) ${op} 0$\n을 만족시키는 정수 $x$ 의 개수가 $${N}$ 이 되도록 하는 모든 $a$ 의 값의 합을 구하시오.`,
+      text: `자연수 $a$ 에 대하여 $x$ 에 대한 부등식\n$(${p}^{x} - ${p}^{a})(\\log_{${qb}} x - ${n}) ${op} 0$\n을 만족시키는 정수 $x$ 의 개수가 $${N}$ 이 되도록 하는 ${ok.length > 1 ? "모든 $a$ 의 값의 합" : "자연수 $a$ 의 값"}을 구하시오.`,
       ...short(ans),
       solution: sol(
         `진수 조건에서 $x > 0$ 이다. $${p}^{x} - ${p}^{a}$ 는 $x > a$ 일 때 양수, $x < a$ 일 때 음수이고, $\\log_{${qb}} x - ${n}$ 은 $x > ${Qv}$ 일 때 양수, $0 < x < ${Qv}$ 일 때 음수이다.`,
@@ -838,43 +840,46 @@ const ineqParam: SuTemplate<{ p: number; qb: number; n: number; N: number; stric
 }
 
 /** a^x = b^y = k, m/x + n/y = t 일 때 k */
-const expSystem: SuTemplate<{ a: number; b: number; i: number; j: number; s: number }> = {
+const expSystem: SuTemplate<{ a: number; b: number; i: number; j: number; w: number }> = {
   id: "exp-system-k",
   subject: "대수",
   unit: U,
   standard: "12대수01-04",
   level: 3,
   count: 70,
+  // k = a^i b^j, 조건 m/x + n/y = 1/w (m = i/w, n = j/w) → k^{1/w} = a^m b^n
   params: (r) => {
     const [a, b] = r.shuffle([2, 3, 5, 6, 7, 10]).slice(0, 2)
-    const i = r.int(1, 3)
-    const j = r.int(1, 3)
+    const i = r.int(1, 4)
+    const j = r.int(1, 4)
     const k = a ** i * b ** j
     if (k > 999) return null
-    // m/x + n/y = s 에서 m, n, s 가 공약수를 가지면 약분되므로 쓰지 않는다
-    const s = r.pick([1, 1, 2, 3])
-    if (gcd(gcd(i * s, j * s), s) > 1) return null
-    return { a, b, i, j, s }
+    const w = r.pick([1, 1, 2, 3])
+    if (i % w || j % w) return null
+    return { a, b, i, j, w }
   },
-  build: ({ a, b, i, j, s }) => {
+  build: ({ a, b, i, j, w }) => {
     const k = a ** i * b ** j
-    const m = i * s
-    const n = j * s
+    const m = i / w
+    const n = j / w
+    const t = q(1, w)
+    const fr = (c: number, v: string) => `\\frac{${c}}{${v}}`
+    const base = a ** m * b ** n
     return {
-      text: `세 실수 $x$, $y$, $k$ 가 $${a}^{x} = ${b}^{y} = k$, $\\frac{${m}}{x} + \\frac{${n}}{y} = ${s}$ 를 만족시킬 때, $k$ 의 값을 구하시오. (단, $k > 1$)`,
+      text: `세 실수 $x$, $y$, $k$ 가 $${a}^{x} = ${b}^{y} = k$, $${fr(m, "x")} + ${fr(n, "y")} = ${t.tex()}$ 를 만족시킬 때, $k$ 의 값을 구하시오. (단, $k > 1$)`,
       ...short(k),
       solution: sol(
         `$${a}^{x} = k$ 에서 $x = \\log_{${a}} k$ 이므로 $\\frac{1}{x} = \\log_{k} ${a}$, 같은 방법으로 $\\frac{1}{y} = \\log_{k} ${b}$`,
-        `$\\frac{${m}}{x} + \\frac{${n}}{y} = ${m}\\log_{k} ${a} + ${n}\\log_{k} ${b} = \\log_{k} (${a}^{${m}} \\times ${b}^{${n}}) = ${s}$`,
-        `따라서 $k = ${a}^{${m}} \\times ${b}^{${n}} = ${k}$`
+        `$${fr(m, "x")} + ${fr(n, "y")} = \\log_{k} (${m === 1 ? a : `${a}^{${m}}`} \\times ${n === 1 ? b : `${b}^{${n}}`}) = \\log_{k} ${base} = ${t.tex()}$`,
+        w === 1 ? `따라서 $k = ${base}$` : `따라서 $k^{${t.tex()}} = ${base}$ 이므로 $k = ${base}^{${w}} = ${k}$`
       ),
       score: 3,
     }
   },
-  verify: ({ a, b, i, j, s }) => {
-    const m = i * s
-    const n = j * s
-    const rs = roots((k) => (m * Math.log(a) + n * Math.log(b)) / Math.log(k) - s, 1.001, 1500, 6000)
+  verify: ({ a, b, i, j, w }) => {
+    const m = i / w
+    const n = j / w
+    const rs = roots((k) => (m * Math.log(a) + n * Math.log(b)) / Math.log(k) - 1 / w, 1.001, 1500, 6000)
     return rs.length === 1 ? rs[0] : NaN
   },
 }
@@ -917,17 +922,17 @@ const rootCountK: SuTemplate<{ a: number; M: number; S: number }> = {
         return s + (c > 0 ? 2 : c === 0 ? 1 : 0)
       }, 0)
       if (e === need) ks.push(k)
-      rows.push(`$k = ${k}$${k === M + 1 ? " 이상" : ""} 일 때 $${e}$`)
+      rows.push(k === M + 1 ? `$k \\ge ${k}$ 일 때 $${e}$` : `$k = ${k}$ 일 때 $${e}$`)
     }
     const ans = ks.reduce((x, y) => x + y, 0)
     return {
-      text: `자연수 $k$ 와 $2$ 이상의 자연수 $n$ 에 대하여 $(n - ${a})(n - k)$ 의 $n$ 제곱근 중 실수인 것의 개수를 $f(n)$ 이라 하자.\n$\\sum_{n=2}^{${M}} f(n) = ${S}$\n를 만족시키는 모든 $k$ 의 값의 합을 구하시오.`,
+      text: `자연수 $k$ 와 $2$ 이상의 자연수 $n$ 에 대하여 $(n - ${a})(n - k)$ 의 $n$ 제곱근 중 실수인 것의 개수를 $f(n)$ 이라 하자.\n$\\sum_{n=2}^{${M}} f(n) = ${S}$\n를 만족시키는 ${ks.length > 1 ? "모든 $k$ 의 값의 합" : "$k$ 의 값"}을 구하시오.`,
       ...short(ans),
       solution: sol(
         `실수 $c$ 의 $n$ 제곱근 중 실수인 것은 $n$ 이 홀수이면 항상 $1$ 개이고, $n$ 이 짝수이면 $c > 0$ 일 때 $2$ 개, $c = 0$ 일 때 $1$ 개, $c < 0$ 일 때 $0$ 개이다.`,
         `$2 \\le n \\le ${M}$ 인 홀수 $n$ 은 $${odd.length}$ 개이므로 홀수에서 $f(n)$ 의 합은 $${odd.length}$ 이고, 짝수 $n = ${evens.join(", ")}$ 에서의 합이 $${S} - ${odd.length} = ${need}$ 이어야 한다.`,
         `짝수 $n$ 에서 $(n - ${a})(n - k)$ 의 부호는 $n$ 이 $${a}$ 와 $k$ 사이에 있으면 음, 바깥에 있으면 양, $n = ${a}$ 또는 $n = k$ 이면 $0$ 이다.`,
-        `$k$ 의 값에 따른 짝수 부분의 합: ${rows.join(", ")} (단, $k > ${M}$ 이면 모두 같다)`,
+        `$k$ 의 값에 따른 짝수 부분의 합: ${rows.join(", ")}`,
         `합이 $${need}$ 인 $k$ 는 $${ks.join(", ")}$ 이므로 구하는 값은 $${ans}$`
       ),
       score: 4,
@@ -1030,7 +1035,8 @@ const rootPairs: SuTemplate<{ p: number; e: number; M: number; N: number; le: bo
     const e = r.pick([2, 3, 4, 6].filter((x) => p ** x <= 1000))
     const M = r.int(4, 12)
     const N = r.int(8, 30)
-    const le = r.chance(0.4)
+    // m ≤ n 조건은 빠지는 순서쌍이 충분히 많을 때만 붙인다
+    const le = r.chance(0.4) && rootPairCount(e, M, N, false) - rootPairCount(e, M, N, true) >= 4
     const ans = rootPairCount(e, M, N, le)
     if (ans < 1 || ans > 999) return null
     return { p, e, M, N, le }
@@ -1115,7 +1121,7 @@ const logIneqParam: SuTemplate<{ b: number; c: number; d: number; N: number; for
     const lo = N * (N - c)
     const hi = (N + 1) * (N + 1 - c) - 1
     return {
-      text: `자연수 $a$ 에 대하여 $x$ 에 대한 부등식\n$${lhs}$\n를 만족시키는 정수 $x$ 의 개수가 $${N}$ 이 되도록 하는 모든 $a$ 의 값의 합을 구하시오.`,
+      text: `자연수 $a$ 에 대하여 $x$ 에 대한 부등식\n$${lhs}$\n를 만족시키는 정수 $x$ 의 개수가 $${N}$ 이 되도록 하는 ${as.length > 1 ? "모든 $a$ 의 값의 합" : "자연수 $a$ 의 값"}을 구하시오.`,
       ...short(ans),
       solution: sol(
         form === 0

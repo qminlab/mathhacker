@@ -228,14 +228,22 @@ export const euro = (n: number | string) => {
   const { batchim, rieul } = numSound(String(n))
   return batchim && !rieul ? "으로" : "로"
 }
-const JOSA_PAIRS: [string, string][] = [["을", "를"], ["은", "는"], ["이었", "였"], ["이", "가"], ["과", "와"]]
-/** 숫자로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다 */
+const JOSA_PAIRS: [string, string][] = [["을", "를"], ["은", "는"], ["이었", "였"], ["이라", "라"], ["이", "가"], ["과", "와"]]
+/** 숫자(또는 숫자로 끝나는 괄호)로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다. "(t > 0)$ 로" 같은 괄호 안 조건은 그대로 둔다 */
 export function fixJosa(s: string) {
-  return s.replace(/(\d+(?:\.\d+)?)\$(\s?)(으로|로|이었|였|을|를|은|는|이|가|과|와)(?=[\s,.)을다고]|$)/g, (all, n: string, sp: string, j: string) => {
-    if (j === "으로" || j === "로") return `${n}$${sp}${euro(n)}`
-    for (const [w, wo] of JOSA_PAIRS) if (j === w || j === wo) return `${n}$${sp}${josa(n, w, wo)}`
-    return all
-  })
+  return s.replace(
+    /(\d+(?:\.\d+)?)((?:\)|\\right\))?)\$(\s?)(으로|로|이었|였|이라|라|을|를|은|는|이|가|과|와)(?=[\s,.)을다고]|$)/g,
+    (all, n: string, close: string, sp: string, j: string, idx: number) => {
+      if (close) {
+        const before = s.slice(Math.max(0, idx - 20), idx + n.length + 8)
+        if (/(>|<|\\ne|\\ge|\\le|\\geq|\\leq)\s*-?\d+(?:\.\d+)?\s*(\)|\\right\))\$/.test(before)) return all
+      }
+      const head = `${n}${close}$${sp}`
+      if (j === "으로" || j === "로") return head + euro(n)
+      for (const [w, wo] of JOSA_PAIRS) if (j === w || j === wo) return head + josa(n, w, wo)
+      return all
+    }
+  )
 }
 
 /** 약분 전후가 다를 때만 "= 약분값" 을 붙인 분수 */

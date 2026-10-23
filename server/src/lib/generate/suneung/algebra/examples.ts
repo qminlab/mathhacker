@@ -1,5 +1,5 @@
 // 예시 템플릿 (다른 템플릿을 쓸 때 이 모양을 따른다)
-import { ints, intChoice, lines, mc, q, qChoice, short, texPoly } from "../kit"
+import { ints, intChoice, lines, mc, q, qChoice, short, term, texPoly } from "../kit"
 import type { SuTemplate } from "../types"
 
 /** 기초: 로그의 성질로 계산 (객관식) */
@@ -59,7 +59,7 @@ const arithTerm: SuTemplate<{ a: number; d: number; i: number; j: number; n: num
       ...short(an),
       solution: lines(
         `공차를 $d$ 라 하면 $a_{${j}} - a_{${i}} = ${j - i}d$ 이므로 $${j - i}d = ${aj - ai}$, 즉 $d = ${d}$`,
-        `따라서 $a_{${n}} = a_{${j}} + ${n - j}d = ${aj} + ${n - j} \\times ${d < 0 ? `(${d})` : d} = ${an}$`
+        `따라서 $a_{${n}} = a_{${j}}${term(n - j, "d")} = ${aj} + ${n - j === 1 ? (d < 0 ? `(${d})` : d) : `${n - j} \\times ${d < 0 ? `(${d})` : d}`} = ${an}$`
       ),
       score: 3,
     }
@@ -137,13 +137,13 @@ function sumNs(a: number, b: number, M: number) {
   return s
 }
 
-/** 수능 4점: 분수 보기 예 (qChoice) — 등비수열 */
+/** 기초: 분수 보기 예 (qChoice) — 등비수열 */
 const geoRatio: SuTemplate<{ a: number; rN: number; rD: number; k: number }> = {
   id: "ex-geo-ratio",
   subject: "대수",
   unit: "수열",
   standard: "12대수03-03",
-  level: 3,
+  level: 1,
   count: 20,
   params: (r) => {
     const rN = r.pick([1, 2, 3])
@@ -159,7 +159,7 @@ const geoRatio: SuTemplate<{ a: number; rN: number; rD: number; k: number }> = {
       text: `첫째항이 $${a}$ 이고 공비가 $${ratio.tex()}$ 인 등비수열 $\\{a_n\\}$ 에 대하여 $a_{${k}}$ 의 값은?`,
       ...mc(r, qChoice(ans), [qChoice(ratio.pow(k).mul(a)), qChoice(ratio.pow(k - 2).mul(a)), qChoice(ans.mul(2)), qChoice(ans.div(2))]),
       solution: lines(`$a_n = ${a} \\times \\left(${ratio.tex()}\\right)^{n-1}$ 이므로`, `$a_{${k}} = ${a} \\times \\left(${ratio.tex()}\\right)^{${k - 1}} = ${ans.tex()}$`),
-      score: 3,
+      score: 2,
     }
   },
   verify: ({ a, rN, rD, k }) => a * Math.pow(rN / rD, k - 1),

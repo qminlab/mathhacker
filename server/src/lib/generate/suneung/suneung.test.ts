@@ -96,12 +96,15 @@ describe("수능 문제 은행", () => {
       const last = nz[nz.length - 1]
       return { batchim: "013678".includes(last), rieul: "178".includes(last) }
     }
-    const pairs: [string, string][] = [["을", "를"], ["은", "는"], ["이", "가"], ["과", "와"], ["이었", "였"]]
+    const pairs: [string, string][] = [["을", "를"], ["은", "는"], ["이", "가"], ["과", "와"], ["이었", "였"], ["이라", "라"]]
     const bad: string[] = []
     for (const p of all) {
       for (const s of [p.text, p.solution, ...(p.choices ?? [])]) {
         // "$...9$ 를" 처럼 숫자로 끝나는 수식 바로 뒤의 조사
-        for (const m of s.matchAll(/(\d+(?:\.\d+)?)\$\s?(으로|로|을|를|은|는|이었|였|이|가|과|와)(?=[\s,.)]|$)/g)) {
+        for (const m of s.matchAll(/(\d+(?:\.\d+)?)(?:\)|\\right\))?\$\s?(으로|로|을|를|은|는|이었|였|이라|라|이|가|과|와)(?=[\s,.)]|$)/g)) {
+          // "(t > 0)$ 로" 처럼 괄호 안 조건 뒤의 조사는 앞 글자(t)에 붙으므로 건너뛴다
+          const before = s.slice(Math.max(0, (m.index ?? 0) - 20), (m.index ?? 0) + m[1].length + 8)
+          if (/(>|<|\\ne|\\ge|\\le|\\geq|\\leq)\s*-?\d+(?:\.\d+)?\s*(\)|\\right\))\$/.test(before)) continue
           const { batchim, rieul } = lastSound(m[1])
           const j = m[2]
           let ok = true

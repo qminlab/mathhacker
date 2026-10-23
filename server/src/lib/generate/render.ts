@@ -29,8 +29,8 @@ const mjDoc = mathjax.document("", { InputJax: tex, OutputJax: svgOut })
 
 const INK = "#1F1A3D"
 const NUMBER = "#2B48C8"
-const WIDTH = 900
-const PAD = 40
+const WIDTH = 640 // 폰에서도 글씨가 작지 않게 (폭이 좁을수록 화면에서 글자가 커진다)
+const PAD = 30
 const SIZE = 30 // 본문 글자 크기(px)
 const LINE = 50 // 줄 높이
 const EX = SIZE * 0.47 // MathJax 1ex 를 px로
@@ -100,7 +100,9 @@ function layout(tokens: Token[], width: number): Layout {
       x = 0
       continue
     }
-    if (x > 0 && x + t.w > width) {
+    // 쉼표·마침표·닫는 괄호로 시작하는 조각은 앞 조각과 떼지 않는다 (줄 맨 앞에 ", 14" 가 오지 않게)
+    const glued = t.kind === "text" && /^[,.)\]:;?!]/.test(t.s)
+    if (x > 0 && x + t.w > width && !glued) {
       line++
       x = 0
       if (t.kind === "text" && !t.s.trim()) continue
