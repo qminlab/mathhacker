@@ -522,7 +522,8 @@ const equalArea: SuTemplate<{ v: number; a: number; p: number; qq: number; side:
       ...mcI(r, ans, [3 * b, (3 * b) / 2 === Math.floor((3 * b) / 2) ? (3 * b) / 2 : 3 * b + 1, b + 1, 4 * b, 2 * b + 1]),
       solution: lines(
         `두 부분이 $x$ 축의 위쪽과 아래쪽에 있고 넓이가 같으므로 $${intTex(0, "k", `x(${texShift(b)})(x - k)`)} = 0$`,
-        `$${intTex(0, "k", `\\{x^{3} - (k + ${b})x^{2} + ${b}kx\\}`)} = \\frac{k^{4}}{4} - \\frac{(k + ${b})k^{3}}{3} + \\frac{${b}k^{3}}{2} = \\frac{k^{3}(${2 * b} - k)}{12}$`,
+        `전개하여 적분하면 $${intTex(0, "k", `\\{x^{3} - (k + ${b})x^{2} + ${b === 1 ? "" : b}kx\\}`)} = \\frac{k^{4}}{4} - \\frac{(k + ${b})k^{3}}{3} + \\frac{${b === 1 ? "" : b}k^{3}}{2}$ 이고,`,
+        `이를 정리하면 $\\frac{k^{3}(${2 * b} - k)}{12} = 0$ 이다.`,
         `$k > ${b}$ 이므로 $k = ${ans}$`
       ),
       score: 3,
@@ -691,8 +692,8 @@ const motionCond: SuTemplate<{ p: number; p2: number; qd: number; R: number }> =
       text: `수직선 위를 움직이는 점 $\\mathrm{P}$ 의 시각 $t \\ (t \\ge 0)$ 에서의 속도가 $v(t) = 3t^{2} + at + b$ 이다. 점 $\\mathrm{P}$ 가 다음 조건을 만족시킬 때, 시각 $t = 0$ 에서 $t = ${R}$ 까지 점 $\\mathrm{P}$ 가 움직인 거리${isShortOk(ans) ? "를 구하시오." : "는?"} (단, $a, b$ 는 상수이다.)\n(가) 점 $\\mathrm{P}$ 는 시각 $t = ${p}$ 에서 운동 방향을 바꾼다.\n(나) 시각 $t = 0$ 에서 $t = ${qd}$ 까지 점 $\\mathrm{P}$ 의 위치의 변화량은 $${D}$ 이다.`,
       ...answerI(r, ans, [ev(X, R), Math.abs(ev(X, R)), ans + parts.length, ans - 1, ans + 1, 2 * ans]),
       solution: lines(
-        `(가)에서 $v(${p}) = 0$ 이므로 $${3 * p * p} + ${p}a + b = 0$ … ①`,
-        `(나)에서 $${intTex(0, qd, "v(t)", "t")} = \\left[ t^{3} + \\frac{a}{2}t^{2} + bt \\right]_{0}^{${qd}} = ${qd ** 3} + ${(qd * qd) / 2}a + ${qd}b = ${D}$ … ②`,
+        `(가)에서 $v(${p}) = 0$ 이므로 $${3 * p * p} + ${cx(p, "a")} + b = 0$ … ①`,
+        `(나)에서 $${intTex(0, qd, "v(t)", "t")} = \\left[ t^{3} + \\frac{a}{2}t^{2} + bt \\right]_{0}^{${qd}} = ${qd ** 3} + ${q(qd * qd, 2).tex()}a + ${cx(qd, "b")} = ${D}$ … ②`,
         `①, ②를 연립하면 $a = ${2 * a}$, $b = ${b}$ 이므로 $v(t) = ${texPoly(vel, "t")} = 3(${texShift(p, "t")})(${texShift(p2, "t")})$ ($t = ${p}$ 은 중근이 아니므로 실제로 운동 방향이 바뀐다)`,
         `$0 \\le t \\le ${R}$ 에서 $v(t)$ 의 부호는 $t = ${cuts.slice(1, -1).join(", ")}$ 에서 바뀌므로 움직인 거리는`,
         `$${parts.map((x, i) => `\\left| ${intTex(cuts[i], cuts[i + 1], "v(t)", "t")} \\right|`).join(" + ")} = ${parts.map((x) => Math.abs(x)).join(" + ")} = ${ans}$`
@@ -739,7 +740,7 @@ const defnExt: SuTemplate<{ A: number; be: number; k: number; v: number }> = {
       ...mcQ(r, ans, wr.filter((x) => !x.eq(ans))),
       solution: lines(
         `$g'(x) = f(x)$ 이므로 (가)에서 $f(${be}) = 0$ 이고, (나)에서 $g(x)$ 는 극댓값을 가지므로 $f(x)$ 는 다른 근 $\\alpha$ 를 갖는다. $f(x) = ${A}(x - \\alpha)${fac(be)}$`,
-        `$g(\\alpha) = ${intTex(0, "\\alpha", `${A}(t - \\alpha)${fac(be, "t")}`, "t")} = ${A === 6 ? "" : A === -6 ? "-" : `\\frac{${A}}{6}`}\\alpha^{2}(${3 * be} - \\alpha) = 0$ 에서 $\\alpha = 0$ 또는 $\\alpha = ${3 * be}$`,
+        `$g(\\alpha) = ${intTex(0, "\\alpha", `${A}(t - \\alpha)${fac(be, "t")}`, "t")} = ${q(A, 6).eq(1) ? "" : q(A, 6).eq(-1) ? "-" : q(A, 6).tex()}\\alpha^{2}(${3 * be} - \\alpha) = 0$ 에서 $\\alpha = 0$ 또는 $\\alpha = ${3 * be}$`,
         `최고차항의 계수가 ${A > 0 ? "양수" : "음수"}이므로 $g(x)$ 는 $f(x)$ 의 두 근 중 ${A > 0 ? "작은" : "큰"} 근에서 극대, ${A > 0 ? "큰" : "작은"} 근에서 극소이다.`,
         `$\\alpha = ${other}$ 이면 $x = ${be}$ 가 극소가 될 수 없으므로 $\\alpha = ${al}$, 즉 $f(x) = ${facs(A, [al, be])}$`,
         `따라서 ${v === 0 ? `$g(${k}) = ${intTex(0, k, `${facs(A, [al, be], "t")}`, "t")} = ${ans.tex()}$` : `극솟값은 $g(${be}) = ${intTex(0, be, `${facs(A, [al, be], "t")}`, "t")} = ${ans.tex()}$`}`
@@ -853,8 +854,8 @@ const areaCond: SuTemplate<{ s: number; tgt: number; st: number[]; k: number }> 
         `(가)에서 $f(x) = 0$ 의 서로 다른 실근은 $0$ 과 $a \\ (a \\ne 0)$ 뿐이므로 $f(x) = x^{2}(x - a)$ 또는 $f(x) = x(x - a)^{2}$`,
         `두 경우 모두 넓이는 $\\left| ${intTex(0, "a", "x^{2}(x - a)")} \\right| = \\left| ${intTex(0, "a", "x(x - a)^{2}")} \\right| = \\frac{a^{4}}{12}$ 이므로 (나)에서 $a^{4} = ${s ** 4}$, $a = ${s}$ 또는 $a = ${-s}$`,
         `네 후보 ${cs.map((c) => `$${name(c)}$`).join(", ")} 중`,
-        `(다) 를 만족시키는 것은 ${cs.filter((c) => AC_STAT[st[0]].ok(c)).map((c) => `$${name(c)}$`).join(", ")}`,
-        `(라) 를 만족시키는 것은 ${cs.filter((c) => AC_STAT[st[1]].ok(c)).map((c) => `$${name(c)}$`).join(", ")}`,
+        `(다)를 만족시키는 것은 ${cs.filter((c) => AC_STAT[st[0]].ok(c)).map((c) => `$${name(c)}$`).join(", ")}`,
+        `(라)를 만족시키는 것은 ${cs.filter((c) => AC_STAT[st[1]].ok(c)).map((c) => `$${name(c)}$`).join(", ")}`,
         `따라서 $f(x) = ${name(T)} = ${texPoly(f)}$ 이고 $f(${k}) = ${ans}$`
       ),
       score: 4,
@@ -880,10 +881,10 @@ const areaCond: SuTemplate<{ s: number; tgt: number; st: number[]; k: number }> 
           return null
         })
         if (checks.some((x) => x === false)) continue
-        const vals = gridVals(f, -8, 8, 16)
+        const vals = gridVals(f, -8, 8, 4)
         if (gridCount(vals, 0) !== 2) continue
         const rs: number[] = []
-        for (let i = 0; i < vals.length; i++) if (Math.abs(vals[i]) < 1e-12) rs.push(-8 + i / 16)
+        for (let i = 0; i < vals.length; i++) if (Math.abs(vals[i]) < 1e-12) rs.push(-8 + i / 4)
         if (rs.length !== 2 || !rs.includes(0)) continue
         const other = rs[0] === 0 ? rs[1] : rs[0]
         if (st.includes(6) && !(other > 0)) continue

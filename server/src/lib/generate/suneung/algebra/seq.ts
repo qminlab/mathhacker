@@ -404,8 +404,8 @@ const telescope: SuTemplate<{ mode: "frac" | "sqrt" | "log"; a: number; b: numbe
         text: `$${S(n, `\\frac{1}{${f1}${f2}}`)}$ 의 값은?`,
         ...mc(r, qChoice(ans), wr.map(qChoice), qFill(ans)),
         solution: sol(
-          `$\\frac{1}{${f1}${f2}} = ${a === 1 ? "" : `\\frac{1}{${a}}`}\\left(\\frac{1}{${texPoly([a, b], "k")}} - \\frac{1}{${texPoly([a, a + b], "k")}}\\right)$`,
-          `$k = 1, 2, \\cdots, ${n}$ 을 대입하여 더하면 가운데 항이 모두 지워져 $${a === 1 ? "" : `\\frac{1}{${a}}`}\\left(\\frac{1}{${a + b}} - \\frac{1}{${a * n + a + b}}\\right)$ 만 남는다.`,
+          `$\\frac{1}{${f1}${f2}} = ${a === 1 ? `\\frac{1}{${texPoly([a, b], "k")}} - \\frac{1}{${texPoly([a, a + b], "k")}}` : `\\frac{1}{${a}}\\left(\\frac{1}{${texPoly([a, b], "k")}} - \\frac{1}{${texPoly([a, a + b], "k")}}\\right)`}$`,
+          `$k = 1, 2, \\cdots, ${n}$ 을 대입하여 더하면 가운데 항이 모두 지워져 $${a === 1 ? `\\frac{1}{${a + b}} - \\frac{1}{${n + 1 + b}}` : `\\frac{1}{${a}}\\left(\\frac{1}{${a + b}} - \\frac{1}{${a * n + a + b}}\\right)`}$ 만 남는다.`,
           `따라서 구하는 값은 $${ans.tex()}$`
         ),
         score: 3,

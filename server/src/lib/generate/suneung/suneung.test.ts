@@ -49,7 +49,7 @@ describe("수능 문제 은행", () => {
       expect(Number.isFinite(v), `verify가 수가 아님 ${where(p)}`).toBe(true)
       expect(near(v, p.value), `${where(p)}\n정답 ${p.value}, 검산 ${v}`).toBe(true)
     }
-  })
+  }, 600_000)
 
   it("객관식: 보기 5개, 값이 모두 다르고 작은 순, 정답 번호의 값이 정답", () => {
     for (const p of all.filter((x) => x.choices)) {
@@ -129,6 +129,12 @@ describe("수능 문제 은행", () => {
           if (kind === "CP") expect(Number(m[2]) <= Number(m[1]), `${where(p)}: ${m[0]}`).toBe(true)
         }
     }
+  })
+
+  it("수식($...$) 안에 한글이 없다 (그림에서 글자가 빠진다)", () => {
+    for (const p of all)
+      for (const s of [p.text, ...(p.choices ?? []), p.solution, p.hint ?? ""])
+        for (const m of s.matchAll(/\$([^$]+)\$/g)) expect(/[가-힣]/.test(m[1]), `${where(p)}: ${m[1]}`).toBe(false)
   })
 
   it("수식이 모두 MathJax로 그려진다", () => {

@@ -170,7 +170,7 @@ export function josa(num: number | string, j: string) {
 }
 /** 문장 안에서 숫자로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다 */
 export const fixJosa = (s: string) =>
-  s.replace(/(\d+(?:\.\d+)?)\$(\s?)(으로|로|을|를|은|는|이었|였|이|가|과|와)(?=[\s,.)]|$)/g, (_m, n: string, sp: string, j: string) => `${n}$${sp}${josa(n, j)}`)
+  s.replace(/(\d+(?:\.\d+)?)\$( ?)(으로|로|을|를|은|는|이었|였|이|가|과|와)(?=[\s,.)]|$)/g, (_m, n: string, sp: string, j: string) => `${n}$${sp}${josa(n, j)}`)
 /** 템플릿의 문제·보기·해설에 조사 교정을 적용 */
 export const withJosa = <P>(t: SuTemplate<P>): SuTemplate<P> => ({
   ...t,

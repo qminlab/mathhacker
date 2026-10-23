@@ -517,8 +517,8 @@ const cubicDet: SuTemplate<{ al: number; be: number; A: number; m: number; k: nu
       solution: lines(
         `두 극한에서 (분모) $\\to 0$ 이고 극한값이 존재하므로 $f(${al}) = 0$, $f(${be}) = 0$ 이다.`,
         `$f(x)$ 는 삼차함수이므로 $f(x) = ${facs(1, [al, be])}(ax + b) \\ (a \\ne 0)$ 로 놓을 수 있다.`,
-        `$\\lim_{x \\to ${al}} ${fac(be)}(ax + b) = ${al - be}(${al === 0 ? "b" : `${texPoly([al, 0], "a")} + b`}) = ${P}$ 에서 $${al === 0 ? "" : `${texPoly([al, 0], "a")} + `}b = ${g1.tex()}$`,
-        `$\\lim_{x \\to ${be}} ${fac(al)}(ax + b) = ${be - al}(${be === 0 ? "b" : `${texPoly([be, 0], "a")} + b`}) = ${R}$ 에서 $${be === 0 ? "" : `${texPoly([be, 0], "a")} + `}b = ${g2.tex()}$`,
+        `$\\lim_{x \\to ${al}} ${fac(be)}(ax + b) = ${al === 0 ? `${al - be}b` : `${al - be}(${texPoly([al, 0], "a")} + b)`} = ${P}$ 에서 $${al === 0 ? "" : `${texPoly([al, 0], "a")} + `}b = ${g1.tex()}$`,
+        `$\\lim_{x \\to ${be}} ${fac(al)}(ax + b) = ${be === 0 ? `${be - al}b` : `${be - al}(${texPoly([be, 0], "a")} + b)`} = ${R}$ 에서 $${be === 0 ? "" : `${texPoly([be, 0], "a")} + `}b = ${g2.tex()}$`,
         `두 식을 연립하면 $a = ${A}$, $b = ${m}$ 이므로 $f(x) = ${facs(1, [al, be])}(${texPoly([A, m])})$`,
         `따라서 $f(${k}) = ${times(k - al, k - be, A * k + m)} = ${ans}$`
       ),
@@ -718,12 +718,12 @@ const crossInfo = (c: Cross) => {
 }
 const crossTable = (c: Cross, crit: number[]) => {
   const parts: string[] = []
-  parts.push(`$t < ${crit[0]}$ 일 때 $${crossCount(c, crit[0] - 0.5)}$`)
+  parts.push(`$t < ${crit[0]}$ 일 때 $g(t) = ${crossCount(c, crit[0] - 0.5)}$`)
   crit.forEach((t, i) => {
-    parts.push(`$t = ${t}$ 일 때 $${crossCount(c, t)}$`)
-    if (i + 1 < crit.length) parts.push(`$${t} < t < ${crit[i + 1]}$ 일 때 $${crossCount(c, (t + crit[i + 1]) / 2)}$`)
+    parts.push(`$t = ${t}$ 일 때 $g(t) = ${crossCount(c, t)}$`)
+    if (i + 1 < crit.length) parts.push(`$${t} < t < ${crit[i + 1]}$ 일 때 $g(t) = ${crossCount(c, (t + crit[i + 1]) / 2)}$`)
   })
-  parts.push(`$t > ${crit[crit.length - 1]}$ 일 때 $${crossCount(c, crit[crit.length - 1] + 0.5)}$`)
+  parts.push(`$t > ${crit[crit.length - 1]}$ 일 때 $g(t) = ${crossCount(c, crit[crit.length - 1] + 0.5)}$`)
   return parts.join(", ")
 }
 const crossFTex = ({ m, n, s, a, b }: Cross, nTex?: string) =>
@@ -761,7 +761,7 @@ const crossDisc: SuTemplate<Cross> = {
       ...mcI(r, ans, [S, ans + 1, ans - 1, crit.reduce((x, y) => x + y, 0) + max + 1, S + max - 1 + (disc.length === 3 ? -crit[0] : 2), ans + 2]),
       solution: lines(
         crossShape(c, R0),
-        `직선 $y = t$ 를 위아래로 움직이며 교점의 개수를 세면 ${crossTable(c, crit)}`,
+        `직선 $y = t$ 를 위아래로 움직이며 교점의 개수를 세면 ${crossTable(c, crit)} 이다.`,
         `따라서 $g(t)$ 는 $t = ${disc.join(", ")}$ 에서 불연속이고 $S = ${disc.join(" + ").replace(/\+ -/g, "- ")} = ${S}$, 최댓값 $M = ${max}$`,
         `$S + M = ${S} ${signed(max)} = ${ans}$`
       ),

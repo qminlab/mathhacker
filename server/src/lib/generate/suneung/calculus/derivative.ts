@@ -1,5 +1,5 @@
 // 미적분Ⅰ · 미분 (12미적Ⅰ-02-01 ~ 10)
-import { deriv, isShortOk, limitAt, q, roots, short, signed, texPoly, texShift, paren, term } from "../kit"
+import { deriv, isShortOk, texSqrt, limitAt, q, roots, short, signed, texPoly, texShift, paren, term } from "../kit"
 import type { SuTemplate } from "../types"
 import { answerI, ask, cases, countRoots, gridCount, gridVals, cx, dcs, ev, fac, facs, head, lines, mcI, mcQ, nz, only, solveLinear, times, U_DIFF } from "./helpers"
 
@@ -346,7 +346,7 @@ const incrRange: SuTemplate<{ p: number; rr: number; s: number; e: number }> = {
         s === 1 ? `$f'(x) = 3x^{2} - 2ax + (${lin})$` : `$f'(x) = -3x^{2} + 2ax - (${lin}) = -\\{3x^{2} - 2ax + (${lin})\\}$`,
         `$f(x)$ 가 실수 전체에서 ${word}하려면 모든 실수 $x$ 에 대하여 $f'(x) ${s === 1 ? "\\ge" : "\\le"} 0$ 이어야 하므로 이차방정식 $3x^{2} - 2ax + (${lin}) = 0$ 의 판별식 $\\frac{D}{4} \\le 0$`,
         `$\\frac{D}{4} = a^{2} - 3(${lin}) = ${texPoly([1, -3 * p, -3 * rr], "a")} \\le 0$`,
-        `$\\frac{${3 * p} - \\sqrt{${D}}}{2} \\le a \\le \\frac{${3 * p} + \\sqrt{${D}}}{2}$ 이므로 정수 $a$ 는 $${lo}, ${lo + 1}, \\cdots, ${hi}$`,
+        `$\\frac{${3 * p} - ${texSqrt(D)}}{2} \\le a \\le \\frac{${3 * p} + ${texSqrt(D)}}{2}$ 이므로 정수 $a$ 는 $${lo}, ${lo + 1}, \\cdots, ${hi}$`,
         `따라서 정수 $a$ 의 개수는 $${ans}$`
       ),
       score: 3,
@@ -415,6 +415,7 @@ const extVal: SuTemplate<{ al: number; be: number; m: number; s: number }> = {
         const c = m - g(mins[0])
         found.push(g(maxs[0]) + c)
       }
+    }
     return only(found) ?? NaN
   },
 }
@@ -534,7 +535,7 @@ const tanExt: SuTemplate<{ v: number; b: number; c: number; p: number; qq: numbe
         ...mcI(r, ans, w === 0 ? [K, 4 * K, prod + 2 * b * p, -prod, prod + 1, sum] : [2 * p + b, 2 * p, sum + b, -sum, sum + 2, prod]),
         solution: lines(
           `접점의 $x$ 좌표를 $s$ 라 하면 접선은 $y = (${texPoly([2, b], "s")})(x - s) + ${texPoly([1, b, c], "s")}$`,
-          `이 직선이 점 $(${p}, ${qq})$ 를 지나므로 $${qq} = (${texPoly([2, b], "s")})(${p} - s) + ${texPoly([1, b, c], "s")}$, 정리하면 $${texPoly([1, -2 * p, K], "s")} = 0$`,
+          `이 접선이 점 $(${p}, ${qq})$ 를 지나므로 $${qq} = (${texPoly([2, b], "s")})(${p} - s) + ${texPoly([1, b, c], "s")}$, 정리하면 $${texPoly([1, -2 * p, K], "s")} = 0$`,
           `두 근을 $s_1, s_2$ 라 하면 $s_1 + s_2 = ${2 * p}$, $s_1 s_2 = ${K}$ 이고, 기울기는 $2s_1 ${signed(b)}$, $2s_2 ${signed(b)}$`,
           w === 0
             ? `기울기의 곱은 $4s_1 s_2 + ${paren(2 * b)}(s_1 + s_2) + ${b * b} = ${times(4, K)} + ${paren(2 * b)} \\times ${paren(2 * p)} + ${b * b} = ${ans}$`
@@ -553,7 +554,7 @@ const tanExt: SuTemplate<{ v: number; b: number; c: number; p: number; qq: numbe
       ...mcI(r, ans, [ev(df, p), ev(df, -t), ev(df, t + 1), ans + 1, -ans, ev(df, p + t)]),
       solution: lines(
         `접점의 $x$ 좌표를 $s$ 라 하면 접선은 $y = (${texPoly(dcs(f), "s")})(x - s) + ${texPoly(f, "s")}$`,
-        `이 직선이 점 A 를 지나므로 $${y0} = (${texPoly(dcs(f), "s")})(${p} - s) + ${texPoly(f, "s")}$`,
+        `이 접선이 점 A 를 지나므로 $${y0} = (${texPoly(dcs(f), "s")})(${p} - s) + ${texPoly(f, "s")}$`,
         `정리하면 $${fac(p, "s")}^{2}${p + a === 0 ? "s" : `(2s ${signed(p + a)})`} = 0$ 이고, $s \\ne ${p}$ 이므로 $s = ${t}$`,
         `따라서 구하는 기울기는 $f'(${t}) = ${ans}$`
       ),
@@ -640,7 +641,7 @@ const ineqAlways: SuTemplate<{ al: number; be: number; P: number; Qc: number; e:
     const ans = mn
     const crit = [al, be].filter((x) => x > 0)
     return {
-      text: `두 함수 $f(x) = ${texPoly(f)}$, $g(x) = ${g.every((x) => x === 0) ? "k" : `${texPoly([...g, 0])} + k`}$ 에 대하여 $x \\ge 0$ 인 모든 실수 $x$ 에 대하여 부등식 $f(x) \\ge g(x)$ 가 성립하도록 하는 실수 $k$ 의 최댓값은?`,
+      text: `두 함수 $f(x) = ${texPoly(f)}$, $g(x) = ${g.every((x) => x === 0) ? "k" : `${texPoly([...g, 0])} + k`}$ 가 있다. $x \\ge 0$ 인 모든 실수 $x$ 에 대하여 부등식 $f(x) \\ge g(x)$ 가 성립하도록 하는 실수 $k$ 의 최댓값은?`,
       ...mcI(r, ans, [ev(h, al), e, ans - 1, ans + 1, -ans, ev(h, be) + 1 === ans ? ans + 2 : ev(h, be) + 1]),
       solution: lines(
         `$f(x) \\ge g(x)$ 는 $f(x) - g(x) + k \\ge k$ 와 같다. $h(x) = f(x) - g(x) + k = ${texPoly(h)}$ 이라 하면 $x \\ge 0$ 에서 $h(x) \\ge k$ 이어야 한다.`,
@@ -771,7 +772,7 @@ const cubicGraph: SuTemplate<{ w: number; d: number; h: number; sg: number; k: n
     for (let c2 = -12; c2 <= 12; c2++) {
       if (Math.abs(3 * a * a + 2 * c2 * a - (3 * b * b + 2 * c2 * b)) > 1e-9) continue
       for (let c1 = -30; c1 <= 30; c1++) {
-        const base = (x: number) => x ** 3 + c2 * x * x + c1 * x
+        const base = (x: number) => ((x + c2) * x + c1) * x
         const crit = roots((x) => deriv(base, x), -15, 15, 200)
         for (const cp of crit) {
           const c0 = -base(cp)
@@ -815,6 +816,7 @@ const tanCount: SuTemplate<{ m: number; b: number; c: number; p: number; v: numb
     const ans = v === 0 ? hi - lo - 1 : V1 + V2
     // g(t) = -2t³ + (3p - 3m)t² + 6mpt + (bp + c)  (f = x³ + 3mx² + bx + c)
     const G = [-2, 3 * p - 3 * m, 6 * m * p, b * p + c]
+    const pt = p === 0 ? "(-t)" : `(${p} - t)`
     return {
       text:
         v === 0
@@ -822,9 +824,9 @@ const tanCount: SuTemplate<{ m: number; b: number; c: number; p: number; v: numb
           : `점 $(${p}, k)$ 에서 곡선 $y = ${texPoly(f)}$ 에 그을 수 있는 서로 다른 접선의 개수가 $2$ 가 되도록 하는 모든 실수 $k$ 의 값의 합은?`,
       ...answerI(r, ans, v === 0 ? [hi - lo + 1, hi - lo, ans + 2, V1 + V2] : [hi - lo, -ans, 2 * V1, 2 * V2, ans + 1]),
       solution: lines(
-        `$f(x) = ${texPoly(f)}$ 위의 점 $(t, f(t))$ 에서의 접선 $y = f'(t)(x - t) + f(t)$ 가 점 $(${p}, k)$ 를 지나면 $k = f(t) + f'(t)(${p} - t)$`,
-        `$g(t) = f(t) + f'(t)(${p} - t)$ 라 하면 $g(t) = ${texPoly(G, "t")}$ 이고, 접점이 다르면 접선도 다르므로 접선의 개수는 방정식 $g(t) = k$ 의 서로 다른 실근의 개수와 같다.`,
-        `$g'(t) = f''(t)(${p} - t) = (${texPoly([6, 6 * m], "t")})(${p} - t)$ 이므로 $g(t)$ 는 $t = ${-m}$, $t = ${p}$ 에서 극값 $g(${-m}) = ${V2}$, $g(${p}) = ${V1}$ 을 갖는다.`,
+        `$f(x) = ${texPoly(f)}$ 위의 점 $(t, f(t))$ 에서의 접선 $y = f'(t)(x - t) + f(t)$ 가 점 $(${p}, k)$ 를 지나면 $k = f(t) + f'(t)${pt}$`,
+        `$g(t) = f(t) + f'(t)${pt}$ 라 하면 $g(t) = ${texPoly(G, "t")}$ 이고, 접점이 다르면 접선도 다르므로 접선의 개수는 방정식 $g(t) = k$ 의 서로 다른 실근의 개수와 같다.`,
+        `$g'(t) = f''(t)${pt} = (${texPoly([6, 6 * m], "t")})${pt}$ 이므로 $g(t)$ 는 $t = ${-m}$, $t = ${p}$ 에서 극값 $g(${-m}) = ${V2}$, $g(${p}) = ${V1}$ 을 갖는다.`,
         v === 0
           ? `접선이 $3$ 개이려면 $${lo} < k < ${hi}$ 이어야 하므로 정수 $k$ 의 개수는 $${ans}$`
           : `접선이 $2$ 개이려면 $k = ${V2}$ 또는 $k = ${V1}$ 이므로 합은 $${ans}$`
