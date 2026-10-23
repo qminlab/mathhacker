@@ -1,6 +1,7 @@
 // 확률과 통계 공용 도구
 import type { Rng } from "../../types"
-import { mc, NORMAL_TABLE, q, Q, qChoice, short } from "../kit"
+import { intChoice, NORMAL_TABLE, q, Q, qChoice, short } from "../kit"
+import type { SuProblem } from "../types"
 import type { Choice, SuTemplate } from "../types"
 
 /** 기약분수 p/q 일 때 p+q (단답형) */
@@ -12,15 +13,17 @@ export function fracMc(r: Rng, ans: Q, wrongs: Q[], prob = true) {
   const ok = (x: Q) => x.n > 0 && (!prob || x.value < 1)
   const extra: Q[] = []
   for (let k = 1; k <= 60; k++) {
-    for (const x of [q(ans.n + k, ans.d), q(ans.n - k, ans.d), q(ans.n, ans.d + k), q(ans.n * (k + 1), ans.d), q(ans.n, ans.d * (k + 1))]) {
+    const co = q(1).sub(ans)
+    for (const x of [q(ans.n + k, ans.d), q(ans.n - k, ans.d), q(ans.n, ans.d + k), q(ans.n * (k + 1), ans.d), q(ans.n, ans.d * (k + 1)), ...(co.n > 0 ? [q(1).sub(co.div(k + 1)), q(1).sub(co.mul(q(k + 1, k)))] : [])]) {
       if (x.d > 0 && ok(x)) extra.push(x)
     }
   }
-  return mc(
+  return mcBal(
     r,
     qChoice(ans),
     wrongs.filter(ok).map(qChoice),
-    (k) => qChoice(extra[Math.min(k - 1, extra.length - 1)] ?? q(k, k + 1))
+    (k) => qChoice(extra[Math.min(k - 1, extra.length - 1)] ?? q(k, k + 1)),
+    (c) => c.value > 0 && (!prob || c.value < 1)
   )
 }
 
@@ -46,7 +49,7 @@ export function decMc(r: Rng, ans: number, wrongs: number[], digits = 4) {
     }
   }
   const cand = [...pool].filter((x) => x > 0 && x < 1 && Math.abs(x - ans) > 1e-9).sort((x, y) => Math.abs(x - ans) - Math.abs(y - ans))
-  return mc(r, decChoice(ans, digits), okw.map((w) => decChoice(w, digits)), (k) => decChoice(cand[Math.min(k - 1, cand.length - 1)], digits))
+  return mcBal(r, decChoice(ans, digits), okw.map((w) => decChoice(w, digits)), (k) => decChoice(cand[Math.min(k - 1, cand.length - 1)], digits), (c) => c.value > 0 && c.value < 1)
 }
 
 /** 표 값 P(0 ≤ Z ≤ z), z = 0, 0.5, ..., 3.0 */
@@ -293,4 +296,41 @@ export function toFrac(x: number, maxD = 1e7): Q {
 export function pqOrValue(x: number, useShort: boolean) {
   const f = toFrac(x)
   return useShort && f.n + f.d <= 999 && f.d > 1 ? f.n + f.d : x
+}
+
+/**
+ * 정답 번호가 한쪽으로 몰리지 않는 객관식.
+ * 정답보다 작은 보기 개수 t(0~4)를 r 로 정하고, 작은 쪽·큰 쪽에서 그럴듯한 오답(주어진 오답 먼저, 모자라면 fill 로 만든 것 중 정답에 가까운 것)을 고른다.
+ * ok: 보기로 쓸 수 있는 값인지 (기본: 정답이 양수면 양수만 — 개수·확률·길이)
+ */
+export function mcBal(
+  r: Rng,
+  correct: Choice,
+  wrongs: Choice[],
+  fill?: (k: number) => Choice,
+  ok?: (c: Choice) => boolean
+): Pick<SuProblem, "choices" | "answer" | "value" | "choiceValues"> {
+  const valid = ok ?? ((c: Choice) => (correct.value > 0 ? c.value > 0 : true))
+  const step = Math.max(1, Math.abs(correct.value) >= 20 ? Math.round(Math.abs(correct.value) / 10) : 1)
+  const f = fill ?? ((k: number) => intChoice(correct.value + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * step))
+  const same = (a: Choice, b: Choice) => Math.abs(a.value - b.value) < 1e-9 * Math.max(1, Math.abs(a.value), Math.abs(b.value)) || a.tex === b.tex
+  const prim: Choice[] = []
+  const extra: Choice[] = []
+  const add = (list: Choice[], c: Choice) => {
+    if (!Number.isFinite(c.value) || !valid(c) || same(c, correct) || prim.some((p) => same(p, c)) || extra.some((p) => same(p, c))) return
+    list.push(c)
+  }
+  for (const w of r.shuffle([...wrongs])) add(prim, w)
+  for (let k = 1; k <= 60; k++) add(extra, f(k))
+  const near = (a: Choice, b: Choice) => Math.abs(a.value - correct.value) - Math.abs(b.value - correct.value)
+  extra.sort(near)
+  const lo = [...prim.filter((c) => c.value < correct.value), ...extra.filter((c) => c.value < correct.value)]
+  const hi = [...prim.filter((c) => c.value > correct.value), ...extra.filter((c) => c.value > correct.value)]
+  const tMin = Math.max(0, 4 - hi.length)
+  const tMax = Math.min(4, lo.length)
+  if (tMin > tMax) throw new Error("보기 5개를 만들지 못했어요")
+  const t = r.int(tMin, tMax)
+  const picked = [...lo.slice(0, t), correct, ...hi.slice(0, 4 - t)].sort((a, b) => a.value - b.value)
+  const idx = picked.indexOf(correct)
+  return { choices: picked.map((c) => `$${c.tex}$`), answer: String(idx + 1), value: correct.value, choiceValues: picked.map((c) => c.value) }
 }

@@ -1,7 +1,7 @@
 // 확률과 통계 · 통계 (12확통03-01~07): 확률분포, 이항분포, 정규분포, 표본평균, 추정
 import { isShortOk, mc, normalTableFigure, NORMAL_TABLE, q, Q, roots, short, signed, term, tuples } from "../kit"
 import type { SuTemplate } from "../types"
-import { decChoice, decMc, F, fracMc, ncdf as phi, r4, sol as lines, T, tableFigure, zt , polish } from "./helpers"
+import { decChoice, decMc, F, fracMc, ncdf as phi, r4, sol as lines, T, tableFigure, zt , polish, mcBal } from "./helpers"
 
 const UNIT = "통계"
 const S = "확률과 통계" as const
@@ -559,7 +559,7 @@ const sampleMean: SuTemplate<{ kind: number; m: number; s: number; n: number; z:
     if (kind === 0) {
       return {
         text: `정규분포 $\\mathrm{N}(${m}, ${s}^{2})$ 을 따르는 모집단에서 크기가 $${n}$ 인 표본을 임의추출하여 구한 표본평균을 $\\overline{X}$ 라 할 때, $E(\\overline{X}) + \\sigma(\\overline{X})$ 의 값${isShortOk(m + se) && Number.isInteger(se) ? "을 구하시오." : "은?"}`,
-        ...(Number.isInteger(m + se) ? short(m + se) : mc(r, { tex: num(m + se), value: m + se }, [{ tex: num(m + s), value: m + s }, { tex: num(m + se * se), value: m + se * se }, { tex: num(m + s / n), value: m + s / n }])),
+        ...(Number.isInteger(m + se) ? short(m + se) : mcBal(r, { tex: num(m + se), value: m + se }, [{ tex: num(m + s), value: m + s }, { tex: num(m + se * se), value: m + se * se }, { tex: num(m + s / n), value: m + s / n }])),
         solution: lines(`$E(\\overline{X}) = m = ${m}$`, `$\\sigma(\\overline{X}) = \\frac{\\sigma}{\\sqrt{n}} = \\frac{${s}}{\\sqrt{${n}}} = ${num(se)}$`, `따라서 $E(\\overline{X}) + \\sigma(\\overline{X}) = ${num(m + se)}$`),
         score: 2,
       }
@@ -666,7 +666,7 @@ const ciMean: SuTemplate<{ kind: number; s: number; k: number; xbar: number; con
     const L99 = r4(2 * 2.58 * se)
     return {
       text: `정규분포 $\\mathrm{N}(m, \\sigma^{2})$ 을 따르는 모집단에서 크기가 $${n}$ 인 표본을 임의추출하여 구한 모평균 $m$ 에 대한 신뢰도 $95\\%$ 의 신뢰구간이 $a \\le m \\le b$ 이고, 같은 표본으로 구한 신뢰도 $99\\%$ 의 신뢰구간이 $c \\le m \\le d$ 이다. $b - a = ${num(L95)}$ 일 때, $d - c$ 의 값은? (단, $Z$ 가 표준정규분포를 따르는 확률변수일 때, $P(|Z| \\le 1.96) = 0.95$, $P(|Z| \\le 2.58) = 0.99$ 로 계산한다.)`,
-      ...mc(r, numC(L99), [numC(r4(L99 / 2)), numC(r4(L95 * 1.5)), numC(r4(2 * 2.58 * s)), numC(r4(L95 + 0.62 * 2 * se)), numC(r4(L95 + 2)), numC(r4(2.58 * se))], (j) => numC(r4(L99 + (j % 2 ? 1 : -1) * Math.ceil(j / 2) * 0.5))),
+      ...mcBal(r, numC(L99), [numC(r4(L99 / 2)), numC(r4(L95 * 1.5)), numC(r4(2 * 2.58 * s)), numC(r4(L95 + 0.62 * 2 * se)), numC(r4(L95 + 2)), numC(r4(2.58 * se))], (j) => numC(r4(L99 + (j % 2 ? 1 : -1) * Math.ceil(j / 2) * 0.5))),
       solution: lines(
         `같은 표본으로 구한 신뢰구간이므로 $\\frac{\\sigma}{\\sqrt{${n}}}$ 은 같고, 곱하는 수만 $1.96$ 에서 $2.58$ 로 바뀐다.`,
         `$b - a = 2 \\times 1.96 \\times \\frac{\\sigma}{\\sqrt{${n}}} = ${num(L95)}$ 에서 $\\frac{\\sigma}{${k}} = ${num(se)}$, 즉 $\\sigma = ${s}$`,
@@ -741,7 +741,7 @@ const propCI: SuTemplate<{ ph: number; n: number; kind: number; conf: 95 | 99 }>
     ][kind]
     return {
       text: `${lead} $${what}$ 의 값은? ${note}`,
-      ...mc(r, decChoice(ans), wr.filter((w) => w > 0).map((w) => decChoice(w)), (j) => decChoice(ans + (j % 2 ? 1 : -1) * Math.ceil(j / 2) * 0.01)),
+      ...mcBal(r, decChoice(ans), wr.filter((w) => w > 0).map((w) => decChoice(w)), (j) => decChoice(ans + (j % 2 ? 1 : -1) * Math.ceil(j / 2) * 0.01)),
       solution: lines(
         `표본비율은 $\\hat{p} = \\frac{${x}}{${n}} = ${num(ph)}$ 이므로`,
         `신뢰구간은 $\\hat{p} - ${z}\\sqrt{\\frac{\\hat{p}(1 - \\hat{p})}{${n}}} \\le p \\le \\hat{p} + ${z}\\sqrt{\\frac{\\hat{p}(1 - \\hat{p})}{${n}}}$ 이다.`,

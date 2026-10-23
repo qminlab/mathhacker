@@ -1,7 +1,7 @@
 // 확률과 통계 · 경우의 수 (12확통01-01~03): 중복순열, 같은 것이 있는 순열, 중복조합, 이항정리
 import { C, fact, intChoice, ints, mc, Pm, short, signed, term, tuples, isShortOk } from "../kit"
 import type { SuProblem, SuTemplate } from "../types"
-import { countDistinctPerms, polyPowLow, polyMulLow, sol as lines , polish } from "./helpers"
+import { countDistinctPerms, polyPowLow, polyMulLow, sol as lines , polish, mcBal } from "./helpers"
 
 const UNIT = "경우의 수"
 const H = (n: number, r: number) => (r < 0 ? 0 : r === 0 ? 1 : C(n + r - 1, r))
@@ -16,7 +16,7 @@ const DIGIT_WORD: Record<number, string> = { 2: "두", 3: "세", 4: "네", 5: "�
 /** 정수 답: 1~999면 단답형, 아니면 객관식 */
 function intAnswer(r: Parameters<SuTemplate["build"]>[1], ans: number, wrongs: number[]): Pick<SuProblem, "choices" | "answer" | "value" | "choiceValues"> {
   if (isShortOk(ans)) return short(ans)
-  return mc(r, intChoice(ans), ints(...intW(wrongs)))
+  return mcBal(r, intChoice(ans), ints(...intW(wrongs)))
 }
 
 /** 단조증가(같아도 됨) 수열을 직접 나열 (검산용) */
@@ -144,7 +144,7 @@ const repPermBasic: SuTemplate<{ kind: number; n: number; k: number }> = {
     }
     return {
       text,
-      ...mc(r, intChoice(ans), ints(k ** n, Pm(n, Math.min(k, n)), C(n + k - 1, k), n * k, ans - 1)),
+      ...mcBal(r, intChoice(ans), ints(k ** n, Pm(n, Math.min(k, n)), C(n + k - 1, k), n * k, ans - 1)),
       solution: lines(first, `따라서 구하는 경우의 수는 $${nPi(n, k)} = ${n}^{${k}} = ${ans}$`),
       score: 2,
     }
@@ -180,7 +180,7 @@ const samePerm: SuTemplate<{ cnts: number[]; digits: boolean }> = {
     const big = Math.max(...cnts)
     return {
       text,
-      ...mc(r, intChoice(ans), ints(...intW([fact(n), fact(n) / fact(big), ans * 2, ans / 2, ans + n, fact(n - 1) / (den / fact(big)) / fact(big - 1)]))),
+      ...mcBal(r, intChoice(ans), ints(...intW([fact(n), fact(n) / fact(big), ans * 2, ans / 2, ans + n, fact(n - 1) / (den / fact(big)) / fact(big - 1)]))),
       solution: lines(
         `같은 ${digits ? "숫자" : "문자"}가 ${cnts
           .map((c, i) => [c, syms[i]] as const)
@@ -256,7 +256,7 @@ const binomCoef: SuTemplate<{ a: number; b: number; n: number; k: number }> = {
     const bt = b < 0 ? `(${b})` : String(b)
     return {
       text: `다항식 $${expr}$ 의 전개식에서 $x^{${k}}$ 의 계수는?`,
-      ...mc(r, intChoice(v), ints(-v, swap, C(n, k) * a ** k, C(n, k - 1) * a ** k * b ** (n - k), v + C(n, k), C(n, k) * a * b)),
+      ...mcBal(r, intChoice(v), ints(-v, swap, C(n, k) * a ** k, C(n, k - 1) * a ** k * b ** (n - k), v + C(n, k), C(n, k) * a * b)),
       solution: lines(
         `$${expr}$ 의 전개식의 일반항은 $${nC(n, "r")} (${a === 1 ? "x" : `${a}x`})^{r} (${b})^{${n} - r}$ 이다.`,
         `$x^{${k}}$ 항은 $r = ${k}$ 일 때이므로 계수는`,
@@ -551,7 +551,7 @@ const binomConst: SuTemplate<{ p: number; s: number; c: number; n: number; t: nu
     const ex = `${p === 1 ? `${n} - r` : `${p}(${n} - r)`} - ${s === 1 ? "" : s}r`
     return {
       text: `$${expr}$ 의 전개식에서 ${target}?`,
-      ...mc(r, intChoice(v), ints(-v, C(n, k), C(n, k) * Math.abs(c) ** (n - k) * Math.sign(c) ** k, C(n, k + 1) * c ** (k + 1), v * 2)),
+      ...mcBal(r, intChoice(v), ints(-v, C(n, k), C(n, k) * Math.abs(c) ** (n - k) * Math.sign(c) ** k, C(n, k + 1) * c ** (k + 1), v * 2)),
       solution: lines(
         `일반항은 $${nC(n, "r")} ${p === 1 ? `x^{${n} - r}` : `(${xp})^{${n} - r}`} \\left(\\frac{${c}}{${xs}}\\right)^{r} = ${nC(n, "r")} \\times ${c === 1 ? "" : `(${c})^{r} \\times `}x^{${ex}}$`,
         `${t === 0 ? "상수항" : `$x^{${t}}$ 항`}이려면 $${ex} = ${t}$ 이어야 하므로 $r = ${k}$`,
@@ -779,7 +779,7 @@ const binomProduct: SuTemplate<{ e: number; a: number; b: number; n: number; t: 
       const s2b = `$x^{${t}}$ 항은 $${xe}$ 와 $${base}$ 의 ${lowT}의 곱, $${a}$ ${wa(a)} $x^{${t}}$ 항의 곱에서 나온다.`
       return {
         text: `다항식 $(${xe} ${signed(a)})${base}$ 의 전개식에서 $x^{${t}}$ 의 계수는?`,
-        ...mc(r, intChoice(v), ints(A, a * B, A - a * B, -v, A + B, v + C(n, t))),
+        ...mcBal(r, intChoice(v), ints(A, a * B, A - a * B, -v, A + B, v + C(n, t))),
         solution: lines(
           s1,
           s2b,
@@ -791,7 +791,7 @@ const binomProduct: SuTemplate<{ e: number; a: number; b: number; n: number; t: 
     }
     return {
       text: `다항식 $(${xe} + a)${base}$ 의 전개식에서 $x^{${t}}$ 의 계수가 $${v}$ 일 때, 상수 $a$ 의 값은?`,
-      ...mc(r, intChoice(a), ints(-a, a + 1, a - 1, a + 2, a - 2, 2 * a)),
+      ...mcBal(r, intChoice(a), ints(-a, a + 1, a - 1, a + 2, a - 2, 2 * a)),
       solution: lines(
         s1,
         s2,

@@ -1,7 +1,7 @@
 // 미적분Ⅰ · 적분 (12미적Ⅰ-03-01 ~ 06)
 import { deriv, integrate, isShortOk, limitAt, pEval, pInteg, q, roots, signed, texPoly, texShift, paren, term } from "../kit"
 import type { SuTemplate } from "../types"
-import { answerI, ask, cases, coefTex, plus, cx, dcs, plusPoly, ev, fac, facs, gridCount, gridVals, head, integrateAbs, lines, mcI, mcQ, nz, only, simpson, solveLinear, times, U_INT } from "./helpers"
+import { answerI, ask, cases, mcQnn, coefTex, plus, cx, dcs, plusPoly, ev, fac, facs, gridCount, gridVals, head, integrateAbs, lines, mcI, mcQ, nz, only, simpson, solveLinear, times, U_INT } from "./helpers"
 
 const U = U_INT
 /** 정수 계수 다항식의 부정적분 (유리수 계수, 상수항 0) */
@@ -151,7 +151,7 @@ const area1: SuTemplate<{ k: number; p: number; qq: number }> = {
     const ans = sgn.n < 0 ? sgn.neg() : sgn
     return {
       text: `곡선 $y = ${texPoly(f)}$ 와 $x$ 축으로 둘러싸인 부분의 넓이는?`,
-      ...mcQ(r, ans, [ans.neg(), ans.mul(2), q((qq - p) ** 3, 6), q(Math.abs(k) * (qq - p) ** 3, 3), ans.add(1)].filter((x) => !x.eq(ans))),
+      ...mcQnn(r, ans, [ans.neg(), ans.mul(2), q((qq - p) ** 3, 6), q(Math.abs(k) * (qq - p) ** 3, 3), ans.add(1)].filter((x) => !x.eq(ans))),
       solution: lines(
         `$${texPoly(f)} = ${facs(k, [p, qq])} = 0$ 에서 $x = ${p}$ 또는 $x = ${qq}$`,
         `$${p} \\le x \\le ${qq}$ 에서 $y ${k > 0 ? "\\le" : "\\ge"} 0$ 이므로 넓이는 $${k > 0 ? "-" : ""}${intTex(p, qq, wrap(f))}$`,
@@ -259,7 +259,7 @@ const absInt: SuTemplate<{ v: number; a: number; l: number; m: number; k: number
       const body = `|${texPoly(f)}|`
       return {
         text: `$${intTex(l, m, body)}$ 의 값은?`,
-        ...mcQ(r, ans, [defI(f, l, m), right.sub(left), ans.add(q(1, 2)), ans.mul(2), left]),
+        ...mcQnn(r, ans, [defI(f, l, m), right.sub(left), ans.add(q(1, 2)), ans.mul(2), left]),
         solution: lines(
           `$x \\le ${a}$ 일 때 $${body} = ${texPoly([-k, k * a])}$, $x \\ge ${a}$ 일 때 $${body} = ${texPoly(f)}$`,
           `(주어진 식) $= ${intTex(l, a, wrap([-k, k * a]))} + ${intTex(a, m, wrap(f))}$`,
@@ -275,7 +275,7 @@ const absInt: SuTemplate<{ v: number; a: number; l: number; m: number; k: number
     const body = `|${texPoly(f)}|`
     return {
       text: `$${intTex(0, m, body)}$ 의 값은?`,
-      ...mcQ(r, ans, [defI(f, 0, m), right.sub(left), left, right, ans.add(1)]),
+      ...mcQnn(r, ans, [defI(f, 0, m), right.sub(left), left, right, ans.add(1)]),
       solution: lines(
         `$${texPoly(f)} = ${facs(k, [0, a])}$ 이므로 $0 \\le x \\le ${a}$ 에서 $${texPoly(f)} \\le 0$, $x \\ge ${a}$ 에서 $${texPoly(f)} \\ge 0$`,
         `(주어진 식) $= -${intTex(0, a, wrap(f))} + ${intTex(a, m, wrap(f))}$`,
@@ -339,7 +339,7 @@ const area2: SuTemplate<{ v: number; al: number; be: number; a1: number; a2: num
     const gTex = v === 0 ? texPoly(g.slice(1)) : texPoly(g)
     return {
       text: `곡선 $y = ${texPoly(f)}$ 와 ${v === 0 ? "직선" : "곡선"} $y = ${gTex}$ 로 둘러싸인 부분의 넓이는?`,
-      ...mcQ(r, ans, [ans.mul(2), q(Math.abs(dlt) * (be - al) ** 3, 3), q((be - al) ** 3, 6), ans.add(1), q(Math.abs(dlt) * (be - al) ** 2, 2)].filter((x) => !x.eq(ans))),
+      ...mcQnn(r, ans, [ans.mul(2), q(Math.abs(dlt) * (be - al) ** 3, 3), q((be - al) ** 3, 6), ans.add(1), q(Math.abs(dlt) * (be - al) ** 2, 2)].filter((x) => !x.eq(ans))),
       solution: lines(
         `두 식을 빼면 $(${texPoly(f)}) - (${gTex}) = ${texPoly([dlt, -dlt * (al + be), dlt * al * be])} = ${facs(dlt, [al, be])}$`,
         `교점의 $x$ 좌표는 $${al}, ${be}$ 이고, 그 사이에서 ${dlt > 0 ? `$y = ${gTex}$ 가 위쪽` : `$y = ${texPoly(f)}$ 가 위쪽`}에 있다.`,
@@ -374,7 +374,7 @@ const dist2: SuTemplate<{ c: number; al: number; be: number; T: number }> = {
     const disp = defI(vel, 0, T)
     return {
       text: `수직선 위를 움직이는 점 $\\mathrm{P}$ 의 시각 $t \\ (t \\ge 0)$ 에서의 속도가 $v(t) = ${texPoly(vel, "t")}$ 일 때, 시각 $t = 0$ 에서 $t = ${T}$ 까지 점 $\\mathrm{P}$ 가 움직인 거리는?`,
-      ...mcQ(r, ans, [disp, disp.n < 0 ? disp.neg() : disp.add(2), ans.add(1), ans.mul(2), parts[0].n < 0 ? parts[0].neg() : parts[0]].filter((x) => !x.eq(ans))),
+      ...mcQnn(r, ans, [disp, disp.n < 0 ? disp.neg() : disp.add(2), ans.add(1), ans.mul(2), parts[0].n < 0 ? parts[0].neg() : parts[0]].filter((x) => !x.eq(ans))),
       solution: lines(
         `$v(t) = ${facs(c, [al, be], "t")}$ 이므로 $t = ${cuts.slice(1, -1).join(", ") || "-"}$ 의 좌우에서 $v(t)$ 의 부호가 바뀐다.`.replace("$t = -$ 의 좌우에서 $v(t)$ 의 부호가 바뀐다.", "$0 < t < " + T + "$ 에서 $v(t)$ 의 부호가 바뀌지 않는다."),
         `움직인 거리는 $${intTex(0, T, "|v(t)|", "t")} = ${parts.map((x, i) => `\\left| ${intTex(cuts[i], cuts[i + 1], "v(t)", "t")} \\right|`).join(" + ")}$`,
@@ -585,7 +585,7 @@ const meet: SuTemplate<{ p: number; qv: number; T: number; v: number }> = {
     const ans = v === 0 ? dist : q(ev(x1, T))
     return {
       text: `원점에서 동시에 출발하여 수직선 위를 움직이는 두 점 $\\mathrm{P}$, $\\mathrm{Q}$ 의 시각 $t \\ (t \\ge 0)$ 에서의 속도가 각각 $v_1(t) = ${texPoly(v1, "t")}$, $v_2(t) = ${texPoly(v2, "t")}$ 이다. 출발한 후 두 점 $\\mathrm{P}$, $\\mathrm{Q}$ 가 처음으로 다시 만나는 시각까지 ${v === 0 ? "점 $\\mathrm{P}$ 가 움직인 거리는?" : "가 만나는 위치는?"}`.replace("시각까지 가 만나는 위치는?", "시각에 두 점이 만나는 위치는?"),
-      ...(v === 0 ? mcQ(r, ans, [q(ev(x1, T)), dist.add(d1), d2, ans.add(1), q(T ** 3)]) : mcQ(r, ans, [q(T ** 3), q(ev(x1, T) + 1), q(ev([1, p, 0, 0], T)), q(-ev(x1, T)), q(ev(v1, T))])),
+      ...(v === 0 ? mcQnn(r, ans, [q(ev(x1, T)), dist.add(d1), d2, ans.add(1), q(T ** 3)]) : mcQ(r, ans, [q(T ** 3), q(ev(x1, T) + 1), q(ev([1, p, 0, 0], T)), q(-ev(x1, T)), q(ev(v1, T))])),
       solution: lines(
         `두 점의 위치는 $x_1(t) = ${texPoly(x1, "t")}$, $x_2(t) = ${texPoly([qv / 2, rr, 0], "t")}$`,
         `$x_1(t) - x_2(t) = ${texPoly([1, -s, -rr, 0], "t")} = ${facs(1, [0, T, s - T], "t")}$ 이므로 출발 후 처음 만나는 시각은 $t = ${T}$`,
@@ -633,7 +633,7 @@ const areaTan: SuTemplate<{ v: number; a: number; b: number; c: number; d: numbe
       const ans = q((s - t) ** 4, 12)
       return {
         text: `곡선 $y = ${texPoly(f)}$ 위의 점 $(${t}, ${ev(f, t)})$ 에서의 접선과 이 곡선으로 둘러싸인 부분의 넓이는?`,
-        ...mcQ(r, ans, [q((s - t) ** 4, 6), q((s - t) ** 3, 6), q((s - t) ** 4, 4), ans.mul(2).add(1), q((s - t) ** 4, 3)]),
+        ...mcQnn(r, ans, [q((s - t) ** 4, 6), q((s - t) ** 3, 6), q((s - t) ** 4, 4), ans.mul(2).add(1), q((s - t) ** 4, 3)]),
         solution: lines(
           `$y' = ${texPoly(dcs(f))}$ 이므로 접선은 $y = ${texPoly(tan)}$`,
           `$(${texPoly(f)}) - (${texPoly(tan)}) = ${fac(t)}^{2}${fac(s)}$ 이므로 두 그래프는 $x = ${t}$, $x = ${s}$ 에서 만난다.`,
@@ -648,7 +648,7 @@ const areaTan: SuTemplate<{ v: number; a: number; b: number; c: number; d: numbe
     const ans = q(Math.abs(a * t ** 3), 3)
     return {
       text: `곡선 $y = ${texPoly(f)}$ 위의 점 $(${t}, ${ev(f, t)})$ 에서의 접선과 이 곡선 및 $y$ 축으로 둘러싸인 부분의 넓이는?`,
-      ...mcQ(r, ans, [q(Math.abs(a * t ** 3), 6), q(Math.abs(a * t ** 3), 2), q(Math.abs(t ** 3), 3), ans.add(1), q(Math.abs(a * t * t), 2)]),
+      ...mcQnn(r, ans, [q(Math.abs(a * t ** 3), 6), q(Math.abs(a * t ** 3), 2), q(Math.abs(t ** 3), 3), ans.add(1), q(Math.abs(a * t * t), 2)]),
       solution: lines(
         `$y' = ${texPoly(dcs(f))}$ 이므로 접선은 $y = ${texPoly(tan)}$`,
         `$(${texPoly(f)}) - (${texPoly(tan)}) = ${a === 1 ? "" : a === -1 ? "-" : a}${fac(t)}^{2}$`,

@@ -1,7 +1,7 @@
 // 미적분Ⅰ · 미분 (12미적Ⅰ-02-01 ~ 10)
 import { deriv, gcd, isShortOk, sqrtParts, texSqrt, limitAt, q, roots, short, signed, texPoly, texShift, paren, term } from "../kit"
 import type { SuTemplate } from "../types"
-import { answerI, ask, cases, coefTex, plus, countRoots, gridCount, gridVals, cx, dcs, ev, fac, facs, head, lines, mcI, mcQ, nz, only, solveLinear, times, U_DIFF } from "./helpers"
+import { answerI, ask, cases, mcQnn, coefTex, plus, countRoots, gridCount, gridVals, cx, dcs, ev, fac, facs, head, lines, mcI, mcQ, nz, only, solveLinear, times, U_DIFF } from "./helpers"
 
 const U = U_DIFF
 /** (b ± √D)/2 를 약분해서 TeX로 */
@@ -693,7 +693,7 @@ const motion3: SuTemplate<{ al: number; be: number; x0: number; v: number }> = {
       const ans = q(d ** 3, 2)
       return {
         text: `수직선 위를 움직이는 점 $\\mathrm{P}$ 의 시각 $t \\ (t \\ge 0)$ 에서의 위치 $x$ 가 $x = ${texPoly(X, "t")}$ 이다. 점 $\\mathrm{P}$ 가 운동 방향을 바꾸는 두 시각에서 점 $\\mathrm{P}$ 의 위치를 각각 $x_1, x_2$ 라 할 때, $|x_1 - x_2|$ 의 값은?`,
-        ...mcQ(r, ans, [q(d ** 3), q(d ** 3, 4), q(d ** 2, 2), q(d ** 3, 6), ans.add(1)]),
+        ...mcQnn(r, ans, [q(d ** 3), q(d ** 3, 4), q(d ** 2, 2), q(d ** 3, 6), ans.add(1)]),
         solution: lines(
           `속도는 $v = ${texPoly(dcs(X), "t")} = 3(t - ${al})(t - ${be})$ 이고, $t = ${al}$, $t = ${be}$ 의 좌우에서 $v$ 의 부호가 바뀌므로 이 두 시각에 운동 방향이 바뀐다.`,
           `$x(${al}) = ${ev(X, al)}$, $x(${be}) = ${ev(X, be)}$`,

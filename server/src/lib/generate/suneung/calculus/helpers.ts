@@ -1,7 +1,7 @@
 // 미적분Ⅰ 템플릿 공용 도구
 import type { Rng } from "../../types"
 import { deriv, intChoice, isShortOk, mc, Q, q, qChoice, roots, short, texPoly, texShift } from "../kit"
-import type { Level, SuProblem, SuTemplate } from "../types"
+import type { Choice, Level, SuProblem, SuTemplate } from "../types"
 
 export const SUBJ = "미적분Ⅰ" as const
 export const U_LIM = "함수의 극한과 연속"
@@ -44,10 +44,49 @@ export const addc = (a: number[], b: number[]) => {
 }
 
 /** 정수 정답 객관식 */
-export const mcI = (r: Rng, ans: number, wrongs: number[]) => mc(r, intChoice(ans), wrongs.filter(Number.isFinite).map(intChoice))
-/** 유리수 정답 객관식 (모자란 보기는 정답 ±1, ±2 ... 로) */
-export const mcQ = (r: Rng, ans: Q, wrongs: Q[]) =>
-  mc(r, qChoice(ans), wrongs.map(qChoice), (k) => qChoice(ans.add((k % 2 ? 1 : -1) * Math.ceil(k / 2))))
+export const mcI = (r: Rng, ans: number, wrongs: number[], nonneg?: boolean) => {
+  const ws = wrongs.filter(Number.isFinite)
+  const step = Math.max(1, Math.abs(ans) >= 20 ? Math.round(Math.abs(ans) / 10) : 1)
+  const fills: number[] = []
+  for (let k = 1; k <= 12; k++) fills.push(ans + k * step, ans - k * step)
+  return mcBal(r, intChoice(ans), ws.map(intChoice), fills.map(intChoice), nonneg ?? nonnegOf(ans, ws))
+}
+/** 유리수 정답 객관식 (모자란 보기는 정답 ±1/2, ±1, … 로) */
+export const mcQ = (r: Rng, ans: Q, wrongs: Q[], nonneg?: boolean) => {
+  const fills: Q[] = []
+  for (let k = 1; k <= 12; k++) fills.push(ans.add(k), ans.sub(k))
+  if (!ans.isInt) for (let k = 1; k <= 6; k++) fills.push(ans.add(q(k, 2)), ans.sub(q(k, 2)))
+  return mcBal(r, qChoice(ans), wrongs.map(qChoice), fills.map(qChoice), nonneg ?? nonnegOf(ans.value, wrongs.map((w) => w.value)))
+}
+/** 넓이·거리처럼 음수가 될 수 없는 값의 객관식 (음수 보기 없음) */
+export const mcQnn = (r: Rng, ans: Q, wrongs: Q[]) => mcQ(r, ans, wrongs.filter((w) => w.n >= 0), true)
+/** 정답과 그럴듯한 오답이 모두 0 이상이면 (개수·넓이·거리 등) 음수 보기를 만들지 않는다 */
+const nonnegOf = (ans: number, ws: number[]) => ans >= 0 && ws.every((w) => w >= 0)
+
+/**
+ * 정답 번호가 몰리지 않게 고르는 객관식.
+ * 정답보다 작은 보기 개수 t(0~4)를 먼저 정하고, 그럴듯한 오답(wrongs)을 우선, 모자라면 정답에 가까운 채움 값으로 채운다.
+ */
+export function mcBal(r: Rng, correct: Choice, wrongs: Choice[], fills: Choice[], nonneg: boolean) {
+  const same = (a: Choice, b: Choice) => Math.abs(a.value - b.value) < 1e-9 * Math.max(1, Math.abs(a.value)) || a.tex === b.tex
+  const prim: Choice[] = []
+  const extra: Choice[] = []
+  const ok = (c: Choice) => Number.isFinite(c.value) && !same(c, correct) && !(nonneg && c.value < 0)
+  for (const w of r.shuffle(wrongs)) if (ok(w) && !prim.some((p) => same(p, w))) prim.push(w)
+  for (const f of fills) if (ok(f) && !prim.some((p) => same(p, f)) && !extra.some((p) => same(p, f))) extra.push(f)
+  const near = (xs: Choice[]) => [...xs].sort((a, b) => Math.abs(a.value - correct.value) - Math.abs(b.value - correct.value))
+  const side = (lo: boolean) => {
+    const f = (c: Choice) => (lo ? c.value < correct.value : c.value > correct.value)
+    return [...prim.filter(f), ...near(extra.filter(f))]
+  }
+  const L = side(true)
+  const H = side(false)
+  let t = r.int(0, 4)
+  t = Math.min(t, L.length)
+  if (4 - t > H.length) t = 4 - H.length
+  if (t < 0 || t > L.length) return mc(r, correct, wrongs, (k) => fills[(k - 1) % fills.length])
+  return mc(r, correct, [...L.slice(0, t), ...H.slice(0, 4 - t)])
+}
 /** 1~999 자연수면 단답형, 아니면 객관식 */
 export const answerI = (r: Rng, ans: number, wrongs: number[]): Pick<SuProblem, "answer" | "value" | "choices" | "choiceValues"> =>
   isShortOk(ans) ? short(ans) : mcI(r, ans, wrongs)
