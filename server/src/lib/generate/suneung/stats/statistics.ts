@@ -1,7 +1,7 @@
 // 확률과 통계 · 통계 (12확통03-01~07): 확률분포, 이항분포, 정규분포, 표본평균, 추정
 import { isShortOk, mc, normalTableFigure, NORMAL_TABLE, q, Q, roots, short, signed, term, tuples } from "../kit"
 import type { SuTemplate } from "../types"
-import { decChoice, decMc, F, fracMc, ncdf as phi, r4, sol as lines, T, tableFigure, zt } from "./helpers"
+import { decChoice, decMc, F, fracMc, ncdf as phi, r4, sol as lines, T, tableFigure, zt , polish } from "./helpers"
 
 const UNIT = "통계"
 const S = "확률과 통계" as const
@@ -109,7 +109,7 @@ const distUnknown: SuTemplate<{ vs: number[]; ks: number[]; ask: number; j: numb
     if (ask === 0) {
       ans = a
       what = `상수 $a$ 의 값은?`
-      sol = [first, `따라서 $a = ${a.tex()}$`]
+      sol = [`확률의 총합은 $1$ 이므로 $${pTex.join(" + ")} = 1$`, `$${K}a = 1$ 이므로 $a = ${a.tex()}$`]
     } else if (ask === 1) {
       ans = E
       what = `$E(X)$ 의 값은?`
@@ -117,7 +117,7 @@ const distUnknown: SuTemplate<{ vs: number[]; ks: number[]; ask: number; j: numb
     } else {
       ans = q(ks.slice(j).reduce((s, k) => s + k, 0), K)
       what = `$P(X \\ge ${vs[j]})$ 의 값은?`
-      sol = [first, `$P(X \\ge ${vs[j]}) = ${ks.slice(j).map((k) => q(k, K).tex()).join(" + ")} = ${ans.tex()}$`]
+      sol = [first, `$P(X \\ge ${vs[j]}) = ${ks.slice(j).length > 1 ? `${ks.slice(j).map((k) => q(k, K).tex()).join(" + ")} = ` : ""}${ans.tex()}$`]
     }
     const prob = ask !== 1
     return {
@@ -218,7 +218,7 @@ const binomMean: SuTemplate<{ n: number; ip: number; ask: number }> = {
       solution: lines(
         `이항분포 $\\mathrm{B}(n, p)$ 에서 $E(X) = np,\\ V(X) = np(1 - p)$ 이다.`,
         `$E(X) = ${n} \\times ${p.tex()} = ${E.tex()},\\ V(X) = ${n} \\times ${p.tex()} \\times ${q(1).sub(p).tex()} = ${V.tex()}$`,
-        ask === 2 ? `따라서 $\\sigma(X) = \\sqrt{${V.tex()}} = ${ans}$` : ask === 3 ? `따라서 $E(X^{2}) = V(X) + \\{E(X)\\}^{2} = ${V.tex()} + ${E.tex()}^{2} = ${ans}$` : `따라서 구하는 값은 $${ans}$`
+        ask === 2 ? `따라서 $\\sigma(X) = \\sqrt{${V.tex()}} = ${ans}$` : ask === 3 ? `따라서 $E(X^{2}) = V(X) + \\{E(X)\\}^{2} = ${V.tex()} + ${E.tex()}^{2} = ${ans}$` : ``
       ),
       score: 2,
     }
@@ -339,10 +339,11 @@ const binomFind: SuTemplate<{ n: number; ip: number; c: number; d: number; ask: 
       text: `확률변수 $X$ 가 이항분포 $\\mathrm{B}(n, p)$ 를 따르고 ${given} 일 때, $${what}$ 의 값을 구하시오. (단, $0 < p < 1$)`,
       ...short(ans),
       solution: lines(
+        `이항분포 $\\mathrm{B}(n, p)$ 에서 $E(X) = np,\\ V(X) = np(1 - p)$ 이다.`,
         lin && `$E(${Y}) = ${pc}E(X) ${signed(d)} = ${EY.tex()}$ 에서 $E(X) = ${E.tex()}$, $V(${Y}) = ${pc}^{2}V(X) = ${VY.tex()}$ 에서 $V(X) = ${V.tex()}$`,
         `$np = ${E.tex()},\\ np(1 - p) = ${V.tex()}$ 이므로 두 식을 나누면 $1 - p = ${V.div(E).tex()}$, 즉 $p = ${p.tex()}$`,
         `$n = ${E.tex()} \\div ${p.tex()} = ${n}$`,
-        ask === 1 ? `$E(X^{2}) = V(X) + \\{E(X)\\}^{2} = ${V.tex()} + ${E.mul(E).tex()} = ${ans}$` : ask === 2 ? `따라서 $n + \\frac{1}{p} = ${n} + ${p.d} = ${ans}$` : `따라서 $n = ${n}$`
+        ask === 0 ? `` : ask === 1 ? `$E(X^{2}) = V(X) + \\{E(X)\\}^{2} = ${V.tex()} + ${E.mul(E).tex()} = ${ans}$` : ask === 2 ? `따라서 $n + \\frac{1}{p} = ${n} + ${p.d} = ${ans}$` : ``
       ),
       score: 3,
     }
@@ -664,6 +665,7 @@ const ciMean: SuTemplate<{ kind: number; s: number; k: number; xbar: number; con
       text: `정규분포 $\\mathrm{N}(m, \\sigma^{2})$ 을 따르는 모집단에서 크기가 $${n}$ 인 표본을 임의추출하여 구한 모평균 $m$ 에 대한 신뢰도 $95\\%$ 의 신뢰구간이 $a \\le m \\le b$ 이고, 같은 표본으로 구한 신뢰도 $99\\%$ 의 신뢰구간이 $c \\le m \\le d$ 이다. $b - a = ${num(L95)}$ 일 때, $d - c$ 의 값은? (단, $Z$ 가 표준정규분포를 따르는 확률변수일 때, $P(|Z| \\le 1.96) = 0.95$, $P(|Z| \\le 2.58) = 0.99$ 로 계산한다.)`,
       ...mc(r, numC(L99), [numC(r4(L99 / 2)), numC(r4(L95 * 1.5)), numC(r4(2 * 2.58 * s)), numC(r4(L95 + 0.62 * 2 * se)), numC(r4(L95 + 2)), numC(r4(2.58 * se))], (j) => numC(r4(L99 + (j % 2 ? 1 : -1) * Math.ceil(j / 2) * 0.5))),
       solution: lines(
+        `같은 표본으로 구한 신뢰구간이므로 $\\frac{\\sigma}{\\sqrt{${n}}}$ 은 같고, 곱하는 수만 $1.96$ 에서 $2.58$ 로 바뀐다.`,
         `$b - a = 2 \\times 1.96 \\times \\frac{\\sigma}{\\sqrt{${n}}} = ${num(L95)}$ 에서 $\\frac{\\sigma}{${k}} = ${num(se)}$, 즉 $\\sigma = ${s}$`,
         `$d - c = 2 \\times 2.58 \\times \\frac{\\sigma}{\\sqrt{${n}}} = 2 \\times 2.58 \\times ${num(se)}$`,
         `$= ${num(L99)}$`
@@ -725,7 +727,7 @@ const propCI: SuTemplate<{ ph: number; n: number; kind: number; conf: 95 | 99 }>
     const lo = r4(ph - e)
     const hi = r4(ph + e)
     const lead = `어느 도시의 시민 중에서 $${n}$ 명을 임의추출하여 조사하였더니 $${x}$ 명이 대중교통으로 출퇴근한다고 답하였다. 이 결과를 이용하여 이 도시 시민 전체에서 대중교통으로 출퇴근하는 시민의 비율 $p$ 에 대한 신뢰도 $${conf}\\%$ 의 신뢰구간을 구하면 $a \\le p \\le b$ 이다.`
-    const note = `(단, $Z$ 가 표준정규분포를 따르는 확률변수일 때, $${zs}$ 로 계산한다.)`
+    const note = `(단, 표본의 크기는 충분히 크고, $Z$ 가 표준정규분포를 따르는 확률변수일 때, $${zs}$ 로 계산한다.)`
     const what = [`b`, `b - a`, `a`][kind]
     const ans = [hi, r4(2 * e), lo][kind]
     const oz = conf === 95 ? 2.58 : 1.96
@@ -738,10 +740,10 @@ const propCI: SuTemplate<{ ph: number; n: number; kind: number; conf: 95 | 99 }>
       text: `${lead} $${what}$ 의 값은? ${note}`,
       ...mc(r, decChoice(ans), wr.filter((w) => w > 0).map((w) => decChoice(w)), (j) => decChoice(ans + (j % 2 ? 1 : -1) * Math.ceil(j / 2) * 0.01)),
       solution: lines(
-        `표본비율은 $\\hat{p} = \\frac{${x}}{${n}} = ${num(ph)}$ 이고, 표본의 크기가 충분히 크므로`,
+        `표본비율은 $\\hat{p} = \\frac{${x}}{${n}} = ${num(ph)}$ 이므로`,
         `신뢰구간은 $\\hat{p} - ${z}\\sqrt{\\frac{\\hat{p}(1 - \\hat{p})}{${n}}} \\le p \\le \\hat{p} + ${z}\\sqrt{\\frac{\\hat{p}(1 - \\hat{p})}{${n}}}$ 이다.`,
         `$\\sqrt{\\frac{${num(ph)} \\times ${num(1 - ph)}}{${n}}} = ${num(se)}$ 이므로 $${z} \\times ${num(se)} = ${num(e)}$`,
-        `따라서 $a = ${num(lo)},\\ b = ${num(hi)}$ 이고 $${what} = ${num(ans)}$`
+        kind === 1 ? `따라서 $a = ${num(lo)},\\ b = ${num(hi)}$ 이므로 $b - a = ${num(ans)}$` : `따라서 $${what} = ${num(ph)} ${kind === 0 ? "+" : "-"} ${num(e)} = ${num(ans)}$`
       ),
       score: 3,
     }
@@ -757,7 +759,8 @@ const propCI: SuTemplate<{ ph: number; n: number; kind: number; conf: 95 | 99 }>
   },
 }
 
-const normalTwoCond: SuTemplate<{ m: number; s: number; z1: number; z2: number; z3: number | null; z4: number | null; askMs: boolean }> = {
+const MS_TEX = [`m + \\sigma`, `m`, `\\sigma`, `m + 2\\sigma`, `m\\sigma`]
+const normalTwoCond: SuTemplate<{ m: number; s: number; z1: number; z2: number; z3: number | null; z4: number | null; askMs: boolean; ak: number }> = {
   id: "s3-normal-two-cond",
   subject: S,
   unit: UNIT,
@@ -777,10 +780,14 @@ const normalTwoCond: SuTemplate<{ m: number; s: number; z1: number; z2: number; 
     if (r.chance(0.5)) z3 = null
     else if (z3 >= z4) return null
     if ((z3 !== null && !Number.isInteger(m + z3 * s)) || !Number.isInteger(m + z4 * s)) return null
-    if (askMs && m + s > 999) return null
-    return { m, s, z1, z2, z3, z4, askMs }
+    // 묻는 값: 0 m+σ, 1 m, 2 σ, 3 m+2σ, 4 mσ — 한 조건만으로 바로 나오는 조합(m+zσ 꼴)은 거른다
+    const ak = r.int(0, 4)
+    const val = [m + s, m, s, m + 2 * s, m * s][ak]
+    if (askMs && !isShortOk(val)) return null
+    if (askMs && ((ak === 0 && (z1 === 1 || z2 === 1)) || (ak === 3 && (z1 === 2 || z2 === 2)))) return null
+    return { m, s, z1, z2, z3, z4, askMs, ak }
   },
-  build: ({ m, s, z1, z2, z3, z4, askMs }, r) => {
+  build: ({ m, s, z1, z2, z3, z4, askMs, ak }, r) => {
     const a = m + z1 * s
     const b = m + z2 * s
     const pa = F(z1)
@@ -799,10 +806,10 @@ const normalTwoCond: SuTemplate<{ m: number; s: number; z1: number; z2: number; 
     const figure = tableFor(z1, z2, ...(askMs ? [] : [z3, z4].filter((z): z is number => z !== null)))
     if (askMs) {
       return {
-        text: `${lead} $m + \\sigma$ 의 값을 오른쪽 표준정규분포표를 이용하여 구하시오. (단, $\\sigma > 0$)`,
+        text: `${lead} $${MS_TEX[ak]}$ 의 값을 오른쪽 표준정규분포표를 이용하여 구하시오. (단, $\\sigma > 0$)`,
         figure,
-        ...short(m + s),
-        solution: lines(...base, `따라서 $m + \\sigma = ${m + s}$`),
+        ...short([m + s, m, s, m + 2 * s, m * s][ak]),
+        solution: lines(...base, `따라서 $${MS_TEX[ak]} = ${[`${m} + ${s}`, `${m}`, `${s}`, `${m} + 2 \\times ${s}`, `${m} \\times ${s}`][ak]}${ak === 1 || ak === 2 ? "" : ` = ${[m + s, m, s, m + 2 * s, m * s][ak]}`}$`),
         score: 3,
       }
     }
@@ -819,7 +826,7 @@ const normalTwoCond: SuTemplate<{ m: number; s: number; z1: number; z2: number; 
     }
   },
   // 표 값으로부터 z 를 거꾸로 찾아 m, σ 를 연립으로 다시 구한 뒤 계산
-  verify: ({ m, s, z1, z2, z3, z4, askMs }) => {
+  verify: ({ m, s, z1, z2, z3, z4, askMs, ak }) => {
     const a = m + z1 * s
     const b = m + z2 * s
     const pa = F(z1)
@@ -832,7 +839,7 @@ const normalTwoCond: SuTemplate<{ m: number; s: number; z1: number; z2: number; 
     const zb = -inv(pb) // P(X ≥ b) = pb → P(Z ≤ -zb') = pb
     const sg = (b - a) / (zb - za)
     const mm = a - za * sg
-    if (askMs) return mm + sg
+    if (askMs) return [mm + sg, mm, sg, mm + 2 * sg, mm * sg][ak]
     const zz3 = z3 === null ? null : snap((mm + z3 * sg - mm) / sg)
     const zz4 = snap((m + z4! * s - mm) / sg)
     return zz3 === null ? r4(1 - tableTail(zz4)) : tableBetween(zz3, zz4)
@@ -952,7 +959,7 @@ const mixDist: SuTemplate<{ vs: number[]; cnt: number[]; D: number; im: number; 
     ]
     if (res) {
       return {
-        text: `${text}이 $\\frac{q}{p}$ 일 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
+        text: `${text}을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
         ...short(ans.n + ans.d),
         solution: lines(...sol, `$p = ${ans.d},\\ q = ${ans.n}$ 이므로 $p + q = ${ans.n + ans.d}$`),
         score: 4,
@@ -1207,4 +1214,4 @@ const sampleCond: SuTemplate<{ m: number; h: number; s: number; k: number; dist:
   },
 }
 
-export const STATISTICS: SuTemplate[] = [distUnknown, linearTrans, binomMean, normalStd, binomFind, distEV, normalSym, sampleMean, ciMean, propCI, normalTwoCond, sampleProp, mixDist, normalMax, cardSample, sampleCond]
+export const STATISTICS: SuTemplate[] = [distUnknown, linearTrans, binomMean, normalStd, binomFind, distEV, normalSym, sampleMean, ciMean, propCI, normalTwoCond, sampleProp, mixDist, normalMax, cardSample, sampleCond].map(polish)

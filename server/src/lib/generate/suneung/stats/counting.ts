@@ -1,7 +1,7 @@
 // 확률과 통계 · 경우의 수 (12확통01-01~03): 중복순열, 같은 것이 있는 순열, 중복조합, 이항정리
 import { C, fact, intChoice, ints, mc, Pm, short, signed, term, tuples, isShortOk } from "../kit"
 import type { SuProblem, SuTemplate } from "../types"
-import { countDistinctPerms, polyPowLow, polyMulLow, sol as lines } from "./helpers"
+import { countDistinctPerms, polyPowLow, polyMulLow, sol as lines , polish } from "./helpers"
 
 const UNIT = "경우의 수"
 const H = (n: number, r: number) => (r < 0 ? 0 : r === 0 ? 1 : C(n + r - 1, r))
@@ -225,7 +225,7 @@ const repCombBasic: SuTemplate<{ kind: number; k: number; n: number }> = {
         kind === 0
           ? `$${vs.join(", ")}$ 의 값의 합이 $${n}$ 이 되도록 하는 것은 $${k}$ 개의 문자 $${vs.join(", ")}$ 중에서 중복을 허락하여 $${n}$ 개를 택하는 경우와 같다.`
           : `학생 $${k}$ 명 중에서 중복을 허락하여 $${n}$ 명을 택하고, 택한 횟수만큼 사탕을 주면 되므로 중복조합의 수와 같다.`,
-        `따라서 구하는 경우의 수는 $${nH(k, n)} = ${nC(k + n - 1, n)} = ${nC(k + n - 1, k - 1)} = ${ans}$`
+        `따라서 구하는 경우의 수는 $${nH(k, n)} = ${nC(k + n - 1, n)}${n !== k - 1 ? ` = ${nC(k + n - 1, k - 1)}` : ""} = ${ans}$`
       ),
       score: 2,
     }
@@ -599,11 +599,13 @@ const funcInc: SuTemplate<{ a: number; b: number; strict: boolean }> = {
       solution: strict
         ? lines(
             `$${fChain(a, "<")}$ 이므로 $Y$ 에서 서로 다른 $${a}$ 개의 원소를 택하면 작은 것부터 차례로 대응시키는 방법은 한 가지뿐이다.`,
+            `택한 원소의 모임이 다르면 함수도 다르므로, 함수의 개수는 $Y$ 의 원소 $${b}$ 개 중 $${a}$ 개를 택하는 조합의 수와 같다.`,
             `따라서 함수의 개수는 $${nC(b, a)} = ${ans}$`
           )
         : lines(
             `$${fChain(a, "\\le")}$ 이므로 $Y$ 에서 중복을 허락하여 $${a}$ 개의 원소를 택하면 작은 것부터 차례로 대응시키는 방법은 한 가지뿐이다.`,
-            `따라서 함수의 개수는 중복조합의 수 $${nH(b, a)} = ${nC(a + b - 1, a)} = ${ans}$`
+            `택한 원소의 모임이 다르면 함수도 다르므로, 함수의 개수는 $${b}$ 개에서 중복을 허락하여 $${a}$ 개를 택하는 중복조합의 수와 같다.`,
+            `따라서 함수의 개수는 $${nH(b, a)} = ${nC(a + b - 1, a)} = ${ans}$`
           ),
       score: 3,
     }
@@ -704,7 +706,8 @@ const repCombCond: SuTemplate<{ kind: number; n: number; k: number }> = {
         k === 3
           ? [
               `$z$ 의 값에 따라 나누어 센다. $z = t$ ($0 \\le t \\le ${Math.floor(n / 2)}$) 이면 $x + y = ${n} - 2t$ 이고, 이 방정식의 음이 아닌 정수해는 $${n} - 2t + 1$ 개이다.`,
-              `따라서 $t = 0, 1, \\cdots, ${Math.floor(n / 2)}$ 에 대하여 $${terms.join(" + ")}$`,
+              `$t = ${range(0, Math.floor(n / 2)).join(", ")}$ 일 때 해의 개수는 각각 ${terms.map((x) => `$${x}$`).join(", ")} 이다.`,
+              `따라서 구하는 개수는 $${terms.join(" + ")}$`,
               `$= ${ans}$`,
             ]
           : [
@@ -1051,7 +1054,7 @@ const pathAvoid: SuTemplate<{ a: number; b: number; P: [number, number]; Q: [num
       ? `두 점을 모두 지나는 경로는 $\\mathrm{O} \\to ${ptT(L)} \\to ${ptT(R)} \\to (${a}, ${b})$ 순서로 가야 하므로 $${pathC(L[0], L[1])} \\times ${pathC(R[0] - L[0], R[1] - L[1])} \\times ${pathC(a - R[0], b - R[1])} = ${vPQ}$`
       : `두 점 중 한 점이 다른 점의 오른쪽 아래에 있으므로 두 점을 모두 지나는 최단 경로는 없다.`
     if (kind === 0) {
-      text = `${lead} 두 점 $\\mathrm{P}${ptT(P)}$, $\\mathrm{Q}${ptT(Q)}$${eul(Q)} 모두 지나지 않는 경로의 수를 구하시오.`
+      text = `${lead} 점 $\\mathrm{P}${ptT(P)}$ 도 지나지 않고 점 $\\mathrm{Q}${ptT(Q)}$ 도 지나지 않는 경로의 수를 구하시오.`
       sol = [
         `전체 경로의 수는 $\\frac{${a + b}!}{${a}!\\,${b}!} = ${total}$ 이다.`,
         `$\\mathrm{P}$ 를 지나는 경로: $${pathC(P[0], P[1])} \\times ${pathC(a - P[0], b - P[1])} = ${vP}$, $\\mathrm{Q}$ 를 지나는 경로: $${pathC(Q[0], Q[1])} \\times ${pathC(a - Q[0], b - Q[1])} = ${vQ}$`,
@@ -1126,7 +1129,7 @@ const hockey: SuTemplate<{ kind: number; a: number; b: number; k: number }> = {
       return { kind, a: 0, b: n, k: 1 }
     }
     const k = r.int(2, 4)
-    const a = kind === 0 ? r.int(Math.max(1, k - 1), 6) : k
+    const a = kind === 0 ? r.int(k + 1, 7) : k
     const b = r.int(a + 2, 12)
     const v = hockeyValue(kind, a, b, k)
     if (!isShortOk(v) || v < 5) return null
@@ -1141,7 +1144,8 @@ const hockey: SuTemplate<{ kind: number; a: number; b: number; k: number }> = {
         ...short(ans),
         solution: lines(
           `$1 \\le k \\le ${n}$ 일 때 $k \\times ${nC(n, "k")} = k \\times \\frac{${n}!}{k!\\,(${n} - k)!} = ${n} \\times \\frac{${n - 1}!}{(k - 1)!\\,(${n} - k)!} = ${n} \\times ${nC(n - 1, "k - 1")}$`,
-          `따라서 $\\sum_{k=1}^{${n}} k \\times ${nC(n, "k")} = ${n} \\sum_{k=1}^{${n}} ${nC(n - 1, "k - 1")} = ${n} \\times 2^{${n - 1}}$`,
+          `따라서 $\\sum_{k=1}^{${n}} k \\times ${nC(n, "k")} = ${n} \\sum_{k=1}^{${n}} ${nC(n - 1, "k - 1")} = ${n} \\sum_{j=0}^{${n - 1}} ${nC(n - 1, "j")}$ 이다.`,
+          `이항계수의 합 $\\sum_{j=0}^{${n - 1}} ${nC(n - 1, "j")} = 2^{${n - 1}}$ 을 이용하면 구하는 값은 $${n} \\times 2^{${n - 1}}$`,
           `$= ${n} \\times ${2 ** (n - 1)} = ${ans}$`
         ),
         score: 4,
@@ -1210,4 +1214,4 @@ export const COUNTING: SuTemplate[] = [
   oddCount,
   pathAvoid,
   hockey,
-]
+].map(polish)

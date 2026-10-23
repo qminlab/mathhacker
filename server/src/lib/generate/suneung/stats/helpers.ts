@@ -1,7 +1,7 @@
 // 확률과 통계 공용 도구
 import type { Rng } from "../../types"
 import { mc, NORMAL_TABLE, q, Q, qChoice, short } from "../kit"
-import type { Choice } from "../types"
+import type { Choice, SuTemplate } from "../types"
 
 /** 기약분수 p/q 일 때 p+q (단답형) */
 export const pqShort = (x: Q) => short(x.n + x.d)
@@ -137,7 +137,7 @@ export function polyPowLow(a: number[], n: number) {
 export function askProb(r: Rng, stem: string, ans: Q, wrongs: Q[], useShort: boolean) {
   if (useShort && ans.n + ans.d <= 999 && ans.d > 1) {
     return {
-      text: `${stem}이 $\\frac{q}{p}$ 일 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
+      text: `${stem}을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
       ...short(ans.n + ans.d),
       last: `$p = ${ans.d},\\ q = ${ans.n}$ 이므로 $p + q = ${ans.n + ans.d}$`,
     }
@@ -190,10 +190,77 @@ export function ncdf(z: number) {
   return z >= 0 ? 0.5 * (1 + y) : 0.5 * (1 - y)
 }
 
-/** 해설 줄 묶기: 수식으로 끝나는 줄 다음 줄이 수식으로 시작하면 마침표를 찍어 구분한다 */
+/**
+ * 해설 줄 묶기
+ * - 다음 줄이 "$= …$" 로 이어지면 앞 줄의 수식에 붙여 한 줄로 만든다
+ * - 수식으로 끝난 줄 다음 줄이 수식으로 시작하면 마침표로 구분한다
+ */
 export const sol = (...ls: (string | false | null | undefined)[]) => {
   const xs = ls.filter(Boolean) as string[]
-  return xs.map((l, i) => (i < xs.length - 1 && /\$\s*$/.test(l) && /^\s*\$/.test(xs[i + 1]) ? `${l}.` : l)).join("\n")
+  const out: string[] = []
+  for (const l of xs) {
+    const prev = out[out.length - 1]
+    if (prev !== undefined && /^\s*\$\s*=/.test(l) && /\$\s*$/.test(prev)) {
+      out[out.length - 1] = `${prev.replace(/\$\s*$/, "")} ${l.replace(/^\s*\$\s*/, "")}`
+      continue
+    }
+    if (prev !== undefined && /\$\s*$/.test(prev) && /^\s*\$/.test(l)) out[out.length - 1] = `${prev}.`
+    out.push(l)
+  }
+  return out.join("\n")
+}
+
+/** 숫자를 읽었을 때 마지막 소리: 받침 여부, ㄹ 받침 여부 */
+export function numSound(num: string) {
+  const d = num.replace(/\D/g, "")
+  if (!d || /^0+$/.test(d)) return { batchim: true, rieul: false }
+  const nz = d.replace(/0+$/, "")
+  if (nz.length < d.length) return { batchim: true, rieul: false }
+  const last = nz[nz.length - 1]
+  return { batchim: "013678".includes(last), rieul: "178".includes(last) }
+}
+/** 숫자 뒤 조사 고르기: josa(9, "을", "를") → "를" */
+export function josa(n: number | string, withB: string, without: string) {
+  return numSound(String(n)).batchim ? withB : without
+}
+/** 숫자 뒤 으로/로 */
+export const euro = (n: number | string) => {
+  const { batchim, rieul } = numSound(String(n))
+  return batchim && !rieul ? "으로" : "로"
+}
+const JOSA_PAIRS: [string, string][] = [["을", "를"], ["은", "는"], ["이었", "였"], ["이", "가"], ["과", "와"]]
+/** 숫자로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다 */
+export function fixJosa(s: string) {
+  return s.replace(/(\d+(?:\.\d+)?)\$(\s?)(으로|로|이었|였|을|를|은|는|이|가|과|와)(?=[\s,.)을다고]|$)/g, (all, n: string, sp: string, j: string) => {
+    if (j === "으로" || j === "로") return `${n}$${sp}${euro(n)}`
+    for (const [w, wo] of JOSA_PAIRS) if (j === w || j === wo) return `${n}$${sp}${josa(n, w, wo)}`
+    return all
+  })
+}
+
+/** 약분 전후가 다를 때만 "= 약분값" 을 붙인 분수 */
+export function fracEq(n: number, d: number) {
+  const x = q(n, d)
+  return x.n === n && x.d === d ? x.tex() : `\\frac{${n}}{${d}} = ${x.tex()}`
+}
+/** 두 확률의 비 x/y 를 겹분수 없이: 공통분모를 곱해 정수비로 쓴 뒤 약분 */
+export function ratioTex(x: Q, y: Q) {
+  const L = (x.d * y.d) / gcdQ(x.d, y.d)
+  const a = x.mul(L).n
+  const b = y.mul(L).n
+  return fracEq(a, b)
+}
+const gcdQ = (a: number, b: number): number => (b ? gcdQ(b, a % b) : Math.abs(a))
+
+/** 템플릿 문장·해설의 숫자 뒤 조사를 마지막에 한 번 더 맞춘다 */
+export function polish(t: SuTemplate<any>): SuTemplate<any> {
+  return {
+    ...t,
+    build: (p, r) => {
+      const x = t.build(p, r)
+      return { ...x, text: fixJosa(x.text), solution: fixJosa(x.solution) }
+    },
+  }
 }
 
 /** 실수를 가까운 분수로 (연분수, 분모 ≤ maxD) */

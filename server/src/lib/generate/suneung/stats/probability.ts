@@ -1,7 +1,7 @@
 // 확률과 통계 · 확률 (12확통02-01~06)
 import { C, combos, perms, q, Q, roots, tuples } from "../kit"
 import type { SuTemplate } from "../types"
-import { askProb, fracMc, pqOrValue, sol as lines, tableFigure } from "./helpers"
+import { askProb, fracEq, fracMc, pqOrValue, ratioTex, sol as lines, tableFigure, polish } from "./helpers"
 
 const UNIT = "확률"
 const S = "확률과 통계" as const
@@ -55,7 +55,7 @@ const diceBasic: SuTemplate<{ ev: DiceEv; twice: boolean }> = {
       solution: lines(
         `모든 경우의 수는 $6 \\times 6 = 36$ 이다.`,
         show ? `조건을 만족시키는 순서쌍은 $${show}$ 로 $${fav.length}$ 가지이다.` : `조건을 만족시키는 순서쌍을 첫 번째 눈의 수별로 세면 ${DICE.map((a) => `$${DICE.filter((b) => f(a, b)).length}$`).join(", ")} 가지이므로 모두 $${fav.length}$ 가지이다.`,
-        `따라서 구하는 확률은 $\\frac{${fav.length}}{36} = ${ans.tex()}$`
+        `따라서 구하는 확률은 $${fracEq(fav.length, 36)}$`
       ),
       score: 2,
     }
@@ -96,7 +96,7 @@ const addRule: SuTemplate<{ D: number; a: number; b: number; c: number; kind: nu
     if (kind === 0) {
       ans = PU
       text = `두 사건 $A, B$ 에 대하여 $P(A) = ${PA.tex()},\\ P(B) = ${PB.tex()},\\ P(A \\cap B) = ${PAB.tex()}$ 일 때, $P(A \\cup B)$ 의 값은?`
-      sol = [`확률의 덧셈정리에 의하여 $P(A \\cup B) = P(A) + P(B) - P(A \\cap B)$`, `$= ${PA.tex()} + ${PB.tex()} - ${PAB.tex()} = ${ans.tex()}$`]
+      sol = [`확률의 덧셈정리 $P(A \\cup B) = P(A) + P(B) - P(A \\cap B)$ 를 이용한다.`, `$P(A \\cup B) = ${PA.tex()} + ${PB.tex()} - ${PAB.tex()} = ${ans.tex()}$`]
       wr = [PA.add(PB), PU.sub(PAB), q(1).sub(PU), PA.add(PB).sub(PAB.mul(2))]
     } else if (kind === 1) {
       ans = PAB
@@ -106,7 +106,7 @@ const addRule: SuTemplate<{ D: number; a: number; b: number; c: number; kind: nu
     } else if (kind === 2) {
       ans = PB
       const none = q(1).sub(PU)
-      text = `두 사건 $A, B$ 에 대하여 $P(A) = ${PA.tex()},\\ P(A \\cap B) = ${PAB.tex()},\\ P(A^{C} \\cap B^{C}) = ${none.tex()}$ 일 때, $P(B)$ 의 값은? (단, $A^{C}$ 은 $A$ 의 여사건이다.)`
+      text = `두 사건 $A, B$ 에 대하여 $P(A) = ${PA.tex()},\\ P(A \\cap B) = ${PAB.tex()},\\ P(A^{C} \\cap B^{C}) = ${none.tex()}$ 일 때, $P(B)$ 의 값은? (단, $A^{C}$, $B^{C}$ 은 각각 $A$, $B$ 의 여사건이다.)`
       sol = [
         `$A^{C} \\cap B^{C} = (A \\cup B)^{C}$ 이므로 $P(A \\cup B) = 1 - ${none.tex()} = ${PU.tex()}$`,
         `덧셈정리에서 $P(B) = P(A \\cup B) - P(A) + P(A \\cap B)$`,
@@ -222,7 +222,7 @@ const cardCond: SuTemplate<{ N: number; A: NumSet; B: NumSet }> = {
       solution: lines(
         `꺼낸 수가 ${numSetText(A)}${josaSet(A)}인 사건을 $A$, ${numSetText(B)}${josaSet(B)}인 사건을 $B$ 라 하자.`,
         `$A = \\{${inA.join(", ")}\\}$ 이고, 이 중 $B$ 에도 속하는 것은 $${inAB.join(", ")}$ 이다.`,
-        `따라서 $P(B \\mid A) = \\frac{n(A \\cap B)}{n(A)} = \\frac{${inAB.length}}{${inA.length}} = ${ans.tex()}$`
+        `따라서 $P(B \\mid A) = \\frac{n(A \\cap B)}{n(A)} = ${fracEq(inAB.length, inA.length)}$`
       ),
       score: 2,
     }
@@ -272,7 +272,7 @@ const indepBasic: SuTemplate<{ ia: number; ib: number; kind: number }> = {
       sol = [`$A$ 와 $B$ 가 서로 독립이면 $A^{C}$ 와 $B^{C}$ 도 서로 독립이다.`, `$P(A^{C} \\cap B^{C}) = \\{1 - P(A)\\}\\{1 - P(B)\\} = ${q(1).sub(a).tex()} \\times ${q(1).sub(b).tex()} = ${ans.tex()}$`]
     }
     return {
-      text: `두 사건 $A, B$ 가 서로 독립이고 $P(A) = ${a.tex()},\\ P(B) = ${b.tex()}$ 일 때, $${ask}$ 의 값은? (단, $A^{C}$ 은 $A$ 의 여사건이다.)`,
+      text: `두 사건 $A, B$ 가 서로 독립이고 $P(A) = ${a.tex()},\\ P(B) = ${b.tex()}$ 일 때, $${ask}$ 의 값은?${["", " (단, $B^{C}$ 은 $B$ 의 여사건이다.)", " (단, $A^{C}$, $B^{C}$ 은 각각 $A$, $B$ 의 여사건이다.)"][kind]}`,
       ...fracMc(r, ans, [a.add(b), ab, q(1).sub(ab), a.sub(ab).add(q(1, 12)), q(1).sub(a.add(b).sub(ab)), a.mul(b.sub(q(0))).add(b.mul(q(1).sub(a)))]),
       solution: lines(...sol),
       score: 2,
@@ -336,7 +336,7 @@ const drawSeq: SuTemplate<{ red: number; white: number; kind: number }> = {
     } else if (kind === 2) {
       ans = rw
       ask = `첫 번째에 빨간 공, 두 번째에 흰 공을 꺼낼 확률은? ${tail}`
-      sol = [`첫 번째에 빨간 공을 꺼낼 확률은 $\\frac{${red}}{${n}}$, 그 후 남은 $${n - 1}$ 개 중 흰 공은 $${white}$ 개이다.`, `곱셈정리에 의하여 $\\frac{${red}}{${n}} \\times \\frac{${white}}{${n - 1}} = ${ans.tex()}$`]
+      sol = [`첫 번째에 빨간 공을 꺼낼 확률은 $\\frac{${red}}{${n}}$, 그 후 남은 $${n - 1}$ 개 중 흰 공은 $${white}$ 개이다.`, `따라서 첫 번째에 빨간 공을 꺼냈을 때 두 번째에 흰 공을 꺼낼 조건부확률은 $${fracEq(white, n - 1)}$ 이다.`, `곱셈정리에 의하여 $\\frac{${red}}{${n}} \\times \\frac{${white}}{${n - 1}} = ${ans.tex()}$`]
       wrongs = [q(red * white, n * n), rw.add(wr), q(red * (white - 1), n * (n - 1)), q(white, n - 1), q(red, n)]
     } else {
       ans = rw.add(wr)
@@ -403,7 +403,7 @@ const binomTrial: SuTemplate<{ ti: number; n: number; k: number; kind: number }>
     if (kind === 0) {
       ans = pk(k)
       ask = `${t.name}이 나오는 횟수가 $${k}$ 일 확률`
-      sol = [one, `독립시행의 확률에 의하여 구하는 확률은 $${term(k)} = ${ans.tex()}$`]
+      sol = [one, `$${n}$ 번 중 $${k}$ 번 나오는 경우는 $${nC(n, k)}$ 가지이고, 각 경우의 확률은 $\\left(${p.tex()}\\right)^{${k}} \\left(${qq.tex()}\\right)^{${n - k}}$ 이다.`, `독립시행의 확률에 의하여 구하는 확률은 $${term(k)} = ${ans.tex()}$`]
     } else if (kind === 1) {
       ans = range(k, n).reduce((s, j) => s.add(pk(j)), q(0))
       ask = `${t.name}이 $${k}$ 번 이상 나올 확률`
@@ -472,7 +472,7 @@ const tableCond: SuTemplate<{ ci: number; t: number[]; byRow: boolean; ri: numbe
     const rowW = `${ctx.rows[ri]}`
     const colW = ctx.colWord(ctx.cols[cj])
     const given = byRow ? `${rowW}일 때, 이 ${ctx.who}이 ${colW}일` : `${colW}일 때, 이 ${ctx.who}이 ${rowW}일`
-    const text = `${ctx.intro(N)} 이 $${N}$ 명 중에서 임의로 선택한 한 ${ctx.who}이 ${given} 확률이 $\\frac{q}{p}$ 일 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`
+    const text = `${ctx.intro(N)} 이 $${N}$ 명 중에서 임의로 선택한 한 ${ctx.who}이 ${given} 확률을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`
     return {
       text,
       figure,
@@ -480,7 +480,7 @@ const tableCond: SuTemplate<{ ci: number; t: number[]; byRow: boolean; ri: numbe
       value: ans.n + ans.d,
       solution: lines(
         byRow ? `선택한 ${ctx.who}이 ${rowW}인 사건을 $E$, ${colW}인 사건을 $F$ 라 하면 구하는 확률은 $P(F \\mid E)$ 이다.` : `선택한 ${ctx.who}이 ${colW}인 사건을 $E$, ${rowW}인 사건을 $F$ 라 하면 구하는 확률은 $P(F \\mid E)$ 이다.`,
-        `표에서 $n(E) = ${den}$, $n(E \\cap F) = ${num}$ 이므로 $P(F \\mid E) = \\frac{${num}}{${den}} = ${ans.tex()}$`,
+        `표에서 $n(E) = ${den}$, $n(E \\cap F) = ${num}$ 이므로 $P(F \\mid E) = ${fracEq(num, den)}$`,
         `$p = ${ans.d},\\ q = ${ans.n}$ 이므로 $p + q = ${ans.n + ans.d}$`
       ),
       score: 3,
@@ -543,7 +543,7 @@ const indepFind: SuTemplate<{ ia: number; ib: number; kind: number }> = {
       ]
     }
     return {
-      text: `두 사건 $A, B$ 가 서로 독립이고 $P(A) = ${a.tex()},\\ ${given}$ 일 때, $P(B)$ 의 값은? (단, $A^{C}$ 은 $A$ 의 여사건이다.)`,
+      text: `두 사건 $A, B$ 가 서로 독립이고 $P(A) = ${a.tex()},\\ ${given}$ 일 때, $P(B)$ 의 값은?${["", " (단, $B^{C}$ 은 $B$ 의 여사건이다.)", " (단, $A^{C}$ 은 $A$ 의 여사건이다.)"][kind]}`,
       ...fracMc(r, b, [q(1).sub(b), a.mul(b), b.mul(a).add(q(1, 10)), b.div(q(2)), a, b.add(q(1, b.d * 2))]),
       solution: lines(...sol),
       score: 3,
@@ -672,10 +672,10 @@ const twoBags: SuTemplate<{ k: number; A: [number, number]; B: [number, number];
     const ans = (askA ? jA : jB).div(jA.add(jB))
     const choose = coin
       ? `한 개의 동전을 던져 앞면이 나오면 주머니 A 에서, 뒷면이 나오면 주머니 B 에서`
-      : `한 개의 주사위를 던져 나온 눈의 수가 $${k}$ 이하이면 주머니 A 에서, $${k + 1}$ 이상이면 주머니 B 에서`
+      : `한 개의 주사위를 던져 ${k === 1 ? "$1$ 의 눈이 나오면" : `나온 눈의 수가 $${k}$ 이하이면`} 주머니 A 에서, ${k === 5 ? "$6$ 의 눈이 나오면" : `$${k + 1}$ 이상의 눈이 나오면`} 주머니 B 에서`
     const act = draw2 ? `임의로 $2$ 개의 공을 동시에 꺼낸다.` : `임의로 한 개의 공을 꺼낸다.`
     const cond = draw2 ? `꺼낸 공이 모두 흰 공일 때` : `꺼낸 공이 흰 공일 때`
-    const text = `주머니 A 에는 검은 공 $${A[0]}$ 개와 흰 공 $${A[1]}$ 개, 주머니 B 에는 검은 공 $${B[0]}$ 개와 흰 공 $${B[1]}$ 개가 들어 있다. ${choose} ${act} 이 시행에서 ${cond}, 이 공이 주머니 ${askA ? "A" : "B"} 에서 꺼낸 것일 확률이 $\\frac{q}{p}$ 일 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`
+    const text = `주머니 A 에는 검은 공 $${A[0]}$ 개와 흰 공 $${A[1]}$ 개, 주머니 B 에는 검은 공 $${B[0]}$ 개와 흰 공 $${B[1]}$ 개가 들어 있다. ${choose} ${act} 이 시행에서 ${cond}, 꺼낸 공이 주머니 ${askA ? "A" : "B"} 의 공일 확률을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`
     const wTex = (bag: [number, number], n: number) => (draw2 ? `\\frac{${nC(bag[1], 2)}}{${nC(n, 2)}}` : `\\frac{${bag[1]}}{${n}}`)
     return {
       text,
@@ -684,7 +684,7 @@ const twoBags: SuTemplate<{ k: number; A: [number, number]; B: [number, number];
         `${draw2 ? "모두 흰 공을 꺼내는" : "흰 공을 꺼내는"} 사건을 $E$ 라 하자.`,
         `주머니 A 를 택하고 $E$ 가 일어날 확률: $${pA.tex()} \\times ${wTex(A, nA)} = ${jA.tex()}$`,
         `주머니 B 를 택하고 $E$ 가 일어날 확률: $${pB.tex()} \\times ${wTex(B, nB)} = ${jB.tex()}$`,
-        `$P(E) = ${jA.tex()} + ${jB.tex()} = ${jA.add(jB).tex()}$ 이므로 구하는 확률은 $\\frac{${(askA ? jA : jB).tex()}}{${jA.add(jB).tex()}} = ${ans.tex()}$`,
+        `$P(E) = ${jA.tex()} + ${jB.tex()} = ${jA.add(jB).tex()}$ 이므로 구하는 확률은 $${ratioTex((askA ? jA : jB), jA.add(jB))}$`,
         `$p = ${ans.d},\\ q = ${ans.n}$ 이므로 $p + q = ${ans.n + ans.d}$`
       ),
       score: 4,
@@ -753,14 +753,14 @@ const diceCond: SuTemplate<{ E: DEv; F: DEv }> = {
     const ans = q(ef.length, eList.length)
     const listTex = (xs: [number, number][]) => xs.map(([a, b]) => `(${a}, ${b})`).join(", ")
     return {
-      text: `한 개의 주사위를 두 번 던져 나온 눈의 수를 차례로 $a, b$ 라 하자. ${condEvText(E)}${condEvText(E).endsWith("$") ? " " : ""}일 때, ${targetText(F)}${targetText(F).endsWith("$") ? " " : ""}일 확률이 $\\frac{q}{p}$ 일 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
+      text: `한 개의 주사위를 두 번 던져 나온 눈의 수를 차례로 $a, b$ 라 하자. ${condEvText(E)}${condEvText(E).endsWith("$") ? " " : ""}일 때, ${targetText(F)}${targetText(F).endsWith("$") ? " " : ""}일 확률을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
       answer: String(ans.n + ans.d),
       value: ans.n + ans.d,
       solution: lines(
         `${condEvText(E)}${condEvText(E).endsWith("$") ? " " : ""}인 사건을 $E$, ${targetText(F)}${targetText(F).endsWith("$") ? " " : ""}인 사건을 $F$ 라 하면 구하는 확률은 $P(F \\mid E) = \\frac{n(E \\cap F)}{n(E)}$ 이다.`,
         eList.length <= 15 ? `$E$ 의 원소는 $${listTex(eList)}$ 로 $${eList.length}$ 개이다.` : `$E$ 의 원소를 $a$ 의 값별로 세면 ${DICE.map((a) => `$${DICE.filter((b) => ev(a, b)).length}$`).join(", ")} 개이므로 $n(E) = ${eList.length}$ 이다.`,
         ef.length <= 15 ? `이 중 $F$ 에도 속하는 것은 $${listTex(ef)}$ 로 $${ef.length}$ 개이다.` : `이 중 $F$ 에도 속하는 것을 $a$ 의 값별로 세면 ${DICE.map((a) => `$${DICE.filter((b) => ev(a, b) && tg(a, b)).length}$`).join(", ")} 개이므로 $n(E \\cap F) = ${ef.length}$ 이다.`,
-        `따라서 $P(F \\mid E) = \\frac{${ef.length}}{${eList.length}} = ${ans.tex()}$ 이고, $p + q = ${ans.d} + ${ans.n} = ${ans.n + ans.d}$`
+        `따라서 $P(F \\mid E) = ${fracEq(ef.length, eList.length)}$ 이고, $p + q = ${ans.d} + ${ans.n} = ${ans.n + ans.d}$`
       ),
       score: 3,
     }
@@ -951,18 +951,24 @@ const polya: SuTemplate<{ red: number; white: number; rule: Rule; same: boolean;
     const ev = (rr: number, ww: number) => (same ? q(C(rr, 2) + C(ww, 2), C(rr + ww, 2)) : q(C(rr, 2), C(rr + ww, 2)))
     const jR = q(red, n).mul(ev(rR, wR))
     const jW = q(white, n).mul(ev(rW, wW))
-    const evTex = (rr: number, ww: number) => (same ? `\\frac{${nC(rr, 2)} + ${nC(ww, 2)}}{${nC(rr + ww, 2)}}` : `\\frac{${nC(rr, 2)}}{${nC(rr + ww, 2)}}`)
+    const c2 = (x: number) => (x >= 2 ? nC(x, 2) : "0")
+    const evTex = (rr: number, ww: number) => (same ? `\\frac{${c2(rr)} + ${c2(ww)}}{${nC(rr + ww, 2)}}` : `\\frac{${c2(rr)}}{${nC(rr + ww, 2)}}`)
+    const ones = [
+      ...[rR, rW].filter((x) => x < 2).map((x) => `빨간 공이 $${x}$ 개뿐인 경우에는 빨간 공 $2$ 개를 꺼내는 경우가 없으므로 그 경우의 수를 $0$ 으로 센다.`),
+      ...(same ? [wR, wW].filter((x) => x < 2).map((x) => `흰 공이 $${x}$ 개뿐인 경우에는 흰 공 $2$ 개를 꺼내는 경우가 없으므로 그 경우의 수를 $0$ 으로 센다.`) : []),
+    ]
     const cond = same ? "두 번째 시행에서 꺼낸 $2$ 개의 공의 색이 서로 같았을 때" : "두 번째 시행에서 꺼낸 $2$ 개의 공이 모두 빨간 공이었을 때"
     return {
-      text: `주머니에 빨간 공 $${red}$ 개와 흰 공 $${white}$ 개가 들어 있다. 이 주머니를 사용하여 다음 시행을 한다.\n첫 번째 시행: 주머니에서 임의로 한 개의 공을 꺼내어 색을 확인한 후, ${ruleText(rule)}\n두 번째 시행: 주머니에서 임의로 $2$ 개의 공을 동시에 꺼낸다.\n${cond}, 첫 번째 시행에서 꺼낸 공이 ${askRed ? "빨간 공" : "흰 공"}이었을 확률이 $\\frac{q}{p}$ 일 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
+      text: `주머니에 빨간 공 $${red}$ 개와 흰 공 $${white}$ 개가 들어 있다. 이 주머니를 사용하여 다음 시행을 한다.\n첫 번째 시행: 주머니에서 임의로 한 개의 공을 꺼내어 색을 확인한 후, ${ruleText(rule)}\n두 번째 시행: 주머니에서 임의로 $2$ 개의 공을 동시에 꺼낸다.\n${cond}, 첫 번째 시행에서 꺼낸 공이 ${askRed ? "빨간 공" : "흰 공"}이었을 확률을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
       answer: String(ans.n + ans.d),
       value: ans.n + ans.d,
       solution: lines(
         `첫 번째 시행 후 주머니의 공은 빨간 공이 나온 경우 빨간 공 $${rR}$ 개, 흰 공 $${wR}$ 개이고, 흰 공이 나온 경우 빨간 공 $${rW}$ 개, 흰 공 $${wW}$ 개이다.`,
+        ...[...new Set(ones)],
         `두 번째 시행의 사건을 $E$ 라 하면`,
         `(i) 첫 번째에 빨간 공: $\\frac{${red}}{${n}} \\times ${evTex(rR, wR)} = ${jR.tex()}$`,
         `(ii) 첫 번째에 흰 공: $\\frac{${white}}{${n}} \\times ${evTex(rW, wW)} = ${jW.tex()}$`,
-        `$P(E) = ${jR.tex()} + ${jW.tex()} = ${jR.add(jW).tex()}$ 이므로 구하는 확률은 $\\frac{${(askRed ? jR : jW).tex()}}{${jR.add(jW).tex()}} = ${ans.tex()}$`,
+        `$P(E) = ${jR.tex()} + ${jW.tex()} = ${jR.add(jW).tex()}$ 이므로 구하는 확률은 $${ratioTex((askRed ? jR : jW), jR.add(jW))}$`,
         `$p = ${ans.d},\\ q = ${ans.n}$ 이므로 $p + q = ${ans.n + ans.d}$`
       ),
       score: 4,
@@ -1033,7 +1039,7 @@ const walkCond: SuTemplate<{ ti: number; n: number; a: number; b: number; c: num
     const fail = t.die ? `그 외의 눈이 나오면` : `뒷면이 나오면`
     const succ = t.die ? t.name : "앞면"
     return {
-      text: `수직선 위의 원점에 점 $\\mathrm{P}$ 가 있다. ${act} 점 $\\mathrm{P}$ 를 양의 방향으로 $${a}$ 만큼, ${fail} 음의 방향으로 $${b}$ 만큼 이동시키는 시행을 한다. 이 시행을 $${n}$ 번 반복한 후 점 $\\mathrm{P}$ 의 좌표가 $${c}$ 이었을 때, $${m}$ 번째 시행 후 점 $\\mathrm{P}$ 의 좌표가 $${d}$ 이었을 확률이 $\\frac{q}{p}$ 일 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
+      text: `수직선 위의 원점에 점 $\\mathrm{P}$ 가 있다. ${act} 점 $\\mathrm{P}$ 를 양의 방향으로 $${a}$ 만큼, ${fail} 음의 방향으로 $${b}$ 만큼 이동시키는 시행을 한다. 이 시행을 $${n}$ 번 반복한 후 점 $\\mathrm{P}$ 의 좌표가 $${c}$ 이었을 때, $${m}$ 번째 시행 후 점 $\\mathrm{P}$ 의 좌표가 $${d}$ 이었을 확률을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
       answer: String(ans.n + ans.d),
       value: ans.n + ans.d,
       solution: lines(
@@ -1041,7 +1047,7 @@ const walkCond: SuTemplate<{ ti: number; n: number; a: number; b: number; c: num
         `$${n}$ 번 후 좌표가 $${c}$ 이려면 ${succ}이 $${s}$ 번, $${m}$ 번 후 좌표가 $${d}$ 이려면 처음 $${m}$ 번 중 ${succ}이 $${s1}$ 번 나와야 한다.`,
         `${succ}이 $${s}$ 번 나오는 결과는 어느 것이나 확률이 $\\left(${p.tex()}\\right)^{${s}}\\left(${q(1).sub(p).tex()}\\right)^{${n - s}}$ 로 같으므로, 조건부확률은 경우의 수의 비로 구할 수 있다.`,
         `$${n}$ 번 중 ${succ}이 나오는 $${s}$ 번을 정하는 경우는 $${nC(n, s)} = ${C(n, s)}$ 가지이고, 그중 처음 $${m}$ 번에 $${s1}$ 번, 나머지 $${n - m}$ 번에 $${s - s1}$ 번인 경우는 $${nC(m, s1)} \\times ${nC(n - m, s - s1)} = ${C(m, s1) * C(n - m, s - s1)}$ 가지이다.`,
-        `따라서 구하는 확률은 $\\frac{${C(m, s1) * C(n - m, s - s1)}}{${C(n, s)}} = ${ans.tex()}$ 이고, $p + q = ${ans.n + ans.d}$`
+        `따라서 구하는 확률은 $${fracEq(C(m, s1) * C(n - m, s - s1), C(n, s))}$ 이고, $p + q = ${ans.n + ans.d}$`
       ),
       score: 4,
     }
@@ -1101,7 +1107,7 @@ const sameColorFind: SuTemplate<{ a: number; n: number }> = {
     const ans = q(C(a, 2), C(a, 2) + C(n, 2))
     const quad = `${A2 / g === 1 ? "" : A2 / g}x^{2} - ${-A1 / g}x + ${A0 / g}`
     return {
-      text: `흰 공 $${a}$ 개와 검은 공 $x$ 개가 들어 있는 주머니에서 임의로 $2$ 개의 공을 동시에 꺼낼 때, 꺼낸 두 공의 색이 서로 같을 확률이 $${P.tex()}$ 이다. 이 주머니에서 임의로 $2$ 개의 공을 동시에 꺼낼 때, 꺼낸 두 공의 색이 서로 같았을 때 두 공이 모두 흰 공일 확률이 $\\frac{q}{p}$ 일 때, $p + q$ 의 값을 구하시오. (단, $x > ${a}$ 이고, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
+      text: `흰 공 $${a}$ 개와 검은 공 $x$ 개가 들어 있는 주머니에서 임의로 $2$ 개의 공을 동시에 꺼낼 때, 꺼낸 두 공의 색이 서로 같을 확률이 $${P.tex()}$ 이다. 이 주머니에서 임의로 $2$ 개의 공을 동시에 꺼낼 때, 꺼낸 두 공의 색이 서로 같았을 때 두 공이 모두 흰 공일 확률을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $x > ${a}$ 이고, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
       answer: String(ans.n + ans.d),
       value: ans.n + ans.d,
       solution: lines(
@@ -1109,7 +1115,7 @@ const sameColorFind: SuTemplate<{ a: number; n: number }> = {
         `분모를 없애고 정리하면 $${quad} = 0$`,
         `두 근의 곱이 $${a * (a - 1)}$ 이고 한 근이 $x = ${n}$ 이므로 다른 근은 $${other.tex()}$ 이다. $x > ${a}$ 이므로 $x = ${n}$`,
         `두 공의 색이 같은 경우의 수는 $${nC(a, 2)} + ${nC(n, 2)} = ${C(a, 2)} + ${C(n, 2)} = ${C(a, 2) + C(n, 2)}$ 이고, 이 중 모두 흰 공인 경우는 $${C(a, 2)}$ 이다.`,
-        `따라서 구하는 확률은 $\\frac{${C(a, 2)}}{${C(a, 2) + C(n, 2)}} = ${ans.tex()}$ 이고, $p + q = ${ans.n + ans.d}$`
+        `따라서 구하는 확률은 $${fracEq(C(a, 2), C(a, 2) + C(n, 2))}$ 이고, $p + q = ${ans.n + ans.d}$`
       ),
       score: 4,
     }
@@ -1153,7 +1159,7 @@ const match: SuTemplate<{ ip: number; w: number; kind: number; L: number }> = {
   count: 37,
   params: (r) => {
     const ip = r.int(0, PS.length - 1)
-    const w = r.int(2, 3)
+    const w = r.int(3, 4)
     const kind = r.int(0, 2)
     const L = r.int(w + 1, 2 * w - 1)
     const v = matchAns(PS[ip], w, kind, L)
@@ -1179,7 +1185,7 @@ const match: SuTemplate<{ ip: number; w: number; kind: number; L: number }> = {
         `A 가 $l$ 번째 경기에서 우승하려면 처음 $l - 1$ 번 중 $${w - 1}$ 번 이기고 $l$ 번째 경기에서 이겨야 한다.`,
         `A 가 우승할 확률: $${ls.map((l) => ftex("A", p, l)).join(" + ")} = ${tot.tex()}$`,
         `A 가 첫 경기에서 이기고 우승할 확률은 첫 경기 이후 A 가 B 보다 먼저 $${w - 1}$ 번 이길 확률에 $${p.tex()}$ 를 곱한 것이므로 $${after.tex()}$`,
-        `따라서 구하는 확률은 $\\frac{${after.tex()}}{${tot.tex()}} = ${ans.tex()}$`,
+        `따라서 구하는 확률은 $${ratioTex(after, tot)}$`,
       ]
     } else if (kind === 1) {
       ask = `$${L}$ 번째 경기에서 우승자가 정해졌을 때, 우승한 사람이 A 일 확률`
@@ -1188,7 +1194,7 @@ const match: SuTemplate<{ ip: number; w: number; kind: number; L: number }> = {
       sol = [
         `$${L}$ 번째 경기에서 A 가 우승하려면 처음 $${L - 1}$ 번 중 A 가 $${w - 1}$ 번 이기고 $${L}$ 번째 경기에서 A 가 이겨야 한다.`,
         `A 가 $${L}$ 번째에 우승: $${ftex("A", p, L)} = ${a.tex()}$, B 가 $${L}$ 번째에 우승: $${ftex("B", qq, L)} = ${b.tex()}$`,
-        `따라서 구하는 확률은 $\\frac{${a.tex()}}{${a.tex()} + ${b.tex()}} = ${ans.tex()}$`,
+        `따라서 구하는 확률은 $${ratioTex(a, a.add(b))}$`,
       ]
     } else {
       ask = `A 가 우승하였을 때, 경기가 $${L}$ 번째에 끝났을 확률`
@@ -1198,11 +1204,11 @@ const match: SuTemplate<{ ip: number; w: number; kind: number; L: number }> = {
         `A 가 $l$ 번째 경기에서 우승할 확률은 $${nC("l - 1", w - 1)} \\left(${p.tex()}\\right)^{${w}} \\left(${qq.tex()}\\right)^{l - ${w}}$ 이다.`,
         `A 가 우승할 확률: $${ls.map((l) => winIn(p, l).tex()).join(" + ")} = ${tot.tex()}$`,
         `A 가 $${L}$ 번째에 우승할 확률: $${ftex("A", p, L)} = ${winIn(p, L).tex()}$`,
-        `따라서 구하는 확률은 $\\frac{${winIn(p, L).tex()}}{${tot.tex()}} = ${ans.tex()}$`,
+        `따라서 구하는 확률은 $${ratioTex(winIn(p, L), tot)}$`,
       ]
     }
     return {
-      text: `${lead} ${ask}이 $\\frac{q}{p}$ 일 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
+      text: `${lead} ${ask}을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
       answer: String(ans.n + ans.d),
       value: ans.n + ans.d,
       solution: lines(...sol, `$p = ${ans.d},\\ q = ${ans.n}$ 이므로 $p + q = ${ans.n + ans.d}$`),
@@ -1262,4 +1268,4 @@ function matchAns(p: Q, w: number, kind: number, L: number): Q {
   return winIn(p, L).div(tot)
 }
 
-export const PROBABILITY: SuTemplate[] = [diceBasic, addRule, atLeast, cardCond, indepBasic, drawSeq, binomTrial, tableCond, indepFind, arrange, twoBags, diceCond, walk, indepSets, polya, walkCond, sameColorFind, match]
+export const PROBABILITY: SuTemplate[] = [diceBasic, addRule, atLeast, cardCond, indepBasic, drawSeq, binomTrial, tableCond, indepFind, arrange, twoBags, diceCond, walk, indepSets, polya, walkCond, sameColorFind, match].map(polish)
