@@ -490,7 +490,7 @@ const tanSecond: SuTemplate<{ s: number; b: number; c: number; d: number; t: num
       solution: lines(
         `$y' = ${texPoly(df)}$ 이므로 접선의 기울기는 $${m}$ 이고, 접선의 방정식은 $y = ${texPoly(tan)}$`,
         `곡선과 접선의 교점의 $x$ 좌표는 $${texPoly(f)} = ${texPoly(tan)}$, 즉 $${texPoly([s, b, c - m, d - (y0 - m * t)])} = 0$ 의 해이다.`,
-        `이 식은 $x = ${t}$ 를 중근으로 가지므로 $${s === 1 ? "" : "-"}${fac(t)}^{2}(x - p) = 0$ 꼴이고, $x^{2}$ 의 계수를 비교하면 $${s === 1 ? "" : "-("}${-2 * t} - p${s === 1 ? "" : ")"} = ${b}$ 에서 $p = ${u}$`,
+        `위 방정식은 $x = ${t}$ 를 중근으로 가지므로 $${s === 1 ? "" : "-"}${fac(t)}^{2}(x - p) = 0$ 꼴이고, $x^{2}$ 의 계수를 비교하면 $${s === 1 ? "" : "-("}${-2 * t} - p${s === 1 ? "" : ")"} = ${b}$ 에서 $p = ${u}$`,
         v === 0 ? `따라서 $q = f(${u}) = ${ans}$` : `따라서 구하는 값은 $${u} ${signed(m)} = ${ans}$`
       ),
       score: 4,
@@ -535,7 +535,7 @@ const tanExt: SuTemplate<{ v: number; b: number; c: number; p: number; qq: numbe
         ...mcI(r, ans, w === 0 ? [K, 4 * K, prod + 2 * b * p, -prod, prod + 1, sum] : [2 * p + b, 2 * p, sum + b, -sum, sum + 2, prod]),
         solution: lines(
           `접점의 $x$ 좌표를 $s$ 라 하면 접선은 $y = (${texPoly([2, b], "s")})(x - s) + ${texPoly([1, b, c], "s")}$`,
-          `이 접선이 점 $(${p}, ${qq})$ 를 지나므로 $${qq} = (${texPoly([2, b], "s")})(${p} - s) + ${texPoly([1, b, c], "s")}$, 정리하면 $${texPoly([1, -2 * p, K], "s")} = 0$`,
+          `그 접선이 점 $(${p}, ${qq})$ 를 지나므로 $${qq} = (${texPoly([2, b], "s")})(${p} - s) + ${texPoly([1, b, c], "s")}$, 정리하면 $${texPoly([1, -2 * p, K], "s")} = 0$`,
           `두 근을 $s_1, s_2$ 라 하면 $s_1 + s_2 = ${2 * p}$, $s_1 s_2 = ${K}$ 이고, 기울기는 $2s_1 ${signed(b)}$, $2s_2 ${signed(b)}$`,
           w === 0
             ? `기울기의 곱은 $4s_1 s_2 + ${paren(2 * b)}(s_1 + s_2) + ${b * b} = ${times(4, K)} + ${paren(2 * b)} \\times ${paren(2 * p)} + ${b * b} = ${ans}$`
@@ -554,7 +554,7 @@ const tanExt: SuTemplate<{ v: number; b: number; c: number; p: number; qq: numbe
       ...mcI(r, ans, [ev(df, p), ev(df, -t), ev(df, t + 1), ans + 1, -ans, ev(df, p + t)]),
       solution: lines(
         `접점의 $x$ 좌표를 $s$ 라 하면 접선은 $y = (${texPoly(dcs(f), "s")})(x - s) + ${texPoly(f, "s")}$`,
-        `이 접선이 점 A 를 지나므로 $${y0} = (${texPoly(dcs(f), "s")})(${p} - s) + ${texPoly(f, "s")}$`,
+        `그 접선이 점 A 를 지나므로 $${y0} = (${texPoly(dcs(f), "s")})(${p} - s) + ${texPoly(f, "s")}$`,
         `정리하면 $${fac(p, "s")}^{2}${p + a === 0 ? "s" : `(2s ${signed(p + a)})`} = 0$ 이고, $s \\ne ${p}$ 이므로 $s = ${t}$`,
         `따라서 구하는 기울기는 $f'(${t}) = ${ans}$`
       ),
