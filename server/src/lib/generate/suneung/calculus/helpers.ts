@@ -1,0 +1,302 @@
+// 미적분Ⅰ 템플릿 공용 도구
+import type { Rng } from "../../types"
+import { deriv, intChoice, isShortOk, mc, Q, q, qChoice, roots, short, texPoly, texShift } from "../kit"
+import type { Choice, Level, SuProblem, SuTemplate } from "../types"
+
+export const SUBJ = "미적분Ⅰ" as const
+export const U_LIM = "함수의 극한과 연속"
+export const U_DIFF = "미분"
+export const U_INT = "적분"
+
+/** 템플릿 머리 (subject·unit·standard·level·count) */
+export const head = (id: string, unit: string, standard: string, level: Level, count: number) => ({
+  id,
+  subject: SUBJ,
+  unit,
+  standard,
+  level,
+  count,
+})
+export type T<P> = SuTemplate<P>
+
+/** 수 계수 다항식 값 (최고차부터) */
+export const ev = (cs: number[], x: number) => cs.reduce((a, c) => a * x + c, 0)
+/** 유리수 계수 다항식 값 */
+export const qev = (cs: (number | Q)[], x: number | Q) => cs.reduce<Q>((a, c) => a.mul(x).add(c), q(0))
+/** 정수 계수 도함수 계수 */
+export const dcs = (cs: number[]) => {
+  const n = cs.length - 1
+  return n === 0 ? [0] : cs.slice(0, -1).map((c, i) => c * (n - i))
+}
+/** 두 다항식 곱 (수 계수) */
+export const mulc = (a: number[], b: number[]) => {
+  const out = Array(a.length + b.length - 1).fill(0)
+  a.forEach((x, i) => b.forEach((y, j) => (out[i + j] += x * y)))
+  return out
+}
+/** 근으로 다항식: k(x-r1)(x-r2)... (수 계수) */
+export const fromRoots = (k: number, rs: number[]) => rs.reduce((acc, r) => mulc(acc, [1, -r]), [k])
+export const addc = (a: number[], b: number[]) => {
+  const n = Math.max(a.length, b.length)
+  const A = [...Array(n - a.length).fill(0), ...a]
+  const B = [...Array(n - b.length).fill(0), ...b]
+  return A.map((x, i) => x + B[i])
+}
+
+/** 정수 정답 객관식 */
+export const mcI = (r: Rng, ans: number, wrongs: number[], nonneg?: boolean) => {
+  const ws = wrongs.filter(Number.isFinite)
+  const step = Math.max(1, Math.abs(ans) >= 20 ? Math.round(Math.abs(ans) / 10) : 1)
+  const fills: number[] = []
+  for (let k = 1; k <= 12; k++) fills.push(ans + k * step, ans - k * step)
+  return mcBal(r, intChoice(ans), ws.map(intChoice), fills.map(intChoice), nonneg ?? nonnegOf(ans, ws))
+}
+/** 유리수 정답 객관식 (모자란 보기는 정답 ±1/2, ±1, … 로) */
+export const mcQ = (r: Rng, ans: Q, wrongs: Q[], nonneg?: boolean) => {
+  const fills: Q[] = []
+  for (let k = 1; k <= 12; k++) fills.push(ans.add(k), ans.sub(k))
+  if (!ans.isInt) for (let k = 1; k <= 6; k++) fills.push(ans.add(q(k, 2)), ans.sub(q(k, 2)))
+  return mcBal(r, qChoice(ans), wrongs.map(qChoice), fills.map(qChoice), nonneg ?? nonnegOf(ans.value, wrongs.map((w) => w.value)))
+}
+/** 넓이·거리처럼 음수가 될 수 없는 값의 객관식 (음수 보기 없음) */
+export const mcQnn = (r: Rng, ans: Q, wrongs: Q[]) => mcQ(r, ans, wrongs.filter((w) => w.n >= 0), true)
+/** 정답과 그럴듯한 오답이 모두 0 이상이면 (개수·넓이·거리 등) 음수 보기를 만들지 않는다 */
+const nonnegOf = (ans: number, ws: number[]) => ans >= 0 && ws.every((w) => w >= 0)
+
+/**
+ * 정답 번호가 몰리지 않게 고르는 객관식.
+ * 정답보다 작은 보기 개수 t(0~4)를 먼저 정하고, 그럴듯한 오답(wrongs)을 우선, 모자라면 정답에 가까운 채움 값으로 채운다.
+ */
+export function mcBal(r: Rng, correct: Choice, wrongs: Choice[], fills: Choice[], nonneg: boolean) {
+  const same = (a: Choice, b: Choice) => Math.abs(a.value - b.value) < 1e-9 * Math.max(1, Math.abs(a.value)) || a.tex === b.tex
+  const prim: Choice[] = []
+  const extra: Choice[] = []
+  const ok = (c: Choice) => Number.isFinite(c.value) && !same(c, correct) && !(nonneg && c.value < 0)
+  for (const w of r.shuffle(wrongs)) if (ok(w) && !prim.some((p) => same(p, w))) prim.push(w)
+  for (const f of fills) if (ok(f) && !prim.some((p) => same(p, f)) && !extra.some((p) => same(p, f))) extra.push(f)
+  const near = (xs: Choice[]) => [...xs].sort((a, b) => Math.abs(a.value - correct.value) - Math.abs(b.value - correct.value))
+  const side = (lo: boolean) => {
+    const f = (c: Choice) => (lo ? c.value < correct.value : c.value > correct.value)
+    return [...prim.filter(f), ...near(extra.filter(f))]
+  }
+  const L = side(true)
+  const H = side(false)
+  let t = r.int(0, 4)
+  t = Math.min(t, L.length)
+  if (4 - t > H.length) t = 4 - H.length
+  if (t < 0 || t > L.length) return mc(r, correct, wrongs, (k) => fills[(k - 1) % fills.length])
+  return mc(r, correct, [...L.slice(0, t), ...H.slice(0, 4 - t)])
+}
+/** 1~999 자연수면 단답형, 아니면 객관식 */
+export const answerI = (r: Rng, ans: number, wrongs: number[]): Pick<SuProblem, "answer" | "value" | "choices" | "choiceValues"> =>
+  isShortOk(ans) ? short(ans) : mcI(r, ans, wrongs)
+export const ask = (ans: number) => (isShortOk(ans) ? "의 값을 구하시오." : "의 값은?")
+
+/** 구간별 함수 TeX */
+export const cases = (...ps: [string, string][]) => `\\begin{cases} ${ps.map(([e, c]) => `${e} & (${c})`).join(" \\\\ ")} \\end{cases}`
+
+/** (x - a) 인수 TeX: a = 0 이면 x */
+export const fac = (a: number | Q, x = "x") => (Q.of(a).n === 0 ? x : `(${texShift(a, x)})`)
+/** 인수들 곱 TeX (상수 k 앞에) */
+export const facs = (k: number, rs: number[], x = "x") => {
+  const zs = rs.filter((r) => r === 0)
+  const nz = rs.filter((r) => r !== 0)
+  const body = [...zs.map(() => x), ...nz.map((r) => `(${texShift(r, x)})`)]
+  // 같은 인수는 제곱으로
+  const parts: string[] = []
+  const seen = new Map<string, number>()
+  for (const b of body) seen.set(b, (seen.get(b) ?? 0) + 1)
+  for (const [b, n] of seen) parts.push(n === 1 ? b : `${b}^{${n}}`)
+  const s = parts.join("")
+  return k === 1 ? s : k === -1 ? `-${s}` : `${k}${s}`
+}
+/** a × b 표기 (음수는 괄호) */
+export const times = (...ys: (number | Q)[]) => {
+  // 곱에서 1 은 생략 (모두 1 이면 1 하나)
+  const xs = ys.length > 1 && ys.some((y) => !Q.of(y).eq(1)) ? ys.filter((y) => !Q.of(y).eq(1)) : ys.slice(0, 1)
+  return xs.map((x, i) => (i > 0 && Q.of(x).n < 0 ? `(${Q.of(x).tex()})` : Q.of(x).tex())).join(" \\times ")
+}
+export const tp = texPoly
+
+/** 연립일차방정식 (부분 피벗 가우스 소거) — verify 전용 */
+export function solveLinear(A: number[][], b: number[]): number[] {
+  const n = b.length
+  const M = A.map((row, i) => [...row, b[i]])
+  for (let c = 0; c < n; c++) {
+    let p = c
+    for (let i = c + 1; i < n; i++) if (Math.abs(M[i][c]) > Math.abs(M[p][c])) p = i
+    ;[M[c], M[p]] = [M[p], M[c]]
+    if (Math.abs(M[c][c]) < 1e-12) return Array(n).fill(NaN)
+    for (let i = 0; i < n; i++) {
+      if (i === c) continue
+      const f = M[i][c] / M[c][c]
+      for (let j = c; j <= n; j++) M[i][j] -= f * M[c][j]
+    }
+  }
+  return M.map((row, i) => row[n] / row[i])
+}
+
+/**
+ * 수치로 실근 개수 세기 (verify 전용): 부호가 바뀌는 근 + 중근(도함수가 0인 곳에서 함숫값이 0)
+ */
+export function countRoots(f: (x: number) => number, lo = -60, hi = 60, n = 6000): number[] {
+  const rs = roots(f, lo, hi, n)
+  const crit = roots((x) => deriv(f, x, 1e-6), lo, hi, n)
+  for (const c of crit) if (Math.abs(f(c)) < 1e-6 && !rs.some((x) => Math.abs(x - c) < 1e-4)) rs.push(c)
+  return rs.sort((a, b) => a - b)
+}
+
+/** 구간 [a,b]에서 |f| 적분: 부호가 바뀌는 곳에서 잘라 심프슨 (verify 전용) */
+export function integrateAbs(f: (x: number) => number, a: number, b: number, n = 400) {
+  const cuts = [a, ...roots(f, a, b, 4000).filter((x) => x > a + 1e-9 && x < b - 1e-9), b]
+  let s = 0
+  for (let i = 0; i + 1 < cuts.length; i++) s += Math.abs(simpson(f, cuts[i], cuts[i + 1], n))
+  return s
+}
+export function simpson(f: (x: number) => number, a: number, b: number, n = 200) {
+  if (n % 2) n++
+  const h = (b - a) / n
+  let s = f(a) + f(b)
+  for (let i = 1; i < n; i++) s += f(a + i * h) * (i % 2 ? 4 : 2)
+  return (s * h) / 3
+}
+
+/** 유일한 해만 돌려준다 (없거나 여럿이면 NaN) */
+export function only<X>(xs: X[]): X | undefined {
+  return xs.length === 1 ? xs[0] : undefined
+}
+export const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i)
+export const nz = (r: Rng, a: number, b: number) => {
+  let x = 0
+  while (x === 0) x = r.int(a, b)
+  return x
+}
+/** 정수 → x 앞 계수 TeX ("2x", "-x") */
+export const cx = (c: number, v = "x") => texPoly([c, 0]).replace(/x/g, v)
+/** 분수 x를 TeX로 */
+export const fr = (n: number, d = 1) => q(n, d).tex()
+
+/**
+ * 해설 줄 묶기
+ * - 다음 줄이 "$= …" 로 시작하면 앞 줄에 이어 쓴다
+ * - 수식으로 끝난 줄 다음 줄이 수식으로 시작하면 마침표를 찍어 "$ $" 붙음을 막는다
+ */
+export const lines = (...ls: (string | false | null | undefined)[]) => {
+  const xs: string[] = []
+  for (const l of ls) {
+    if (!l) continue
+    if (xs.length && /^\s*\$?\s*=/.test(l)) {
+      const prev = xs[xs.length - 1].replace(/\.\s*$/, "")
+      xs[xs.length - 1] = prev.endsWith("$") && l.trimStart().startsWith("$") ? `${prev.slice(0, -1)} ${l.trimStart().slice(1)}` : `${prev} ${l}`
+    }
+    else xs.push(l)
+  }
+  return xs.map((l, i) => (l.endsWith("$") && i + 1 < xs.length && xs[i + 1].startsWith("$") ? `${l}.` : l)).join("\n")
+}
+
+/** 숫자를 읽은 마지막 소리의 받침 (0영 1일 3삼 6육 7칠 8팔, 10·100… 받침 있음) */
+export function numSound(num: string) {
+  const d = num.replace(/\D/g, "")
+  if (!d || /^0+$/.test(d)) return { batchim: true, rieul: false }
+  const nzs = d.replace(/0+$/, "")
+  if (nzs.length < d.length) return { batchim: true, rieul: false }
+  const last = nzs[nzs.length - 1]
+  return { batchim: "013678".includes(last), rieul: "178".includes(last) }
+}
+/** 숫자 뒤 조사 고르기: josa(3, "을") → "을", josa(2, "을") → "를" */
+export function josa(num: number | string, j: string) {
+  const { batchim, rieul } = numSound(String(num))
+  const pairs: [string, string][] = [["을", "를"], ["은", "는"], ["이", "가"], ["과", "와"], ["이었", "였"], ["이라", "라"]]
+  if (j === "으로" || j === "로") return batchim && !rieul ? "으로" : "로"
+  for (const [a, b] of pairs) if (j === a || j === b) return batchim ? a : b
+  return j
+}
+/** 문장 안에서 숫자(또는 숫자로 끝나는 괄호)로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다 */
+export const fixJosa = (s: string) =>
+  s.replace(/(\d+(?:\.\d+)?)((?:\)|\\right\))?)\$(\s?)(으로|로|을|를|은|는|이었|였|이라|라|이|가|과|와)(?=[\s,.)]|$)/g, (m0, n: string, par: string, sp: string, j: string, off: number) => {
+    // "(t > 0)$ 로" 처럼 괄호 안 조건 뒤의 조사는 앞 글자에 붙으므로 건드리지 않는다
+    const before = s.slice(Math.max(0, off - 20), off + n.length + 8)
+    if (/(>|<|\\ne|\\ge|\\le|\\geq|\\leq)\s*-?\d+(?:\.\d+)?\s*(\)|\\right\))\$/.test(before)) return m0
+    return `${n}${par}$${sp}${josa(n, j)}`
+  })
+/** 단답형은 '구하시오.', 객관식은 '?' 로 끝나게 맞춘다 */
+export const fixEnding = (text: string, isShort: boolean) => {
+  const m = text.match(/^([\s\S]*?)(\s*\(단,[^)]*\))?$/)!
+  let body = m[1]
+  const tail = m[2] ?? ""
+  if (isShort) body = body.replace(/(은|는)\?$/, (_x, j: string) => (j === "은" ? "을 구하시오." : "를 구하시오."))
+  else body = body.replace(/(을|를) 구하시오\.$/, (_x, j: string) => (j === "을" ? "은?" : "는?"))
+  return body + tail
+}
+/** 수식 안의 등식 사슬에서 같은 값이 이어지면 하나로: "a = \\frac{1}{3} = \\frac{1}{3}" → "a = \\frac{1}{3}" */
+export const dedupEq = (s: string) =>
+  s.replace(/\$([^$]+)\$/g, (_m, body: string) => {
+    const parts = body.split(" = ")
+    const out = parts.filter((x, i) => i === 0 || x.trim() !== parts[i - 1].trim())
+    return `$${out.join(" = ")}$`
+  })
+/** 템플릿의 문제·보기·해설에 조사 교정을 적용 */
+export const withJosa = <P>(t: SuTemplate<P>): SuTemplate<P> => ({
+  ...t,
+  build: (p, r) => {
+    const b = t.build(p, r)
+    return { ...b, text: fixEnding(fixJosa(b.text), !b.choices), solution: fixJosa(dedupEq(b.solution)), ...(b.choices ? { choices: b.choices.map(fixJosa) } : {}) }
+  },
+})
+
+/** 격자 위 함숫값 (verify 전용) */
+export const gridVals = (f: (x: number) => number, lo: number, hi: number, perUnit = 64) => {
+  const n = Math.round((hi - lo) * perUnit)
+  const out = new Float64Array(n + 1)
+  for (let i = 0; i <= n; i++) out[i] = f(lo + i / perUnit)
+  return out
+}
+/**
+ * 격자 값으로 방정식 v(x) = k 의 서로 다른 실근 개수 (verify 전용)
+ * - 부호가 바뀌면 근 하나, 격자점에서 |v - k| < tol 이면 그 점이 근 (중근도 한 번)
+ * - 중근이 격자점 위에 있을 때만 정확하다 (정수점 극값)
+ */
+export function gridCount(vals: ArrayLike<number>, k: number, tol = 1e-9) {
+  let n = 0
+  let last = 0 // 마지막 0이 아닌 부호
+  let zeroRun = false
+  for (let i = 0; i < vals.length; i++) {
+    const y = vals[i] - k
+    if (Math.abs(y) < tol) {
+      if (!zeroRun) n++
+      zeroRun = true
+      continue
+    }
+    const s = y > 0 ? 1 : -1
+    if (last !== 0 && s !== last && !zeroRun) n++
+    last = s
+    zeroRun = false
+  }
+  return n
+}
+
+/** "+ 다항식" 을 부호에 맞게: [−12, −2, 0] → "- 12x^{2} - 2x" */
+export const plusPoly = (cs: (number | Q)[], x = "x") => {
+  const t = texPoly(cs, x)
+  return t.startsWith("-") ? `- ${t.slice(1)}` : `+ ${t}`
+}
+
+/** 0 인 항은 빼고 이어 쓰기: plus(3, 0, -2) → "3 - 2" (모두 0 이면 "0") */
+export const plus = (...xs: (number | Q)[]) => {
+  const nzs = xs.map((x) => Q.of(x)).filter((x) => x.n !== 0)
+  if (!nzs.length) return "0"
+  return nzs.map((x, i) => (i === 0 ? x.tex() : x.n < 0 ? `- ${x.neg().tex()}` : `+ ${x.tex()}`)).join(" ")
+}
+/** 문자 앞 계수: 1 → "", -1 → "-", 그 밖 → 수 */
+export const coefTex = (c: number | Q) => {
+  const k = Q.of(c)
+  return k.eq(1) ? "" : k.eq(-1) ? "-" : k.tex()
+}
+/** 계수 × 식 (0 이면 "0") */
+export const cmul = (c: number | Q, body: string) => (Q.of(c).n === 0 ? "0" : `${coefTex(c)}${body}`)
+
+/** k·∏(x - r) · (Ax + m): Ax + m 이 정수 근을 가지면 인수로 합쳐 같은 인수는 거듭제곱으로 */
+export const facLin = (k: number, rs: number[], A: number, m: number, x = "x") =>
+  m % A === 0 ? facs(k * A, [...rs, -m / A], x) : `${facs(k, rs, x)}(${texPoly([A, m], x)})`
+/** 0 인 항까지 모두 나열한 합: [0, 4, -8] → "0 + 4 - 8" */
+export const listSum = (xs: number[]) => xs.map((x, i) => (i === 0 ? String(x) : x < 0 ? `- ${-x}` : `+ ${x}`)).join(" ")

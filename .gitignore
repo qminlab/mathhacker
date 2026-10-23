@@ -1,29 +1,36 @@
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+.pnp
 .pnp.*
 
-# next.js
-/.next/
-/out/
-/build
+# next.js (server/)
+.next/
+out/
+build/
 next-env.d.ts
 *.tsbuildinfo
+
+# expo (app/)
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
 
 # env (비밀값은 절대 커밋하지 않기)
 .env
 .env*.local
-
-# python
-__pycache__/
-*.pyc
-.venv/
-
-# 파이프라인 작업 폴더 (업로드한 문제지·OCR 결과·잘라낸 이미지)
-/work/
 
 # misc
 .DS_Store
 *.pem
 npm-debug.log*
 .vercel
+coverage/
