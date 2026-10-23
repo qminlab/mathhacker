@@ -347,8 +347,12 @@ begin
   select * into v_session from practice_sessions
   where user_id = auth.uid() and mode = 'daily' and day = v_today
   order by id desc limit 1;
-  if found then
+  if found and cardinality(v_session.problem_ids) > 0 then
     return v_session;
+  end if;
+  -- 오늘 세트가 비어 있으면(그때는 문제가 없었으면) 지우고 다시 뽑는다
+  if found then
+    delete from practice_sessions where id = v_session.id;
   end if;
 
   select coalesce((select daily_count from user_settings where user_id = auth.uid()), 10)
@@ -398,6 +402,48 @@ as $$
     case when p_mode = 'wrong' then la.created_at end desc nulls last,
     p.workbook_id, p.page, p.source_column, p.y_min, p.workbook_number
   limit greatest(1, least(p_limit, 100));
+$$;
+
+-- 문제집 목록 + 내 진행 상황
+create or replace function public.my_workbooks()
+returns table (
+  id bigint, title text, unit text, chapter text, is_mine boolean, created_at timestamptz,
+  total int, with_answer int, solved int, correct int, wrong int
+)
+language sql
+stable
+security invoker set search_path = public
+as $$
+  select w.id, w.title, w.unit, w.chapter, (w.owner_id = auth.uid()) as is_mine, w.created_at,
+         count(p.id)::int,
+         count(p.id) filter (where p.answer is not null)::int,
+         count(la.problem_id)::int,
+         count(la.problem_id) filter (where la.result = 'correct')::int,
+         count(la.problem_id) filter (where la.result in ('wrong', 'gave_up'))::int
+  from workbooks w
+  left join problems p on p.workbook_id = w.id
+  left join my_latest_attempts la on la.problem_id = p.id
+  where w.owner_id is null or w.owner_id = auth.uid() or public.is_admin()
+  group by w.id
+  order by w.created_at desc;
+$$;
+
+-- 문제집 안 문제 + 내 마지막 결과 (읽는 순서대로)
+create or replace function public.workbook_problems(p_workbook_id bigint)
+returns table (
+  id uuid, workbook_id bigint, workbook_number int, page int, score int, unit text,
+  raw_text text, image_path text, answer text, answer_source text, hint text, last_result text
+)
+language sql
+stable
+security invoker set search_path = public
+as $$
+  select p.id, p.workbook_id, p.workbook_number, p.page, p.score, p.unit,
+         p.raw_text, p.image_path, p.answer, p.answer_source, p.hint, la.result
+  from problems p
+  left join my_latest_attempts la on la.problem_id = p.id
+  where p.workbook_id = p_workbook_id and public.can_view_workbook(p_workbook_id)
+  order by p.page, p.source_column, p.y_min, p.workbook_number;
 $$;
 
 -- 통계: 최근 p_days일 일별 정답률, 단원별 정답률, 합계
