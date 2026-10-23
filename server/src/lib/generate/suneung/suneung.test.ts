@@ -131,6 +131,14 @@ describe("수능 문제 은행", () => {
     }
   })
 
+  it("단답형은 '구하시오.', 객관식은 '?'로 끝난다", () => {
+    for (const p of all) {
+      const last = p.text.trim().split("\n").pop()!.replace(/\s*\(단,[^)]*\)\s*$/, "").trim()
+      if (p.choices) expect(/구하시오\.$/.test(last), `객관식인데 '구하시오' ${where(p)}`).toBe(false)
+      else expect(/\?$/.test(last), `단답형인데 '?'로 끝남 ${where(p)}`).toBe(false)
+    }
+  })
+
   it("수식($...$) 안에 한글이 없다 (그림에서 글자가 빠진다)", () => {
     for (const p of all)
       for (const s of [p.text, ...(p.choices ?? []), p.solution, p.hint ?? ""])
