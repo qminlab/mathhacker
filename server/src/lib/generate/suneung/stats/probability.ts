@@ -1107,13 +1107,13 @@ const sameColorFind: SuTemplate<{ a: number; n: number }> = {
     const ans = q(C(a, 2), C(a, 2) + C(n, 2))
     const quad = `${A2 / g === 1 ? "" : A2 / g}x^{2} - ${-A1 / g}x + ${A0 / g}`
     return {
-      text: `흰 공 $${a}$ 개와 검은 공 $x$ 개가 들어 있는 주머니에서 임의로 $2$ 개의 공을 동시에 꺼낼 때, 꺼낸 두 공의 색이 서로 같을 확률이 $${P.tex()}$ 이다. 이 주머니에서 임의로 $2$ 개의 공을 동시에 꺼낼 때, 꺼낸 두 공의 색이 서로 같았을 때 두 공이 모두 흰 공일 확률을 $\\frac{q}{p}$ 라 할 때, $p + q$ 의 값을 구하시오. (단, $x > ${a}$ 이고, $p$ 와 $q$ 는 서로소인 자연수이다.)`,
+      text: `흰 공 $${a}$ 개와 검은 공 $x$ 개가 들어 있는 주머니에서 임의로 $2$ 개의 공을 동시에 꺼낼 때, 꺼낸 두 공의 색이 서로 같을 확률이 $${P.tex()}$ 이다. 이 주머니에서 임의로 $2$ 개의 공을 동시에 꺼냈더니 두 공의 색이 서로 같았을 때, 두 공이 모두 흰 공일 확률은 $\\frac{q}{p}$ 이다. $p + q$ 의 값을 구하시오. (단, ${other.isInt ? `$x > ${a}$ 이고, ` : ""}$p$ 와 $q$ 는 서로소인 자연수이다.)`,
       answer: String(ans.n + ans.d),
       value: ans.n + ans.d,
       solution: lines(
         `두 공의 색이 같을 확률은 $\\frac{${nC(a, 2)} + {}_{x}\\mathrm{C}_{2}}{{}_{${a} + x}\\mathrm{C}_{2}} = \\frac{${a * (a - 1)} + x(x - 1)}{(x + ${a})(x + ${a - 1})} = ${P.tex()}$`,
         `분모를 없애고 정리하면 $${quad} = 0$`,
-        `두 근의 곱이 $${a * (a - 1)}$ 이고 한 근이 $x = ${n}$ 이므로 다른 근은 $${other.tex()}$ 이다. $x > ${a}$ 이므로 $x = ${n}$`,
+        `두 근의 곱이 $${a * (a - 1)}$ 이고 한 근이 $x = ${n}$ 이므로 다른 근은 $${other.tex()}$ 이다. ${other.isInt ? `$x > ${a}$ 이므로` : "$x$ 는 자연수이므로"} $x = ${n}$`,
         `두 공의 색이 같은 경우의 수는 $${nC(a, 2)} + ${nC(n, 2)} = ${C(a, 2)} + ${C(n, 2)} = ${C(a, 2) + C(n, 2)}$ 이고, 이 중 모두 흰 공인 경우는 $${C(a, 2)}$ 이다.`,
         `따라서 구하는 확률은 $${fracEq(C(a, 2), C(a, 2) + C(n, 2))}$ 이고, $p + q = ${ans.n + ans.d}$`
       ),
@@ -1124,7 +1124,9 @@ const sameColorFind: SuTemplate<{ a: number; n: number }> = {
   verify: ({ a, n }) => {
     const P = q(C(a, 2) + C(n, 2), C(a + n, 2))
     const sols: number[] = []
-    for (let x = a + 1; x <= 200; x++) {
+    // 단서 x > a 는 다른 근도 자연수일 때만 문제에 붙는다
+    const cond = Number.isInteger((a * (a - 1)) / n)
+    for (let x = cond ? a + 1 : 1; x <= 200; x++) {
       const p = q(a * (a - 1) + x * (x - 1), (a + x) * (a + x - 1))
       if (p.eq(P)) sols.push(x)
     }

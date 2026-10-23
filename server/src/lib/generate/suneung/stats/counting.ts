@@ -621,7 +621,7 @@ const funcFix: SuTemplate<{ n: number; m: number; j: number; k: number; strict: 
   unit: UNIT,
   standard: "12확통01-03",
   level: 3,
-  count: 64,
+  count: 45,
   params: (r) => {
     const n = r.int(4, 6)
     const m = r.int(5, 9)
@@ -643,7 +643,7 @@ const funcFix: SuTemplate<{ n: number; m: number; j: number; k: number; strict: 
       solution: lines(
         `(가)에서 $${fChain(n, rel)}$ 이고 (나)에서 $f(${j}) = ${k}$ 이므로 $f(${j})$ 의 앞과 뒤를 나누어 센다.`,
         strict
-          ? `$${fRange(1, j - 1)}$ 의 값은 $${k}$ 보다 작은 $${k - 1}$ 개의 수 중 서로 다른 $${j - 1}$ 개를 골라 작은 순으로 정하면 되므로 $${nC(k - 1, j - 1)} = ${left}$`
+          ? `$${fRange(1, j - 1)}$ 의 값은 $${k}$ 보다 작은 $${k - 1}$ 개의 수 중 ${j - 1 === 1 ? "하나를 고르면" : `서로 다른 $${j - 1}$ 개를 골라 작은 순으로 정하면`} 되므로 $${nC(k - 1, j - 1)} = ${left}$`
           : `$${fRange(1, j - 1)}$ 의 값은 $1$ 부터 $${k}$ 까지의 $${k}$ 개의 수 중 중복을 허락하여 $${j - 1}$ 개를 고르면 되므로 $${nH(k, j - 1)} = ${left}$`,
         strict
           ? `$${fRange(j + 1, n)}$ 의 값은 $${k}$ 보다 큰 $${m - k}$ 개의 수 중 서로 다른 $${n - j}$ 개를 고르면 되므로 $${nC(m - k, n - j)} = ${right}$`
@@ -820,7 +820,7 @@ const samePermCond: SuTemplate<{ cnts: number[]; kind: number }> = {
   unit: UNIT,
   standard: "12확통01-02",
   level: 3,
-  count: 66,
+  count: 48,
   params: (r) => {
     const m = r.int(3, 4)
     const cnts = Array.from({ length: m }, (_, i) => (i === 0 ? r.int(2, 3) : r.int(1, 3)))
@@ -891,7 +891,7 @@ const funcRange: SuTemplate<{ n: number; m: number; k: number; d: number; kind: 
   unit: UNIT,
   standard: "12확통01-03",
   level: 4,
-  count: 45,
+  count: 58,
   params: (r) => {
     const n = r.int(4, 6)
     const m = r.int(5, 9)
@@ -957,7 +957,7 @@ const oddCount: SuTemplate<{ k: number; N: number; j: number; kind: number }> = 
   unit: UNIT,
   standard: "12확통01-03",
   level: 4,
-  count: 45,
+  count: 56,
   params: (r) => {
     const k = r.int(3, 4)
     const N = r.int(8, 20)
@@ -977,8 +977,8 @@ const oddCount: SuTemplate<{ k: number; N: number; j: number; kind: number }> = 
       const rest = (N - j - 2 * (k - j)) / 2
       text = `다음 조건을 만족시키는 자연수 $${vs.join(", ")}$ 의 모든 순서쌍 $${tup}$ 의 개수를 구하시오.\n(가) $${vs.join(" + ")} = ${N}$\n(나) $${vs.join(", ")}$ 중에서 홀수는 정확히 $${j}$ 개이다.`
       sol = [
-        `홀수가 될 $${j}$ 개의 문자를 고르는 경우의 수는 $${nC(k, j)} = ${C(k, j)}$ 이다.`,
-        `홀수인 문자는 $2x + 1$, 짝수인 문자는 $2y + 2$ ($x, y$ 는 음이 아닌 정수) 꼴로 놓으면, 새로 놓은 $${k}$ 개의 음이 아닌 정수의 합을 $S$ 라 할 때 $2S + ${j} + ${2 * (k - j)} = ${N}$`,
+        `홀수가 될 $${j}$ 개의 수를 고르는 경우의 수는 $${nC(k, j)} = ${C(k, j)}$ 이다.`,
+        `홀수인 수는 $2x + 1$, 짝수인 수는 $2y + 2$ ($x, y$ 는 음이 아닌 정수) 꼴로 놓으면, 새로 놓은 $${k}$ 개의 음이 아닌 정수의 합을 $S$ 라 할 때 $2S + ${j} + ${2 * (k - j)} = ${N}$`,
         `따라서 $S = ${rest}$ 이고, 그 경우의 수는 $${nH(k, rest)} = ${H(k, rest)}$`,
         `따라서 구하는 개수는 $${C(k, j)} \\times ${H(k, rest)} = ${ans}$`,
       ]
@@ -1024,7 +1024,7 @@ const pathAvoid: SuTemplate<{ a: number; b: number; P: [number, number]; Q: [num
   unit: UNIT,
   standard: "12확통01-02",
   level: 4,
-  count: 40,
+  count: 53,
   params: (r) => {
     const a = r.int(4, 7)
     const b = r.int(3, 6)
@@ -1120,7 +1120,7 @@ const hockey: SuTemplate<{ kind: number; a: number; b: number; k: number }> = {
   subject: "확률과 통계",
   unit: UNIT,
   standard: "12확통01-03",
-  level: 4,
+  level: 3,
   count: 37,
   params: (r) => {
     const kind = r.int(0, 2)

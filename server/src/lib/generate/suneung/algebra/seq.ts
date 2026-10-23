@@ -1,7 +1,7 @@
 // 대수 · 수열
 import { closeTo, isShortOk, mc, q, Q, qChoice, roots, short, signed, term, texPoly, texShift } from "../kit"
 import type { SuTemplate } from "../types"
-import { autoInt, autoQ, qFill, sol } from "./helpers"
+import { autoInt, autoQ, qFill, sol, mcBal } from "./helpers"
 
 const U = "수열"
 const S = (n: number | string, body: string, from: number | string = 1) => `\\sum_{k=${from}}^{${n}} ${body}`
@@ -416,7 +416,7 @@ const telescope: SuTemplate<{ mode: "frac" | "sqrt" | "log"; a: number; b: numbe
       const wr = [ans.mul(a), q(1, a + b).sub(q(1, a * n + b)).div(a), q(1, a).mul(q(1, a + b).sub(q(1, a * n + 2 * a + b))), q(1, a + b).sub(q(1, a * n + a + b)).mul(a)]
       return {
         text: `$${S(n, `\\frac{1}{${f1}${f2}}`)}$ 의 값은?`,
-        ...mc(r, qChoice(ans), wr.map(qChoice), qFill(ans)),
+        ...mcBal(r, qChoice(ans), wr.map(qChoice), qFill(ans)),
         solution: sol(
           `$\\frac{1}{${f1}${f2}} = ${a === 1 ? `\\frac{1}{${texPoly([a, b], "k")}} - \\frac{1}{${texPoly([a, a + b], "k")}}` : `\\frac{1}{${a}}\\left(\\frac{1}{${texPoly([a, b], "k")}} - \\frac{1}{${texPoly([a, a + b], "k")}}\\right)`}$`,
           `$k = 1, 2, \\cdots, ${n}$ 을 대입하여 더하면 가운데 항이 모두 지워져 $${a === 1 ? `\\frac{1}{${a + b}} - \\frac{1}{${n + 1 + b}}` : `\\frac{1}{${a}}\\left(\\frac{1}{${a + b}} - \\frac{1}{${a * n + a + b}}\\right)`}$ 만 남는다.`,
@@ -1109,7 +1109,9 @@ const snMax: SuTemplate<{ k: number; m: number; N: number; d: number }> = {
           : m - k === 3
             ? `$S_{${m}} - S_{${k}} = a_{${k + 1}} + a_{${k + 2}} + a_{${m}} = 3a_{${k + 2}} = 0$ 이므로 $a_{${k + 2}} = 0$, 즉 $a_{${k + 1}} + a_{${m}} = 2a_{${k + 2}} = 0$`
             : `$S_{${m}} - S_{${k}} = a_{${k + 1}} + a_{${k + 2}} + \\cdots + a_{${m}} = \\frac{${m - k}(a_{${k + 1}} + a_{${m}})}{2} = 0$ 이므로 $a_{${k + 1}} + a_{${m}} = 0$`,
-        `공차를 $d$ 라 하면 $a_n = d\\left(n - ${c.tex()}\\right)$ 꼴이고, $a_1 > 0$ 이므로 $d < 0$ 이다.`,
+        c.isInt
+          ? `$a_{${k + 1}} + a_{${m}} = 2a_{${c.n}} = 0$ 이므로 $a_{${c.n}} = 0$ 이고, 공차를 $d$ 라 하면 $a_n = d(n - ${c.n})$ 이다. $a_1 > 0$ 이므로 $d < 0$`
+          : `$a_{${k + 1}} + a_{${m}} = a_{${c.n / 2 - 0.5}} + a_{${c.n / 2 + 0.5}} = 0$ 이므로 공차를 $d$ 라 하면 $a_n = d\\left(n - ${c.tex()}\\right)$ 이다. $a_1 > 0$ 이므로 $d < 0$`,
         `$\\sum_{n=1}^{${N}} |a_n| = |d| \\sum_{n=1}^{${N}} \\left|n - ${c.tex()}\\right| = ${T.tex()}|d| = ${Y}$ 이므로 $d = ${d}$, $a_1 = ${a1.tex()}$`,
         c.isInt
           ? `$a_n > 0$ 인 항은 $n \\le ${F}$ 일 때이고 $a_{${F + 1}} = 0$ 이므로 $S_n$ 은 $n = ${F}$ 또는 $n = ${F + 1}$ 일 때 최대이다.`

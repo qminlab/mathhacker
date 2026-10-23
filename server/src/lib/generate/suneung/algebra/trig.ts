@@ -25,6 +25,7 @@ import {
   tanPi,
   zeros,
   type Sd,
+  mcBal,
 } from "./helpers"
 
 const U = "삼각함수"
@@ -92,7 +93,7 @@ const sector: SuTemplate<{ mode: "area" | "angle" | "radius" | "perim"; r: numbe
       const S = th.mul(rad * rad).div(2)
       return {
         text: `반지름의 길이가 $${rad}$ 이고 중심각의 크기가 $${piTex(th)}$ 인 부채꼴의 넓이는?`,
-        ...mc(r, piChoice(S), [piChoice(th.mul(rad)), piChoice(S.mul(2)), piChoice(th.mul(rad).div(2)), piChoice(S.div(2))], piFill(S, q(1, 2))),
+        ...mcBal(r, piChoice(S), [piChoice(th.mul(rad)), piChoice(S.mul(2)), piChoice(th.mul(rad).div(2)), piChoice(S.div(2))], piFill(S, q(1, 2))),
         solution: sol(
           `반지름의 길이가 $r$, 중심각의 크기가 $\\theta$ 인 부채꼴의 넓이는 $\\frac{1}{2}r^{2}\\theta$ 이다.`,
           `$\\frac{1}{2} \\times ${rad}^{2} \\times ${piTex(th)} = ${piTex(S)}$`
@@ -105,7 +106,7 @@ const sector: SuTemplate<{ mode: "area" | "angle" | "radius" | "perim"; r: numbe
       const th = q(l, rad)
       return {
         text: `반지름의 길이가 $${rad}$ 이고 호의 길이가 $${piTex(L)}$ 인 부채꼴의 중심각의 크기는?`,
-        ...mc(r, piChoice(th), [piChoice(q(rad, l)), piChoice(th.mul(2)), piChoice(th.div(2)), piChoice(q(l * rad))], piFill(th, q(1, rad))),
+        ...mcBal(r, piChoice(th), [piChoice(q(rad, l)), piChoice(th.mul(2)), piChoice(th.div(2)), piChoice(q(l * rad))], piFill(th, q(1, rad))),
         solution: sol(
           `반지름의 길이가 $r$, 중심각의 크기가 $\\theta$ 인 부채꼴의 호의 길이는 $r\\theta$ 이다.`,
           `$${rad}\\theta = ${piTex(L)}$ 이므로 $\\theta = ${piTex(th)}$`
@@ -216,7 +217,7 @@ const trigValues: SuTemplate<{ fam: 4 | 6; f1: string; m1: number; f2: string; m
         : `각이 속한 사분면에서의 부호를 생각한다.`
     return {
       text: `$${e1} ${opTex} ${e2}$ 의 값은?`,
-      ...mc(r, sdChoice(ans), wrongs, sdFill(ans)),
+      ...mcBal(r, sdChoice(ans), wrongs, sdFill(ans)),
       solution: sol(
         intro,
         `${reduce(f1, t1, v1)}, ${reduce(f2, t2, v2)}`,
@@ -278,7 +279,7 @@ const trigPyth: SuTemplate<{ ti: number; sw: boolean; qd: number; given: string;
         : `$\\sin^{2}\\theta + \\cos^{2}\\theta = 1$ 에서 $\\${other}^{2}\\theta = 1 - \\left(${vals[given].tex()}\\right)^{2} = ${vals[other].mul(vals[other]).tex()}$`
     return {
       text: `$${QUAD_TEX[qd - 1]}$ 인 $\\theta$ 에 대하여 $${name[given]} = ${vals[given].tex()}$ 일 때, $${name[ask]}$ 의 값은?`,
-      ...mc(r, qChoice(ans), wrongs.map(qChoice), qFill(ans)),
+      ...mcBal(r, qChoice(ans), wrongs.map(qChoice), qFill(ans)),
       solution: sol(
         step,
         `$\\theta$ 는 제${qd}사분면의 각이므로 $\\sin\\theta ${ss > 0 ? ">" : "<"} 0$, $\\cos\\theta ${cs > 0 ? ">" : "<"} 0$ 이다. 따라서 $\\sin\\theta = ${S.tex()}$, $\\cos\\theta = ${C.tex()}$`,
@@ -335,7 +336,7 @@ const periodMax: SuTemplate<{ f: string; a: number; bi: number; c: number; ph: n
       const wrong = f === "tan" ? [q(2).div(b), q(1).mul(b), q(1, 2).div(b)] : [q(1).div(b), q(2).mul(b), q(4).div(b)]
       return {
         text: `함수 $y = ${ftex}$ 의 주기는?`,
-        ...mc(r, piChoice(per), wrong.map(piChoice), piFill(per, q(1, 2))),
+        ...mcBal(r, piChoice(per), wrong.map(piChoice), piFill(per, q(1, 2))),
         solution: sol(
           f === "tan" ? `함수 $y = a\\tan(bx + c) + d$ 의 주기는 $\\frac{\\pi}{|b|}$ 이다.` : `함수 $y = a\\${f}(bx + c) + d$ 의 주기는 $\\frac{2\\pi}{|b|}$ 이다.`,
           `$b = ${b.tex()}$ 이므로 주기는 $${f === "tan" ? "\\pi" : "2\\pi"} \\div ${b.tex()} = ${piTex(per)}$`
@@ -346,7 +347,7 @@ const periodMax: SuTemplate<{ f: string; a: number; bi: number; c: number; ph: n
     if (ask === "max") {
       return {
         text: `함수 $y = ${ftex}$ 의 최댓값은?`,
-        ...mc(r, intChoice(M), ints(c + a, m, c, A, -M)),
+        ...mcBal(r, intChoice(M), ints(c + a, m, c, A, -M)),
         solution: sol(
           `$-1 \\le \\${f} ${phase.n === 0 ? bx(b) : "(\\cdots)"} \\le 1$ 이므로 $${-A} \\le ${term(a, `\\${f}(\\cdots)`, true)} \\le ${A}$`,
           `따라서 $${m} \\le y \\le ${M}$ 이고 최댓값은 $${M}$`
@@ -356,7 +357,7 @@ const periodMax: SuTemplate<{ f: string; a: number; bi: number; c: number; ph: n
     }
     return {
       text: `함수 $y = ${ftex}$ 의 최댓값을 $M$, 최솟값을 $m$ 이라 할 때, $Mm$ 의 값은?`,
-      ...mc(r, intChoice(M * m), ints(c * c + A * A, -(M * m), M + m, M * m + 1, M * m - 1)),
+      ...mcBal(r, intChoice(M * m), ints(c * c + A * A, -(M * m), M + m, M * m + 1, M * m - 1)),
       solution: sol(
         `$-1 \\le \\${f}(\\cdots) \\le 1$ 이므로 $${term(a, `\\${f}(\\cdots)`, true)}$ 의 값의 범위는 $${-A}$ 이상 $${A}$ 이하이다.`,
         `따라서 $M = ${c} + ${A} = ${M}$, $m = ${c} - ${A} = ${m}$`,
@@ -430,7 +431,7 @@ const reduction: SuTemplate<{ kind: "s" | "c"; vi: number; ids: number[]; cs: nu
     const wr = ids.map((id, i) => v.mul(K - 2 * cs[i] * REDS[id].sg))
     return {
       text: `$${base} = ${v.tex()}$ 일 때, $${expr}$ 의 값은?`,
-      ...mc(r, qChoice(ans), [...wr, ans.neg(), v].map(qChoice), qFill(ans)),
+      ...mcBal(r, qChoice(ans), [...wr, ans.neg(), v].map(qChoice), qFill(ans)),
       solution: sol(
         `각 항을 $${base}$ 로 나타내면 ${each}`,
         `(주어진 식) $= ${term(K, base, true)}$`,
@@ -493,7 +494,7 @@ const trigCoef: SuTemplate<{ f: string; a: number; b: number; c: number; ti: num
     const fname = `a\\${f} bx + c`
     return {
       text: `함수 $f(x) = ${fname}$ 의 주기가 $${piTex(per)}$ 이고 ${ext === "max" ? "최댓값" : "최솟값"}이 $${E}$ 이다. $f\\left(${piTex(x0)}\\right) = ${y0.tex()}$ 일 때, $a + b + c$ 의 값은? (단, $a > 0$, $b > 0$)`,
-      ...mc(r, intChoice(ans), ints(a - b + c, a + b - c, ans + 1, ans - 1, b + c - a)),
+      ...mcBal(r, intChoice(ans), ints(a - b + c, a + b - c, ans + 1, ans - 1, b + c - a)),
       solution: sol(
         `$b > 0$ 이므로 주기는 $\\frac{2\\pi}{b} = ${piTex(per)}$ 에서 $b = ${b}$`,
         `$a > 0$ 이므로 ${ext === "max" ? "최댓값은 $a + c$" : "최솟값은 $-a + c$"}, 즉 $${ext === "max" ? "a + c" : "-a + c"} = ${E}$`,
@@ -602,7 +603,7 @@ const trigEqQuad: SuTemplate<{ f: string; i1: number; i2: number; out: boolean; 
     const wr = [sum1.eq(sum) ? sum.add(1) : sum1, sum.add(2), sum.sub(1), sum.mul(2)]
     return {
       text: `$0 \\le x < 2\\pi$ 일 때, 방정식 $${tex} = 0$ 의 모든 해의 합은?`,
-      ...mc(r, piChoice(sum), wr.map(piChoice), piFill(sum, q(1, 6))),
+      ...mcBal(r, piChoice(sum), wr.map(piChoice), piFill(sum, q(1, 6))),
       solution: sol(...lines0, `따라서 모든 해의 합은 $${all.length > 1 ? `${all.map((x) => piTex(x)).join(" + ")} = ` : ""}${piTex(sum)}$`),
       score: 3,
     }
@@ -649,7 +650,7 @@ const sineLaw: SuTemplate<{ mode: "R" | "area" | "side"; a: number; A: number; B
       if (mode === "R") {
         return {
           text: `${head} ${tri} 의 외접원의 반지름의 길이는?`,
-          ...mc(r, sdChoice(R), [sdChoice(sdScale(R, 2)), sdChoice(sdScale(R, q(1, 2))), sdChoice(sdMul(sd(a), s)), sdChoice(sdScale(sdMul(sd(a), s), q(1, 2)))], sdFill(R)),
+          ...mcBal(r, sdChoice(R), [sdChoice(sdScale(R, 2)), sdChoice(sdScale(R, q(1, 2))), sdChoice(sdMul(sd(a), s)), sdChoice(sdScale(sdMul(sd(a), s), q(1, 2)))], sdFill(R)),
           solution: sol(...lines0, `따라서 외접원의 반지름의 길이는 $${sdTex(R)}$`),
           score: 3,
         }
@@ -657,7 +658,7 @@ const sineLaw: SuTemplate<{ mode: "R" | "area" | "side"; a: number; A: number; B
       const S = R2.a
       return {
         text: `${head} ${tri} 의 외접원의 넓이는?`,
-        ...mc(r, piChoice(S), [piChoice(S.mul(4)), piChoice(S.div(4)), piChoice(S.mul(2)), piChoice(q(a * a))], piFill(S, q(1, 3))),
+        ...mcBal(r, piChoice(S), [piChoice(S.mul(4)), piChoice(S.div(4)), piChoice(S.mul(2)), piChoice(q(a * a))], piFill(S, q(1, 3))),
         solution: sol(...lines0, `따라서 외접원의 넓이는 $\\pi R^{2} = ${piTex(S)}$`),
         score: 3,
       }
@@ -669,7 +670,7 @@ const sineLaw: SuTemplate<{ mode: "R" | "area" | "side"; a: number; A: number; B
     const c = sdDiv(sdMul(sd(a), sC), sB)
     return {
       text: `${tri} 에서 $${seg("AC")} = ${a}$, $\\angle ${T("B")} = ${piTex(bA)}$, $\\angle ${T("C")} = ${piTex(cA)}$ 일 때, 선분 $${T("AB")}$ 의 길이는?`,
-      ...mc(r, sdChoice(c), [sdChoice(sdDiv(sdMul(sd(a), sB), sC)), sdChoice(sdMul(sd(a), sC)), sdChoice(sdScale(c, 2)), sdChoice(sdScale(c, q(1, 2)))], sdFill(c)),
+      ...mcBal(r, sdChoice(c), [sdChoice(sdDiv(sdMul(sd(a), sB), sC)), sdChoice(sdMul(sd(a), sC)), sdChoice(sdScale(c, 2)), sdChoice(sdScale(c, q(1, 2)))], sdFill(c)),
       solution: sol(
         `사인법칙에 의하여 $\\frac{${seg("AC")}}{\\sin B} = \\frac{${seg("AB")}}{\\sin C}$`,
         `$\\sin${angleArg(bA)} = ${sdTex(sB)}$, $\\sin${angleArg(cA)} = ${sdTex(sC)}$ 이므로`,
@@ -805,7 +806,7 @@ const sinCos: SuTemplate<{ diff: boolean; ki: number; ask: "sc" | "cube" | "tan"
     const wrongs = [ans.neg(), sc.n !== 0 ? q(1).div(sc).sub(ans).add(ans) : ans.add(1), k2, scW, ans.add(q(1, 2)), q(1).sub(ans)]
     return {
       text: `$${lhs} = ${k.tex()}$ 일 때, $${target}$ 의 값은?`,
-      ...mc(r, qChoice(ans), wrongs.map(qChoice), qFill(ans)),
+      ...mcBal(r, qChoice(ans), wrongs.map(qChoice), qFill(ans)),
       solution: sol(
         `양변을 제곱하면 $1 ${diff ? "-" : "+"} 2\\sin\\theta\\cos\\theta = ${k2.tex()}$ ($\\sin^{2}\\theta + \\cos^{2}\\theta = 1$)`,
         `$\\sin\\theta\\cos\\theta = ${sc.tex()}$`,
@@ -878,7 +879,7 @@ const trigIneq: SuTemplate<{ ci: number; oi: number; strict: boolean; rewrite: b
     const reduced = `\\${cs.f} x ${cs.gt ? (strict ? ">" : "\\ge") : strict ? "<" : "\\le"} ${cs.r.tex()}`
     return {
       text: `$0 \\le x < 2\\pi$ 일 때, 부등식 $${shown} ${opTex} 0$ 의 해가 $${intv}$ 이다. $${ask === "diff" ? "\\beta - \\alpha" : "\\alpha + \\beta"}$ 의 값은?`,
-      ...mc(r, piChoice(ans), wr.map(piChoice), piFill(ans, q(1, 6))),
+      ...mcBal(r, piChoice(ans), wr.map(piChoice), piFill(ans, q(1, 6))),
       solution: sol(
         `${rewrite ? `$${trigQuad(cs.f, cs.r, r2, true).G}^{2} x = 1 - \\${cs.f}^{2} x$ 를 이용하여 ` : ""}주어진 부등식을 $${F}$ 에 대하여 정리하면 $${term(A, `\\${cs.f}^{2} x`, true)}${term(B, F)}${term(C, "")} ${wantPos ? (strict ? ">" : "\\ge") : strict ? "<" : "\\le"} 0$`,
         `$${F} = t$ 라 하면 $${term(A, "t^{2}", true)}${term(B, "t")}${term(C, "")} = ${fac(cs.r)}${fac(r2)}$ 이고, $-1 \\le t \\le 1$ 에서 $${fac(r2)} ${otherNeg ? "<" : ">"} 0$ 이다.`,
@@ -1003,7 +1004,7 @@ const trigEqSum: SuTemplate<{ f: string; ki: number; b: number; phi: number; L: 
     const lines0 = [
       `$${arg.replace("\\left(", "").replace("\\right)", "")} = t$ 로 놓으면 $${dom}$ 에서 $${piTex(tlo)} \\le t < ${piTex(thi)}$`,
       `이 범위에서 $\\${f} t = ${sdTex((f === "tan" ? KTAN : KSIN)[ki].k)}$ 를 만족시키는 $t$ 는 $${tVals.map(piTex).join(", ")}$`,
-      `$x = \\frac{t ${ph.n === 0 ? "" : `+ ${piTex(ph)}`}}{${b}}$ 이므로 해는 $${xs.map(piTex).join(", ")}$`,
+      `$x = \\frac{${ph.n === 0 ? "t" : `t + ${piTex(ph)}`}}{${b}}$ 이므로 해는 $${xs.map(piTex).join(", ")}$`,
     ]
     if (ask === "count") {
       return {
@@ -1016,7 +1017,7 @@ const trigEqSum: SuTemplate<{ f: string; ki: number; b: number; phi: number; L: 
     const wr = [sum.add(q(1, b)), sum.sub(xs[xs.length - 1]), sum.mul(2), sum.add(ph), sum.sub(q(1, 2))]
     return {
       text: `$${dom}$ 일 때, 방정식 $${eq}$ 의 모든 해의 합은?`,
-      ...mc(r, piChoice(sum), wr.map(piChoice), piFill(sum, q(1, 12))),
+      ...mcBal(r, piChoice(sum), wr.map(piChoice), piFill(sum, q(1, 12))),
       solution: sol(...lines0, `따라서 모든 해의 합은 $${piTex(sum)}$`),
       score: 4,
     }
@@ -1070,7 +1071,7 @@ const lawRatio: SuTemplate<{ s: number[]; mode: "sin" | "sum"; ask: "max" | "min
     const wr = [cosv.neg(), q(s[o[0]] ** 2 + s[idx] ** 2 - s[o[1]] ** 2, 2 * s[o[0]] * s[idx]), q(s[o[0]] ** 2 + s[o[1]] ** 2 - s[idx] ** 2, s[o[0]] * s[o[1]]), q(s[idx], s[o[0]] + s[o[1]])]
     return {
       text: `${tri} 에서 ${cond} 이다. ${tri} 의 세 내각 중 크기가 가장 ${ask === "max" ? "큰" : "작은"} 각의 크기를 $\\theta$ 라 할 때, $\\cos\\theta$ 의 값은?`,
-      ...mc(r, qChoice(cosv), wr.map(qChoice), qFill(cosv)),
+      ...mcBal(r, qChoice(cosv), wr.map(qChoice), qFill(cosv)),
       solution: sol(
         first,
         `가장 ${ask === "max" ? "긴" : "짧은"} 변의 대각이 가장 ${ask === "max" ? "큰" : "작은"} 각이므로 $\\theta = ${names[idx]}$`,
@@ -1137,7 +1138,7 @@ const circumBC: SuTemplate<{ R: number; Ai: 0 | 1; s: number; ask: "bc" | "sq" |
     const area = sd(0, q(bc, 4), 3)
     return {
       text: `${head} ${tri} 의 넓이는?`,
-      ...mc(r, sdChoice(area), [sdChoice(sd(0, q(bc, 2), 3)), sdChoice(sd(q(bc, 4))), sdChoice(sd(0, q(bc, 4), 2)), sdChoice(sd(0, q(bc * 3, 4), 3))], sdFill(area)),
+      ...mcBal(r, sdChoice(area), [sdChoice(sd(0, q(bc, 2), 3)), sdChoice(sd(q(bc, 4))), sdChoice(sd(0, q(bc, 4), 2)), sdChoice(sd(0, q(bc * 3, 4), 3))], sdFill(area)),
       solution: sol(...lines0, `넓이는 $\\frac{1}{2}bc\\sin${angleArg(A)} = \\frac{1}{2} \\times ${bc} \\times \\frac{\\sqrt{3}}{2} = ${sdTex(area)}$`),
       score: 4,
     }
@@ -1207,7 +1208,7 @@ const trigQuadMax: SuTemplate<{ f: string; a: number; di: number; given: "max" |
     const wr = given === "max" ? [ans.add(max0.sub(endMax)), q(E).sub(ans).add(q(E)), ans.neg(), ans.add(1)] : [max0.sub(endMax).neg().add(ans), ans.neg(), q(E).add(ans), ans.sub(1)]
     return {
       text: `${D.tex ? `$${D.tex}$ 에서 ` : ""}함수 $f(x) = ${fx2}$ 의 ${given === "max" ? "최댓값" : "최솟값"}이 $${E}$ 일 때, $f(x)$ 의 ${given === "max" ? "최솟값" : "최댓값"}은? (단, $b$ 는 상수이다.)`,
-      ...mc(r, qChoice(ans), wr.map(qChoice), qFill(ans)),
+      ...mcBal(r, qChoice(ans), wr.map(qChoice), qFill(ans)),
       solution: sol(
         `$${sq} = 1 - ${tName.replace(" x", "^{2} x")}$ 이므로 $${tName} = t$ 로 놓으면 $f(x) = -t^{2}${term(a, "t")} + 1 + b = -\\left(t ${signed(t0.neg())}\\right)^{2} + ${t0.mul(t0).add(1).tex()} + b$`,
         `${D.tex ? `$${D.tex}$ 에서 ` : ""}$${D.lo.tex()} \\le t \\le ${D.hi.tex()}$ 이다. 꼭짓점의 $t$ 좌표 $${t0.tex()}$ 는 이 범위 ${inside ? "안에" : "밖에"} 있다.`,
@@ -1268,7 +1269,8 @@ const absTrig: SuTemplate<{ f: string; M: number; m: number; b: number; closed: 
       ...short(total),
       solution: sol(
         `$a + c = ${M}$, $-a + c = ${m}$ 에서 $a = ${a.tex()}$, $c = ${c.tex()}$`,
-        `$|f(x)| = n$ 은 $f(x) = n$ 또는 $f(x) = -n$ 이다. $${dom}$ 에서 $y = f(x)$ 는 ${b === 1 ? "한" : `${b}`} 주기${b === 1 ? "" : "만큼"} 그려지므로, 직선 $y = k$ 와의 교점은 $${m} < k < ${M}$ 일 때 $${2 * b}$ 개, $k = ${M}$ 또는 $k = ${m}$ 일 때 $${b}$ 개이다.`,
+        `$|f(x)| = n$ 은 $f(x) = n$ 또는 $f(x) = -n$ 이므로 $g(n)$ 은 방정식 $f(x) = n$ 의 실근의 개수와 방정식 $f(x) = -n$ 의 실근의 개수의 합이다.`,
+        `$${dom}$ 에서 $y = f(x)$ 의 그래프는 ${b === 1 ? "한 주기" : `${b}주기`}만큼 그려지므로, 직선 $y = k$ 와의 교점은 $${m} < k < ${M}$ 일 때 $${2 * b}$ 개, $k = ${M}$ 또는 $k = ${m}$ 일 때 $${b}$ 개이다.`,
         closed ? `구간의 오른쪽 끝 $x = 2\\pi$ 에서 $f(2\\pi) = f(0) = ${f === "sin" ? c.tex() : M}$ 이므로 $k = ${f === "sin" ? c.tex() : M}$ 일 때는 교점이 하나 더 있다.` : `$x = 2\\pi$ 는 구간에 포함되지 않으므로 위의 교점의 개수를 그대로 쓴다.`,
         ...rows,
         `따라서 구하는 값은 $${total}$`
@@ -1328,7 +1330,7 @@ const cyclicQuad: SuTemplate<{ p: number; qq: number; rr: number; s: number; ask
     }
     return {
       text: `${head} 이 원의 넓이는?`,
-      ...mc(r, piChoice(R2), [piChoice(R2.mul(4)), piChoice(ac.div(4)), piChoice(R2.mul(2)), piChoice(ac.div(sin2))], piFill(R2, q(1, R2.d))),
+      ...mcBal(r, piChoice(R2), [piChoice(R2.mul(4)), piChoice(ac.div(4)), piChoice(R2.mul(2)), piChoice(ac.div(sin2))], piFill(R2, q(1, R2.d))),
       solution: sol(
         ...lines0,
         `$\\sin^{2} B = 1 - \\cos^{2} B = ${sin2.tex()}$ 이고, 원의 반지름의 길이를 $R$ 라 하면 사인법칙에 의하여 $\\frac{${seg("AC")}}{\\sin B} = 2R$`,
@@ -1447,7 +1449,7 @@ function trigSymSum(p: number, H: number, u: number, v: number, t: number): Q | 
 }
 
 /** 외접원 위의 호의 중점 D: AD² */
-const midArc: SuTemplate<{ a: number; c: number; ci: number; ask: "ad" | "area" }> = {
+const midArcAll: SuTemplate<{ a: number; c: number; ci: number; ask: "ad" | "area" }> = {
   id: "trig-mid-arc",
   subject: "대수",
   unit: U,
@@ -1492,14 +1494,14 @@ const midArc: SuTemplate<{ a: number; c: number; ci: number; ask: "ad" | "area" 
     const sin2 = q(1).sub(cB.mul(cB))
     return {
       text: `${head} ${tri} 의 외접원의 넓이는?`,
-      ...mc(r, piChoice(R2), [piChoice(R2.mul(4)), piChoice(b2.div(4)), piChoice(b2.div(sin2)), piChoice(R2.mul(2))], piFill(R2, q(1, R2.d))),
+      ...mcBal(r, piChoice(R2), [piChoice(R2.mul(4)), piChoice(b2.div(4)), piChoice(b2.div(sin2)), piChoice(R2.mul(2))], piFill(R2, q(1, R2.d))),
       solution: sol(
         l1,
         `$\\sin^{2}(\\angle ${T("ABC")}) = 1 - \\left(${cB.tex()}\\right)^{2} = ${sin2.tex()}$`,
         `외접원의 반지름의 길이를 $R$ 라 하면 사인법칙에 의하여 $4R^{2} = \\frac{${seg("AC")}^{2}}{\\sin^{2}(\\angle ${T("ABC")})} = ${R2.mul(4).tex()}$`,
         `따라서 외접원의 넓이는 $\\pi R^{2} = ${piTex(R2)}$`
       ),
-      score: 4,
+      score: 3,
     }
   },
   // 좌표로 외심과 점 D 를 직접 구한다
@@ -1531,6 +1533,26 @@ const midArc: SuTemplate<{ a: number; c: number; ci: number; ask: "ad" | "area" 
   },
 }
 
+/** 4단계: 호의 중점 D 까지 (AD²) */
+const midArc: SuTemplate = {
+  ...midArcAll,
+  params: (r) => {
+    const p = midArcAll.params(r)
+    return p && p.ask === "ad" ? p : null
+  },
+}
+/** 3단계: 같은 삼각형에서 외접원의 넓이 (사인·코사인법칙 한 번씩) */
+const circumArea: SuTemplate = {
+  ...midArcAll,
+  id: "trig-circum-area",
+  level: 3,
+  count: 40,
+  params: (r) => {
+    const p = midArcAll.params(r)
+    return p && p.ask === "area" ? p : null
+  },
+}
+
 export const TRIGS: SuTemplate[] = [
   sector,
   trigValues,
@@ -1551,4 +1573,5 @@ export const TRIGS: SuTemplate[] = [
   cyclicQuad,
   trigSym,
   midArc,
+  circumArea,
 ]

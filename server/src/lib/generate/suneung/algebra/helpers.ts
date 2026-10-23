@@ -111,12 +111,12 @@ export const qFill = (x: Q) => (k: number) => qChoice(x.add(q((k % 2 ? 1 : -1) *
 /** 정답이 1~999 자연수면 단답형, 아니면 정수 보기 객관식 */
 export function autoInt(r: Rng, ans: number, wrongs: number[]): Pick<SuProblem, "choices" | "answer" | "value" | "choiceValues"> {
   if (isShortOk(ans)) return short(ans)
-  return mc(r, intChoice(ans), wrongs.map(intChoice))
+  return mcBal(r, intChoice(ans), wrongs.map(intChoice))
 }
 /** 유리수 정답: 자연수면 단답형, 아니면 객관식 */
 export function autoQ(r: Rng, ans: Q, wrongs: Q[]): Pick<SuProblem, "choices" | "answer" | "value" | "choiceValues"> {
   if (ans.isInt && isShortOk(ans.n)) return short(ans.n)
-  return mc(r, qChoice(ans), wrongs.map(qChoice), qFill(ans))
+  return mcBal(r, qChoice(ans), wrongs.map(qChoice), qFill(ans))
 }
 
 // ───────── 수치 검산 ─────────
@@ -276,4 +276,32 @@ export function fixJosa(s: string) {
       return `${num}${close}$${sp}${out}`
     }
   )
+}
+
+/**
+ * 정답 번호가 한쪽으로 몰리지 않도록 오답을 고르는 객관식.
+ * 오답 후보(그럴듯한 실수 값)를 먼저 쓰고, 정답보다 작은 쪽·큰 쪽 개수를 무작위로 정해 모자라면 fill 로 채운다.
+ */
+export function mcBal(r: Rng, correct: Choice, wrongs: Choice[], fill?: (k: number) => Choice) {
+  const f = fill ?? ((k: number) => intChoice(correct.value + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.max(1, Math.abs(correct.value) >= 20 ? Math.round(Math.abs(correct.value) / 10) : 1)))
+  const same = (a: Choice, b: Choice) => Math.abs(a.value - b.value) < 1e-9 * Math.max(1, Math.abs(a.value)) || a.tex === b.tex
+  const pool: Choice[] = []
+  const push = (c: Choice) => {
+    if (Number.isFinite(c.value) && !same(c, correct) && !pool.some((p) => same(p, c))) pool.push(c)
+  }
+  const prim = r.shuffle([...wrongs])
+  prim.forEach(push)
+  const nPrim = pool.length
+  for (let k = 1; k <= 40; k++) push(f(k))
+  const lo = pool.filter((c) => c.value < correct.value)
+  const hi = pool.filter((c) => c.value > correct.value)
+  // 원래 오답을 앞에, 채운 값은 정답에 가까운 순으로
+  const order = (xs: Choice[]) => [...xs].sort((a, b) => (pool.indexOf(a) < nPrim ? 0 : 1) - (pool.indexOf(b) < nPrim ? 0 : 1) || Math.abs(a.value - correct.value) - Math.abs(b.value - correct.value))
+  const L = order(lo)
+  const H = order(hi)
+  let below = r.int(0, 4)
+  below = Math.min(below, L.length)
+  if (4 - below > H.length) below = 4 - H.length
+  const chosen = [...L.slice(0, below), ...H.slice(0, 4 - below)]
+  return mc(r, correct, chosen, f)
 }

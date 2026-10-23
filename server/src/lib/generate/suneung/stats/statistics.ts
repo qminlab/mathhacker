@@ -256,7 +256,7 @@ const normalStd: SuTemplate<{ m: number; s: number; z1: number | null; z2: numbe
   count: 54,
   params: (r) => {
     const m = r.int(2, 20) * 5
-    const s = r.int(1, 10)
+    const s = r.pick([2, 4, 6, 8, 10, 3, 5, 2, 4])
     const kind = r.int(0, 2)
     let z1: number | null = r.pick(Z_STEPS)
     let z2: number | null = r.pick(Z_STEPS)
@@ -452,7 +452,7 @@ const normalSym: SuTemplate<{ m: number; s: number; h: number; kind: number; z1:
   count: 70,
   params: (r) => {
     const m = r.int(4, 30) * 2
-    const s = r.int(1, 8)
+    const s = r.pick([2, 4, 6, 8, 3, 5, 2, 4])
     const h = r.int(1, 10)
     const kind = r.int(0, 2)
     let z1: number | null = r.pick(Z_STEPS)
@@ -619,6 +619,8 @@ const ciMean: SuTemplate<{ kind: number; s: number; k: number; xbar: number; con
     const xbar = r.int(20, 300)
     const e = ((conf === 95 ? 1.96 : 2.58) * s) / k
     if (Math.abs(Math.round(e * 10000) - e * 10000) > 1e-6) return null
+    // σ/√n 이 유한소수(소수 둘째 자리까지)여야 다른 신뢰도의 구간 길이도 정확히 떨어진다
+    if ((s * 100) % k !== 0) return null
     if (kind === 0 && k * k + xbar > 999) return null
     if (kind === 1 && k * k > 999) return null
     return { kind, s, k, xbar, conf }
@@ -769,7 +771,7 @@ const normalTwoCond: SuTemplate<{ m: number; s: number; z1: number; z2: number; 
   count: 64,
   params: (r) => {
     const m = r.int(5, 40) * 2
-    const s = r.int(2, 8)
+    const s = r.pick([2, 4, 6, 8, 3, 5, 2, 4])
     const z1 = r.pick(Z_STEPS)
     const z2 = r.pick(Z_STEPS)
     if (Math.abs(z1 - z2) < 0.6 || Math.abs(z1) === Math.abs(z2)) return null
@@ -1009,7 +1011,7 @@ const normalMax: SuTemplate<{ m: number; s: number; L: number; zk: number; z1: n
   count: 45,
   params: (r) => {
     const m = r.int(5, 40) * 2
-    const s = r.int(2, 8)
+    const s = r.pick([2, 4, 6, 8, 3, 5, 2, 4])
     const L = r.int(1, 4) * 2
     const zk = r.pick(Z_STEPS)
     if (!Number.isInteger(m + zk * s)) return null
@@ -1164,10 +1166,12 @@ const sampleCond: SuTemplate<{ m: number; h: number; s: number; k: number; dist:
     const m = r.int(10, 60) * 2
     const h = r.int(1, 8)
     const k = r.int(2, 6)
-    const s = k * r.int(1, 4)
+    const s = k * r.pick([1, 2, 2, 4, 4, 6])
     const dist = r.int(1, 3) * (s / k) // m - a
     const z = r.pick(Z_STEPS)
     if (!Number.isInteger(dist) || !Number.isInteger(m + (z * s) / k)) return null
+    // 묻는 확률이 (나)의 좌변(또는 그 대칭)과 같으면 n 을 구하지 않아도 답이 나오므로 거른다
+    if (Math.abs(Math.abs(z) - (dist * k) / s) < 1e-9) return null
     if (dist * k > 60) return null
     return { m, h, s, k, dist, z }
   },

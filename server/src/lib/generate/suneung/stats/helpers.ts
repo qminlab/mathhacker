@@ -232,8 +232,10 @@ const JOSA_PAIRS: [string, string][] = [["을", "를"], ["은", "는"], ["이었
 /** 숫자(또는 숫자로 끝나는 괄호)로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다. "(t > 0)$ 로" 같은 괄호 안 조건은 그대로 둔다 */
 export function fixJosa(s: string) {
   return s.replace(
-    /(\d+(?:\.\d+)?)((?:\)|\\right\))?)\$(\s?)(으로|로|이었|였|이라|라|을|를|은|는|이|가|과|와)(?=[\s,.)을다고]|$)/g,
-    (all, n: string, close: string, sp: string, j: string, idx: number) => {
+    // 이었/였 은 뒤에 을·다·고 가 붙고, 나머지는 조사 다음이 띄어쓰기·문장부호일 때만 (이다·이고 같은 서술격은 건드리지 않는다)
+    /(\d+(?:\.\d+)?)((?:\)|\\right\))?)\$( ?)(?:(이었|였)(?=[을다고])|(으로|로|이라|라|을|를|은|는|이|가|과|와)(?=[\s,.)]|$))/g,
+    (all, n: string, close: string, sp: string, j1: string | undefined, j2: string | undefined, idx: number) => {
+      const j = (j1 ?? j2)!
       if (close) {
         const before = s.slice(Math.max(0, idx - 20), idx + n.length + 8)
         if (/(>|<|\\ne|\\ge|\\le|\\geq|\\leq)\s*-?\d+(?:\.\d+)?\s*(\)|\\right\))\$/.test(before)) return all

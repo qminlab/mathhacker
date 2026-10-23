@@ -1,7 +1,7 @@
 // 대수 · 지수함수와 로그함수
 import { closeTo, gcd, intChoice, ints, mc, q, Q, qChoice, roots, short, signed, texPoly, texShift } from "../kit"
 import type { SuTemplate } from "../types"
-import { extrema, nearInt, qFill, sol } from "./helpers"
+import { extrema, nearInt, qFill, sol, mcBal } from "./helpers"
 
 const U = "지수함수와 로그함수"
 const lg = (x: number, b: number) => Math.log(x) / Math.log(b)
@@ -40,7 +40,7 @@ const expLaw: SuTemplate<{ b: number; n: number; a: number; c: number; div: bool
     const op = div ? "\\div" : "\\times"
     return {
       text: `$${rootTex(n, a === 1 ? String(b) : `${b}^{${a}}`)} ${op} ${second}$ 의 값은?`,
-      ...mc(r, intChoice(ans), ints(b ** (e + 1), b ** (e - 1), b * e, ans + b)),
+      ...mcBal(r, intChoice(ans), ints(b ** (e + 1), b ** (e - 1), b * e, ans + b)),
       solution: sol(
         `거듭제곱근을 지수로 나타내면 $${rootTex(n, a === 1 ? String(b) : `${b}^{${a}}`)} = ${b}^{${expTex(q(a, n))}}$ 이다.`,
         div
@@ -76,7 +76,7 @@ const logChain: SuTemplate<{ p: number; m: number; k: number; x: number; swap: b
     const B = `\\log_{${p ** m}} ${x}`
     return {
       text: `$${swap ? `${B} \\times ${A}` : `${A} \\times ${B}`}$ 의 값은?`,
-      ...mc(r, qChoice(ans), [qChoice(q(m, k)), qChoice(q(k * m)), qChoice(q(k + m)), qChoice(ans.add(1)), qChoice(q(k - 1, m))], qFill(ans)),
+      ...mcBal(r, qChoice(ans), [qChoice(q(m, k)), qChoice(q(k * m)), qChoice(q(k + m)), qChoice(ans.add(1)), qChoice(q(k - 1, m))], qFill(ans)),
       solution: sol(
         `밑을 $${p}$ 로 바꾸면 $${A} = \\frac{\\log_{${p}} ${p ** k}}{\\log_{${p}} ${x}} = \\frac{${k}}{\\log_{${p}} ${x}}$`,
         m === 1 ? `$${B}$ 는 이미 밑이 $${p}$ 이다.` : `$${B} = \\frac{\\log_{${p}} ${x}}{\\log_{${p}} ${p ** m}} = \\frac{\\log_{${p}} ${x}}{${m}}$`,
@@ -115,7 +115,7 @@ const logCombo: SuTemplate<{ b: number; c1: number; x1: number; x2: number; x3: 
     const lead = c1 === 2 ? `2\\log_{${b}} ${x1}` : `\\log_{${b}} ${x1}`
     return {
       text: `$${lead} + \\log_{${b}} ${x2} - \\log_{${b}} ${x3}$ 의 값은?`,
-      ...mc(r, intChoice(e), ints(e - 1, e + 1, 2 * e, e + 2)),
+      ...mcBal(r, intChoice(e), ints(e - 1, e + 1, 2 * e, e + 2)),
       solution: sol(
         c1 === 2 ? `$2\\log_{${b}} ${x1} = \\log_{${b}} ${x1}^{2} = \\log_{${b}} ${x1 ** 2}$ 이다.` : `로그의 덧셈은 진수의 곱, 뺄셈은 진수의 나눗셈이 된다.`,
         `(주어진 식) $= \\log_{${b}} \\frac{${x1 ** c1} \\times ${x2}}{${x3}} = \\log_{${b}} ${b ** e}$`,
@@ -166,7 +166,7 @@ const rootProd: SuTemplate<{ n: number; P: number; R: number; div: boolean }> = 
     const op = div ? "\\div" : "\\times"
     return {
       text: `$${rootTex(n, String(P))} ${op} ${rootTex(n, String(R))}$ 의 값은?`,
-      ...mc(r, intChoice(ans), ints(-ans, ans + 1, ans - 1, ans * 2, ans * ans)),
+      ...mcBal(r, intChoice(ans), ints(-ans, ans + 1, ans - 1, ans * 2, ans * ans)),
       solution: sol(
         div ? `$\\frac{${rootTex(n, "a")}}{${rootTex(n, "b")}} = ${rootTex(n, "\\frac{a}{b}")}$ 이므로` : `$${rootTex(n, "a")} \\times ${rootTex(n, "b")} = ${rootTex(n, "ab")}$ 이므로`,
         `(주어진 식) $= ${rootTex(n, String(inner))}$`,
@@ -210,7 +210,7 @@ const graphShift: SuTemplate<{ kind: "exp" | "log"; b: number; inv: boolean; m: 
     const shifted = kind === "exp" ? `y = ${inv ? `\\left(\\frac{1}{${b}}\\right)^{${texShift(m)}}` : `${b}^{${texShift(m)}}`} ${signed(n)}` : `y = \\log_{${b}}(${texShift(m)}) ${signed(n)}`
     return {
       text: `함수 $${f}$ 의 그래프를 $x$ 축의 방향으로 $m$ 만큼, $y$ 축의 방향으로 $n$ 만큼 평행이동한 그래프의 점근선이 직선 $${asym}$ 이고, 이 그래프가 점 $(${x0}, ${y0})$ 을 지날 때, $m + n$ 의 값은? (단, $m$, $n$ 은 상수이다.)`,
-      ...mc(r, intChoice(ans), ints(m - n, n - m, ans + 1, ans - 1, -ans)),
+      ...mcBal(r, intChoice(ans), ints(m - n, n - m, ans + 1, ans - 1, -ans)),
       solution: sol(
         kind === "exp"
           ? `평행이동한 그래프는 $y = ${inv ? `\\left(\\frac{1}{${b}}\\right)^{x - m}` : `${b}^{x - m}`} + n$ 이고 점근선은 직선 $y = n$ 이므로 $n = ${n}$`
@@ -274,7 +274,7 @@ const expQuad: SuTemplate<{ b: number; al: number; be: number; ask: "sum" | "sq"
     const wr = ask === "sum" ? [al * be, ans + 1, ans - 1, be - al, t1.add(t2).isInt ? t1.add(t2).n : ans + 2] : [(al + be) ** 2, ans - 2 * al * be + 1, ans + 2 * al * be, ans + 1, ans - 1]
     return {
       text: `방정식 $${eq}$ 의 두 실근을 $\\alpha$, $\\beta$ 라 할 때, $${ask === "sum" ? "\\alpha + \\beta" : "\\alpha^{2} + \\beta^{2}"}$ 의 값은?`,
-      ...mc(r, intChoice(ans), ints(...wr)),
+      ...mcBal(r, intChoice(ans), ints(...wr)),
       solution: sol(
         `$${b}^{x} = t \\ (t > 0)$ 로 놓으면 $${sq} = t^{2}$ 이므로 $${texPoly([A, B.neg(), C], "t")} = 0$`,
         `인수분해하면 $${A === 1 ? "" : A}\\left(t - ${t1.tex()}\\right)(t - ${t2.tex()}) = 0$ 에서 $t = ${t1.tex()}$ 또는 $t = ${t2.tex()}$ (모두 양수)`,
@@ -754,7 +754,7 @@ const maxMinSub: SuTemplate<{ v: 0 | 1; b: number; p: number; lo: number; hi: nu
     const vertexForm = h0 === 0 ? `t^{2} + a` : `(t ${signed(h0)})^{2} ${signed(-(h0 * h0))} + a`
     return {
       text: `$${dom}$ 에서 함수 $${fx}$ 의 최댓값이 $${M}$ 일 때, $f(x)$ 의 최솟값은? (단, $a$ 는 상수이다.)`,
-      ...mc(r, intChoice(ans), ints(endMin, a, ans + 1, ans - 1, min0 - a, M - ans)),
+      ...mcBal(r, intChoice(ans), ints(endMin, ans + 1, ans - 1, ans + 2, ans - 2, max0 + a)),
       solution: sol(
         `$${tName} = t$ 로 놓으면 $${dom}$ 에서 $${tl} \\le t \\le ${th}$ 이고 $f(x) = ${gTex}${h0 === 0 ? "" : ` = ${vertexForm}`}$`,
         inside ? `꼭짓점의 $t$ 좌표 $${t0}$ 가 범위 안에 있으므로 최솟값은 $t = ${t0}$ 일 때, 최댓값은 꼭짓점에서 더 먼 끝 $t = ${maxEnd}$ 일 때이다.` : `꼭짓점의 $t$ 좌표 $${t0}$ 가 범위 밖에 있으므로 $t$ 의 범위의 양 끝에서 최댓값과 최솟값을 갖는다. 최댓값은 $t = ${maxEnd}$, 최솟값은 $t = ${minT}$ 일 때이다.`,
@@ -906,6 +906,9 @@ const rootCountK: SuTemplate<{ a: number; M: number; S: number }> = {
     const [S, ks] = r.pick(options)
     const sum = ks.reduce((x, y) => x + y, 0)
     if (sum > 999 || ks.some((k) => k > M)) return null
+    // 답이 가장자리 값 k = 1 하나로만 정해지는 경우는 거르고, 1 이 섞인 경우도 줄인다
+    if (ks.length === 1 && ks[0] === 1) return null
+    if (ks.includes(1) && r.chance(0.6)) return null
     return { a, M, S }
   },
   build: ({ a, M, S }) => {
@@ -980,7 +983,7 @@ const lattice: SuTemplate<{ b: number; m: number; k: number }> = {
   params: (r) => {
     const b = r.pick([2, 3])
     const m = r.pick([1, 2])
-    const k = r.int(4, 60)
+    const k = r.int(6, 60)
     const S = latticeCount(b, m, k)
     if (S > 999) return null
     return { b, m, k }

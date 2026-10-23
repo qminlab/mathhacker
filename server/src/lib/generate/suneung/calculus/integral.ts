@@ -203,8 +203,9 @@ const defnFn: SuTemplate<{ L: number; a: number; c: number; p: number; k: number
   ...head("i2-defnfn", U, "12미적Ⅰ-03-04", 2, 72),
   params: (r) => {
     const p = nz(r, -2, 3)
-    const k = r.int(-2, 3)
-    return { L: r.pick([1, 1, 2, -1]), a: r.int(-6, 6), c: r.int(-8, 8), p, k }
+    const k = nz(r, -2, 3) // f(0) = c 는 a 와 무관하게 정해지므로 묻지 않는다
+    const a = nz(r, -6, 6)
+    return { L: r.pick([1, 1, 2, -1]), a, c: r.int(-8, 8), p, k }
   },
   build: ({ L, a, c, p, k }, r) => {
     const d = -(L * p ** 3 + a * p * p + c * p)
@@ -229,6 +230,8 @@ const defnFn: SuTemplate<{ L: number; a: number; c: number; p: number; k: number
       const G = (x: number) => L * x ** 3 + A * x * x + c * x + d
       if (Math.abs(G(p)) < 1e-9) found.push(deriv(G, k))
     }
+    // 대입 조건 없이(a 가 달라도) 같은 답이 나오면 조건을 쓰지 않는 문제
+    if (Math.abs(deriv((x) => L * x ** 3 + (a + 1) * x * x + c * x, k) - deriv((x) => L * x ** 3 + a * x * x + c * x, k)) < 1e-6) return NaN
     return only(found) ?? NaN
   },
 }
@@ -719,11 +722,17 @@ const motionCond: SuTemplate<{ p: number; p2: number; qd: number; R: number }> =
 }
 
 /** g(x) = ∫_0^x f(t)dt 의 극값 조건 */
+const defnExtVal = (A: number, be: number, al: number, x: number) => pEval(F([A, -A * (al + be), A * al * be]), x)
 const defnExt: SuTemplate<{ A: number; be: number; k: number; v: number }> = {
   ...head("i4-defn-ext", U, "12미적Ⅰ-03-04", 4, 44),
   params: (r) => {
     const k = r.int(-3, 4)
-    return { A: r.pick([3, -3, 6, -6]), be: nz(r, -5, 5), k, v: r.int(0, 2) }
+    const A = r.pick([3, -3, 6, -6])
+    const be = nz(r, -5, 5)
+    const v = r.int(0, 2)
+    // g(0) = 0 처럼 조건 없이 정해지는 값, 또는 두 경우(α = 0, α = 3β)에서 같은 값이 되는 점은 묻지 않는다
+    if (v === 0 && (k === 0 || defnExtVal(A, be, 0, k).eq(defnExtVal(A, be, 3 * be, k)))) return null
+    return { A, be, k, v }
   },
   build: ({ A, be, k, v }, r) => {
     // 경우: α = 0 또는 α = 3β, 극대 조건으로 하나만
@@ -762,6 +771,10 @@ const defnExt: SuTemplate<{ A: number; be: number; k: number; v: number }> = {
       if (!(g(be - e) > g(be) && g(be + e) > g(be))) continue
       found.push(v === 0 ? g(k) : g(be))
     }
+    // 조건 (가)·(나) 없이 두 후보 α = 0, α = 3β 에서 같은 답이 나오면 조건을 쓰지 않는 문제이므로 거부
+    const at = v === 0 ? k : be
+    const alt = [0, 3 * be].map((al) => simpson((t) => A * (t - al) * (t - be), 0, at, 4))
+    if (Math.abs(alt[0] - alt[1]) < 1e-9) return NaN
     return only(found) ?? NaN
   },
 }
