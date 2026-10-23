@@ -585,7 +585,7 @@ const meet: SuTemplate<{ p: number; qv: number; T: number; v: number }> = {
       ...(v === 0 ? mcQ(r, ans, [q(ev(x1, T)), dist.add(d1), d2, ans.add(1), q(T ** 3)]) : mcQ(r, ans, [q(T ** 3), q(ev(x1, T) + 1), q(ev([1, p, 0, 0], T)), q(-ev(x1, T)), q(ev(v1, T))])),
       solution: lines(
         `두 점의 위치는 $x_1(t) = ${texPoly(x1, "t")}$, $x_2(t) = ${texPoly([qv / 2, rr, 0], "t")}$`,
-        `$x_1(t) - x_2(t) = ${texPoly([1, -s, -rr, 0], "t")} = t(${texShift(T, "t")})(${texShift(s - T, "t")})$ 이므로 출발 후 처음 만나는 시각은 $t = ${T}$`,
+        `$x_1(t) - x_2(t) = ${texPoly([1, -s, -rr, 0], "t")} = ${facs(1, [0, T, s - T], "t")}$ 이므로 출발 후 처음 만나는 시각은 $t = ${T}$`,
         v === 0
           ? inside
             ? `$v_1(t) = 3t(t - ${tc.tex()})$ 이므로 $t = ${tc.tex()}$ 에서 운동 방향이 바뀐다. 움직인 거리는 $\\left| ${intTex(0, tc.tex(), "v_1(t)", "t")} \\right| + ${intTex(tc.tex(), T, "v_1(t)", "t")} = ${d1.tex()} + ${d2.tex()} = ${ans.tex()}$`
@@ -695,7 +695,7 @@ const motionCond: SuTemplate<{ p: number; p2: number; qd: number; R: number }> =
       solution: lines(
         `(가)에서 $v(${p}) = 0$ 이므로 $${3 * p * p} + ${cx(p, "a")} + b = 0$ … ①`,
         `(나)에서 $${intTex(0, qd, "v(t)", "t")} = \\left[ t^{3} + \\frac{a}{2}t^{2} + bt \\right]_{0}^{${qd}} = ${qd ** 3} + ${q(qd * qd, 2).tex()}a + ${cx(qd, "b")} = ${D}$ … ②`,
-        `①, ②를 연립하면 $a = ${2 * a}$, $b = ${b}$ 이므로 $v(t) = ${texPoly(vel, "t")} = 3(${texShift(p, "t")})(${texShift(p2, "t")})$ ($t = ${p}$ 은 중근이 아니므로 실제로 운동 방향이 바뀐다)`,
+        `①, ②를 연립하면 $a = ${2 * a}$, $b = ${b}$ 이므로 $v(t) = ${texPoly(vel, "t")} = ${facs(3, [p, p2], "t")}$ ($t = ${p}$ 은 중근이 아니므로 실제로 운동 방향이 바뀐다)`,
         `$0 \\le t \\le ${R}$ 에서 $v(t)$ 의 부호는 $t = ${cuts.slice(1, -1).join(", ")}$ 에서 바뀌므로 움직인 거리는`,
         `$${parts.map((x, i) => `\\left| ${intTex(cuts[i], cuts[i + 1], "v(t)", "t")} \\right|`).join(" + ")} = ${parts.map((x) => Math.abs(x)).join(" + ")} = ${ans}$`
       ),

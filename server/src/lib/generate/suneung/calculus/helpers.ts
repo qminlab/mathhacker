@@ -255,3 +255,9 @@ export const coefTex = (c: number | Q) => {
 }
 /** 계수 × 식 (0 이면 "0") */
 export const cmul = (c: number | Q, body: string) => (Q.of(c).n === 0 ? "0" : `${coefTex(c)}${body}`)
+
+/** k·∏(x - r) · (Ax + m): Ax + m 이 정수 근을 가지면 인수로 합쳐 같은 인수는 거듭제곱으로 */
+export const facLin = (k: number, rs: number[], A: number, m: number, x = "x") =>
+  m % A === 0 ? facs(k * A, [...rs, -m / A], x) : `${facs(k, rs, x)}(${texPoly([A, m], x)})`
+/** 0 인 항까지 모두 나열한 합: [0, 4, -8] → "0 + 4 - 8" */
+export const listSum = (xs: number[]) => xs.map((x, i) => (i === 0 ? String(x) : x < 0 ? `- ${-x}` : `+ ${x}`)).join(" ")

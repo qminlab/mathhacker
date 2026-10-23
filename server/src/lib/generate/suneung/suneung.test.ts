@@ -142,6 +142,12 @@ describe("수능 문제 은행", () => {
     }
   })
 
+  it("서술격 조사 '이다'가 '가다'로 바뀌지 않았다", () => {
+    for (const p of all)
+      for (const s of [p.text, p.solution, ...(p.choices ?? [])])
+        expect(s, where(p)).not.toMatch(/\$\s?가(다|고|므로|며|면|지만|어야)(?![가-힣])/)
+  })
+
   it("수식($...$) 안에 한글이 없다 (그림에서 글자가 빠진다)", () => {
     for (const p of all)
       for (const s of [p.text, ...(p.choices ?? []), p.solution, p.hint ?? ""])

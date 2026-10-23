@@ -3,7 +3,7 @@ import { limitAt, q, roots, short, signed, texPoly, texShift, paren, term } from
 import type { Choice } from "../types"
 import { mc } from "../kit"
 import type { SuTemplate } from "../types"
-import { answerI, ask, cases, cmul, coefTex, lines, plus, cx, ev, fac, facs, head, mcI, mcQ, nz, only, range, solveLinear, times, U_LIM } from "./helpers"
+import { answerI, ask, cases, cmul, coefTex, facLin, lines, listSum, plus, cx, ev, fac, facs, head, mcI, mcQ, nz, only, range, solveLinear, times, U_LIM } from "./helpers"
 
 const U = U_LIM
 
@@ -273,7 +273,7 @@ const polyDet: SuTemplate<{ v: number; C: number; A: number; B: number; k: numbe
       solution: lines(
         `첫 번째 조건에서 $f(x)$ 의 이차항의 계수는 $${A}$ 이다.`,
         `두 번째 조건에서 (분모) $\\to 0$ 이므로 (분자) $\\to 0$, 즉 $f(${al}) = 0$ 이다. 따라서 $f(x) = (${texShift(al)})(${cx(A)} + m)$ 으로 놓을 수 있다.`,
-        `$\\lim_{x \\to ${al}} (${cx(A)} + m) = ${A * al} + m = ${B}$ 에서 $m = ${m}$, 즉 $f(x) = (${texShift(al)})(${texPoly([A, m])})$`,
+        `$\\lim_{x \\to ${al}} (${cx(A)} + m) = ${A * al} + m = ${B}$ 에서 $m = ${m}$, 즉 $f(x) = ${facLin(1, [al], A, m)}$`,
         `따라서 $f(${k}) = ${times(k - al, A * k + m)} = ${ans}$`
       ),
       score: 3,
@@ -521,7 +521,7 @@ const cubicDet: SuTemplate<{ al: number; be: number; A: number; m: number; k: nu
         `$f(x)$ 는 삼차함수이므로 $f(x) = ${facs(1, [al, be])}(ax + b) \\ (a \\ne 0)$ 로 놓을 수 있다.`,
         `$\\lim_{x \\to ${al}} ${fac(be)}(ax + b) = ${al === 0 ? cmul(al - be, "b") : `${coefTex(al - be)}(${texPoly([al, 0], "a")} + b)`} = ${P}$ 에서 $${al === 0 ? "" : `${texPoly([al, 0], "a")} + `}b = ${g1.tex()}$`,
         `$\\lim_{x \\to ${be}} ${fac(al)}(ax + b) = ${be === 0 ? cmul(be - al, "b") : `${coefTex(be - al)}(${texPoly([be, 0], "a")} + b)`} = ${R}$ 에서 $${be === 0 ? "" : `${texPoly([be, 0], "a")} + `}b = ${g2.tex()}$`,
-        `두 식을 연립하면 $a = ${A}$, $b = ${m}$ 이므로 $f(x) = ${facs(1, [al, be])}(${texPoly([A, m])})$`,
+        `두 식을 연립하면 $a = ${A}$, $b = ${m}$ 이므로 $f(x) = ${facLin(1, [al, be], A, m)}$`,
         `따라서 $f(${k}) = ${times(k - al, k - be, A * k + m)} = ${ans}$`
       ),
       score: 4,
@@ -677,9 +677,9 @@ const sqCont: SuTemplate<{ k: number; m: number; R: number[]; v: number }> = {
       solution: lines(
         `$x \\ne ${k}$ 에서 $f(x)$ 는 연속이므로 $${h}$ 도 연속이다. $x = ${k}$ 에서의 연속만 확인하면 된다.`,
         v === 0
-          ? `$\\lim_{x \\to ${k}-} \\{f(x)\\}^{2} = (${m * k} + a)^{2}$, $\\{f(${k})\\}^{2} = ${P0 * P0}$ 이므로 $(${m * k} + a)^{2} = ${P0 * P0}$`
-          : `$\\lim_{x \\to ${k}-} |f(x)| = |${m * k} + a|$, $|f(${k})| = ${Math.abs(P0)}$ 이므로 $|${m * k} + a| = ${Math.abs(P0)}$`,
-        `$${m * k} + a = ${P0}$ 또는 $${m * k} + a = ${-P0}$ 에서 $a = ${a1}$ 또는 $a = ${a2}$`,
+          ? `$\\lim_{x \\to ${k}-} \\{f(x)\\}^{2} = ${m * k === 0 ? "a^{2}" : `(${m * k} + a)^{2}`}$, $\\{f(${k})\\}^{2} = ${P0 * P0}$ 이므로 $${m * k === 0 ? "a^{2}" : `(${m * k} + a)^{2}`} = ${P0 * P0}$`
+          : `$\\lim_{x \\to ${k}-} |f(x)| = |${m * k === 0 ? "a" : `${m * k} + a`}|$, $|f(${k})| = ${Math.abs(P0)}$ 이므로 $|${m * k === 0 ? "a" : `${m * k} + a`}| = ${Math.abs(P0)}$`,
+        m * k === 0 ? `따라서 $a = \\pm ${Math.abs(P0)}$, 즉 $a = ${a1}$ 또는 $a = ${a2}$` : `$${m * k} + a = ${P0}$ 또는 $${m * k} + a = ${-P0}$ 에서 $a = ${a1}$ 또는 $a = ${a2}$`,
         `($a = ${a2}$ 이면 $f(x)$ 는 불연속이지만 $${h}$ ${v === 0 ? "은" : "는"} 연속이다.)`,
         `따라서 모든 $a$ 의 값의 곱은 $${times(a1, a2)} = ${ans}$`
       ),
@@ -764,7 +764,7 @@ const crossDisc: SuTemplate<Cross> = {
       solution: lines(
         crossShape(c, R0),
         `직선 $y = t$ 를 위아래로 움직이며 교점의 개수를 세면 ${crossTable(c, crit)} 이다.`,
-        `따라서 $g(t)$ 는 $t = ${disc.join(", ")}$ 에서 불연속이고 $S = ${disc.length > 1 ? `${plus(...disc)} = ` : ""}${S}$, 최댓값 $M = ${max}$`,
+        `따라서 $g(t)$ 는 $t = ${disc.join(", ")}$ 에서 불연속이고 $S = ${disc.length > 1 ? `${listSum(disc)} = ` : ""}${S}$, 최댓값 $M = ${max}$`,
         `$S + M = ${S} ${signed(max)} = ${ans}$`
       ),
       score: 4,
