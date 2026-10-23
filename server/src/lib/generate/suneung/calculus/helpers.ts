@@ -72,7 +72,11 @@ export const facs = (k: number, rs: number[], x = "x") => {
   return k === 1 ? s : k === -1 ? `-${s}` : `${k}${s}`
 }
 /** a × b 표기 (음수는 괄호) */
-export const times = (...xs: (number | Q)[]) => xs.map((x, i) => (i > 0 && Q.of(x).n < 0 ? `(${Q.of(x).tex()})` : Q.of(x).tex())).join(" \\times ")
+export const times = (...ys: (number | Q)[]) => {
+  // 곱에서 1 은 생략 (모두 1 이면 1 하나)
+  const xs = ys.length > 1 && ys.some((y) => !Q.of(y).eq(1)) ? ys.filter((y) => !Q.of(y).eq(1)) : ys.slice(0, 1)
+  return xs.map((x, i) => (i > 0 && Q.of(x).n < 0 ? `(${Q.of(x).tex()})` : Q.of(x).tex())).join(" \\times ")
+}
 export const tp = texPoly
 
 /** 연립일차방정식 (부분 피벗 가우스 소거) — verify 전용 */
@@ -185,12 +189,19 @@ export const fixEnding = (text: string, isShort: boolean) => {
   else body = body.replace(/(을|를) 구하시오\.$/, (_x, j: string) => (j === "을" ? "은?" : "는?"))
   return body + tail
 }
+/** 수식 안의 등식 사슬에서 같은 값이 이어지면 하나로: "a = \\frac{1}{3} = \\frac{1}{3}" → "a = \\frac{1}{3}" */
+export const dedupEq = (s: string) =>
+  s.replace(/\$([^$]+)\$/g, (_m, body: string) => {
+    const parts = body.split(" = ")
+    const out = parts.filter((x, i) => i === 0 || x.trim() !== parts[i - 1].trim())
+    return `$${out.join(" = ")}$`
+  })
 /** 템플릿의 문제·보기·해설에 조사 교정을 적용 */
 export const withJosa = <P>(t: SuTemplate<P>): SuTemplate<P> => ({
   ...t,
   build: (p, r) => {
     const b = t.build(p, r)
-    return { ...b, text: fixEnding(fixJosa(b.text), !b.choices), solution: fixJosa(b.solution), ...(b.choices ? { choices: b.choices.map(fixJosa) } : {}) }
+    return { ...b, text: fixEnding(fixJosa(b.text), !b.choices), solution: fixJosa(dedupEq(b.solution)), ...(b.choices ? { choices: b.choices.map(fixJosa) } : {}) }
   },
 })
 
@@ -230,3 +241,17 @@ export const plusPoly = (cs: (number | Q)[], x = "x") => {
   const t = texPoly(cs, x)
   return t.startsWith("-") ? `- ${t.slice(1)}` : `+ ${t}`
 }
+
+/** 0 인 항은 빼고 이어 쓰기: plus(3, 0, -2) → "3 - 2" (모두 0 이면 "0") */
+export const plus = (...xs: (number | Q)[]) => {
+  const nzs = xs.map((x) => Q.of(x)).filter((x) => x.n !== 0)
+  if (!nzs.length) return "0"
+  return nzs.map((x, i) => (i === 0 ? x.tex() : x.n < 0 ? `- ${x.neg().tex()}` : `+ ${x.tex()}`)).join(" ")
+}
+/** 문자 앞 계수: 1 → "", -1 → "-", 그 밖 → 수 */
+export const coefTex = (c: number | Q) => {
+  const k = Q.of(c)
+  return k.eq(1) ? "" : k.eq(-1) ? "-" : k.tex()
+}
+/** 계수 × 식 (0 이면 "0") */
+export const cmul = (c: number | Q, body: string) => (Q.of(c).n === 0 ? "0" : `${coefTex(c)}${body}`)

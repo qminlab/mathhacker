@@ -261,6 +261,7 @@ export function ratioTex(x: Q, y: Q) {
 const gcdQ = (a: number, b: number): number => (b ? gcdQ(b, a % b) : Math.abs(a))
 
 /** 템플릿 문장·해설의 숫자 뒤 조사를 마지막에 한 번 더 맞춘다 */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function polish(t: SuTemplate<any>): SuTemplate<any> {
   return {
     ...t,

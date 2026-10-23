@@ -1,7 +1,7 @@
 // 미적분Ⅰ · 적분 (12미적Ⅰ-03-01 ~ 06)
 import { deriv, integrate, isShortOk, limitAt, pEval, pInteg, q, roots, signed, texPoly, texShift, paren, term } from "../kit"
 import type { SuTemplate } from "../types"
-import { answerI, ask, cases, cx, dcs, plusPoly, ev, fac, facs, gridCount, gridVals, head, integrateAbs, lines, mcI, mcQ, nz, only, simpson, solveLinear, times, U_INT } from "./helpers"
+import { answerI, ask, cases, coefTex, plus, cx, dcs, plusPoly, ev, fac, facs, gridCount, gridVals, head, integrateAbs, lines, mcI, mcQ, nz, only, simpson, solveLinear, times, U_INT } from "./helpers"
 
 const U = U_INT
 /** 정수 계수 다항식의 부정적분 (유리수 계수, 상수항 0) */
@@ -58,7 +58,7 @@ const defint: SuTemplate<{ cs: number[]; a: number; b: number }> = {
     return {
       text: `$${intTex(a, b, wrap(cs))}$ 의 값은?`,
       ...mcQ(r, ans, [Fb.add(Fa), Fb, Fa.sub(Fb), ans.add(1), q(ev(dcs(cs), b) - ev(dcs(cs), a))]),
-      solution: lines(`$${intTex(a, b, wrap(cs))} = ${bracket(cs, a, b)}$`, `따라서 구하는 값은 $${Fb.tex()} - ${paren(Fa)} = ${ans.tex()}$`),
+      solution: lines(`$${intTex(a, b, wrap(cs))} = ${bracket(cs, a, b)}$`, Fa.n === 0 ? `$x = ${a}$ 에서의 값이 $0$ 이므로 구하는 값은 $${ans.tex()}$` : `따라서 구하는 값은 $${Fb.tex()} - ${paren(Fa)} = ${ans.tex()}$`),
       score: 2,
     }
   },
@@ -123,7 +123,7 @@ const props: SuTemplate<{ v: number; f: number[]; g: number[]; a: number; b: num
       ...mcQ(r, ans, [defI(f, 0, b), defI(ev2, 0, b), ans.neg(), defI(f, 0, b).mul(2), ans.add(1)]),
       solution: lines(
         `$${texPoly([f[0], 0, f[2], 0])}$ 은 홀수 차수의 항만 있어 $${intTex(-b, b, wrap([f[0], 0, f[2], 0]))} = 0$`,
-        `따라서 (주어진 식) $= 2${intTex(0, b, wrap(ev2))} = 2${bracket(ev2, 0, b)}$`,
+        `나머지 항만 남으므로 (주어진 식) $= 2${intTex(0, b, wrap(ev2))} = 2${bracket(ev2, 0, b)}$`,
         `따라서 구하는 값은 $${ans.tex()}$`
       ),
       score: 2,
@@ -185,7 +185,7 @@ const disp1: SuTemplate<{ A: number; B: number; C: number; x0: number; T: number
       solution: lines(
         v === 0 ? `시각 $t = ${T}$ 에서의 위치는 $${x0} + ${intTex(0, T, `(${texPoly(vel, "t")})`, "t")}$` : `위치의 변화량은 $${intTex(t1, T, `(${texPoly(vel, "t")})`, "t")}$`,
         `$${intTex(t1, T, `(${texPoly(vel, "t")})`, "t")} = \\left[ ${texPoly([A, B, C, 0], "t")} \\right]_{${t1}}^{${T}} = ${disp}$`,
-        v === 0 ? `따라서 구하는 위치는 $${x0} ${signed(disp)} = ${ans}$` : `따라서 구하는 값은 $${ans}$`
+        v === 0 ? `따라서 구하는 위치는 $${plus(x0, disp)} = ${ans}$` : `따라서 구하는 값은 $${ans}$`
       ),
       score: 2,
     }
@@ -215,7 +215,7 @@ const defnFn: SuTemplate<{ L: number; a: number; c: number; p: number; k: number
       text: `다항함수 $f(x)$ 가 모든 실수 $x$ 에 대하여 $${intTex(p, "x", "f(t)", "t")} = ${rhs}$ 를 만족시킬 때, $f(${k})$ ${ask(ans)} (단, $a$ 는 상수이다.)`,
       ...answerI(r, ans, [ev([3 * L, a, c], k), ev([3 * L, -2 * a, c], k), ev([L, a, c, d], k), ans + 1, ans - 1, -ans]),
       solution: lines(
-        `양변에 $x = ${p}$ 를 대입하면 좌변은 $0$ 이므로 $0 = ${L * p ** 3} ${signed(p * p)}a ${signed(c * p + d)}$, 즉 $a = ${a}$`,
+        `양변에 $x = ${p}$ 를 대입하면 좌변은 $0$ 이므로 $0 = ${L * p ** 3}${term(p * p, "a")}${term(c * p + d, "")}$, 즉 $a = ${a}$`,
         `양변을 $x$ 에 대하여 미분하면 $f(x) = ${texPoly([3 * L, 0, 0])} + 2ax${term(c, "")} = ${texPoly(fcs)}$`,
         `따라서 $f(${k}) = ${ans}$`
       ),
@@ -303,9 +303,9 @@ const pieceInt: SuTemplate<{ k: number; p: number; m: number; l: number; u: numb
       text: `함수 $f(x) = ${f}$ 가 실수 전체의 집합에서 연속일 때, $${intTex(l, u, "f(x)")}$ 의 값은? (단, $a$ 는 상수이다.)`,
       ...mcQ(r, ans, [defI(L, l, u), defI(R, l, u), I1.sub(I2), defI([m, k * k + p], k, u).add(I1), ans.add(1)]),
       solution: lines(
-        `$x = ${k}$ 에서 연속이므로 $${k * k + p} = ${times(m, k)} + a$, 즉 $a = ${n}$`,
+        `$x = ${k}$ 에서 연속이므로 $${k * k + p} = ${m * k === 0 ? "a" : `${m * k} + a`}$, 즉 $a = ${n}$`,
         `$${intTex(l, u, "f(x)")} = ${intTex(l, k, wrap(L))} + ${intTex(k, u, wrap(R))}$`,
-        `따라서 구하는 값은 $${I1.tex()} + ${paren(I2)} = ${ans.tex()}$`
+        `따라서 구하는 값은 $${plus(I1, I2)} = ${ans.tex()}$`
       ),
       score: 3,
     }
@@ -451,7 +451,7 @@ const fconst: SuTemplate<{ v: number; a: number; b: number; m: number; k: number
           `$${intTex(0, m, "f(t)", "t")} = K$ ($K$ 는 상수)라 하면 $f(x) = ${texPoly([a, b, 0])} + K$`,
           `$K = ${intTex(0, m, `(${texPoly([a, b, 0], "t")} + K)`, "t")} = ${q(a * m ** 3, 3).add(q(b * m * m, 2)).tex()} ${m < 0 ? "-" : "+"} ${Math.abs(m) === 1 ? "" : Math.abs(m)}K$`,
           `$${1 - m === 1 ? "" : 1 - m === -1 ? "-" : 1 - m}K = ${q(a * m ** 3, 3).add(q(b * m * m, 2)).tex()}$ 에서 $K = ${K.tex()}$`,
-          `따라서 $f(${k}) = ${a * k * k + b * k} + ${paren(K)} = ${ans.tex()}$`
+          `따라서 $f(${k}) = ${plus(a * k * k + b * k, K)} = ${ans.tex()}$`
         ),
         score: 3,
       }
@@ -469,7 +469,7 @@ const fconst: SuTemplate<{ v: number; a: number; b: number; m: number; k: number
         `$${intTex(0, m, "f(t)", "t")} = K$ ($K$ 는 상수)라 하면 $f(x) = ${texPoly([a, 0, 0])} + Kx${term(c, "")}$`,
         `$K = ${intTex(0, m, `(${texPoly([a, 0, 0], "t")} + Kt${term(c, "")})`, "t")} = ${rhs.tex()} + ${q(m * m, 2).tex()}K$`,
         `$${coef.eq(1) ? "" : coef.eq(-1) ? "-" : coef.tex()}K = ${rhs.tex()}$ 에서 $K = ${K.tex()}$`,
-        `따라서 $f(${k}) = ${a * k * k + c} + ${paren(K)} \\times ${paren(k)} = ${ans.tex()}$`
+        k === 0 ? `따라서 $f(0) = ${ans.tex()}$` : `따라서 $f(${k}) = ${a * k * k + c} + ${paren(K)} \\times ${paren(k)} = ${ans.tex()}$`
       ),
       score: 3,
     }
@@ -508,9 +508,9 @@ const equalArea: SuTemplate<{ v: number; a: number; p: number; qq: number; side:
         text: `곡선 $y = ${texPoly(f)}$ 와 $x$ 축으로 둘러싸인 부분의 넓이를 $A$, 곡선 $y = ${texPoly(f)}$ 와 $x$ 축 및 직선 $x = t$ $${`(${cond})`}$ 로 둘러싸인 부분의 넓이를 $B$ 라 하자. $A = B$ 일 때, $t$ 의 값은?`.replace("$ $(", " \\ ("),
         ...mcI(r, ans, side === 1 ? [2 * qq - p, qq + (qq - p) / 2 + 1, p + 2 * (qq - p), qq + 1, t - 1] : [2 * p - qq, p - 1, qq - 2 * (qq - p), t + 1, t - 2]),
         solution: lines(
-          `$A = B$ 이고 두 부분은 $x$ 축을 기준으로 서로 반대쪽에 있으므로 $${intTex(from, "t", wrap(f))} = 0$ 이다.`,
-          `$${intTex(from, "t", wrap(f))} = \\left[ ${texPoly(F(f))} \\right]_{${from}}^{t}$ 이고, $x = ${from} + s$ 로 놓으면 $${a === 1 ? "" : a === -1 ? "-" : a}\\left\\{ \\frac{s^{3}}{3} ${side === 1 ? "-" : "+"} \\frac{${qq - p}s^{2}}{2} \\right\\} = 0$ $(s = t - ${paren(from)})$`.replace("$ $(", " \\ ("),
-          `$s \\ne 0$ 이므로 $s = ${side === 1 ? "" : "-"}${(3 * (qq - p)) / 2}$, 즉 $t = ${from} ${signed(side * ((3 * (qq - p)) / 2))} = ${ans}$`
+          `$y = ${facs(a, [p, qq])}$ 이고, $A = B$ 이며 두 부분은 $x$ 축을 기준으로 서로 반대쪽에 있으므로 $${intTex(from, "t", wrap(f))} = 0$ 이다.`,
+          `적분하여 $t$ 에 대하여 정리하면 $${intTex(from, "t", wrap(f))} = ${coefTex(q(a, 6))}${fac(from, "t")}^{2}(2t${term(side === 1 ? p - 3 * qq : qq - 3 * p, "")})$`,
+          `$t \\ne ${from}$ 이므로 $2t${term(side === 1 ? p - 3 * qq : qq - 3 * p, "")} = 0$, 즉 $t = ${ans}$`
         ),
         score: 3,
       }
@@ -522,7 +522,7 @@ const equalArea: SuTemplate<{ v: number; a: number; p: number; qq: number; side:
       ...mcI(r, ans, [3 * b, (3 * b) / 2 === Math.floor((3 * b) / 2) ? (3 * b) / 2 : 3 * b + 1, b + 1, 4 * b, 2 * b + 1]),
       solution: lines(
         `두 부분이 $x$ 축의 위쪽과 아래쪽에 있고 넓이가 같으므로 $${intTex(0, "k", `x(${texShift(b)})(x - k)`)} = 0$`,
-        `전개하여 적분하면 $${intTex(0, "k", `\\{x^{3} - (k + ${b})x^{2} + ${b === 1 ? "" : b}kx\\}`)} = \\frac{k^{4}}{4} - \\frac{(k + ${b})k^{3}}{3} + \\frac{${b === 1 ? "" : b}k^{3}}{2}$ 이고,`,
+        `피적분함수를 전개하면 $x^{3} - (k + ${b})x^{2} + ${b === 1 ? "" : b}kx$ 이므로 적분값은 $\\frac{k^{4}}{4} - \\frac{(k + ${b})k^{3}}{3} + \\frac{${b === 1 ? "" : b}k^{3}}{2}$ 이고,`,
         `이를 정리하면 $\\frac{k^{3}(${2 * b} - k)}{12} = 0$ 이다.`,
         `$k > ${b}$ 이므로 $k = ${ans}$`
       ),
@@ -581,7 +581,7 @@ const meet: SuTemplate<{ p: number; qv: number; T: number; v: number }> = {
     const dist = d1.add(d2)
     const ans = v === 0 ? dist : q(ev(x1, T))
     return {
-      text: `원점에서 동시에 출발하여 수직선 위를 움직이는 두 점 $\\mathrm{P}$, $\\mathrm{Q}$ 의 시각 $t \\ (t \\ge 0)$ 에서의 속도가 각각 $v_1(t) = ${texPoly(v1, "t")}$, $v_2(t) = ${texPoly(v2, "t")}$ 이다. 출발한 후 두 점 $\\mathrm{P}$, $\\mathrm{Q}$ 가 처음으로 다시 만나는 시각까지 ${v === 0 ? "점 $\\mathrm{P}$ 가 움직인 거리는?" : "가 만나는 위치는?"}`.replace("시각까지 가 만나는 위치는?", "시각에서 두 점의 위치는?"),
+      text: `원점에서 동시에 출발하여 수직선 위를 움직이는 두 점 $\\mathrm{P}$, $\\mathrm{Q}$ 의 시각 $t \\ (t \\ge 0)$ 에서의 속도가 각각 $v_1(t) = ${texPoly(v1, "t")}$, $v_2(t) = ${texPoly(v2, "t")}$ 이다. 출발한 후 두 점 $\\mathrm{P}$, $\\mathrm{Q}$ 가 처음으로 다시 만나는 시각까지 ${v === 0 ? "점 $\\mathrm{P}$ 가 움직인 거리는?" : "가 만나는 위치는?"}`.replace("시각까지 가 만나는 위치는?", "시각에 두 점이 만나는 위치는?"),
       ...(v === 0 ? mcQ(r, ans, [q(ev(x1, T)), dist.add(d1), d2, ans.add(1), q(T ** 3)]) : mcQ(r, ans, [q(T ** 3), q(ev(x1, T) + 1), q(ev([1, p, 0, 0], T)), q(-ev(x1, T)), q(ev(v1, T))])),
       solution: lines(
         `두 점의 위치는 $x_1(t) = ${texPoly(x1, "t")}$, $x_2(t) = ${texPoly([qv / 2, rr, 0], "t")}$`,
@@ -633,8 +633,8 @@ const areaTan: SuTemplate<{ v: number; a: number; b: number; c: number; d: numbe
         ...mcQ(r, ans, [q((s - t) ** 4, 6), q((s - t) ** 3, 6), q((s - t) ** 4, 4), ans.mul(2).add(1), q((s - t) ** 4, 3)]),
         solution: lines(
           `$y' = ${texPoly(dcs(f))}$ 이므로 접선은 $y = ${texPoly(tan)}$`,
-          `$(${texPoly(f)}) - (${texPoly(tan)}) = ${fac(t)}^{2}(${texShift(s)})$ 이므로 두 그래프는 $x = ${t}$, $x = ${s}$ 에서 만난다.`,
-          `넓이는 $\\left| ${intTex(Math.min(s, t), Math.max(s, t), `${fac(t)}^{2}(${texShift(s)})`)} \\right| = \\frac{(${Math.max(s, t)} - ${paren(Math.min(s, t))})^{4}}{12} = ${ans.tex()}$`
+          `$(${texPoly(f)}) - (${texPoly(tan)}) = ${fac(t)}^{2}${fac(s)}$ 이므로 두 그래프는 $x = ${t}$, $x = ${s}$ 에서 만난다.`,
+          `넓이는 $\\left| ${intTex(Math.min(s, t), Math.max(s, t), `${fac(t)}^{2}${fac(s)}`)} \\right| = \\frac{${Math.abs(s - t)}^{4}}{12} = ${ans.tex()}$`
         ),
         score: 4,
       }
@@ -674,9 +674,10 @@ const motionCond: SuTemplate<{ p: number; p2: number; qd: number; R: number }> =
     const p = r.int(1, 5)
     const p2 = r.int(-2, 6)
     if (p2 === p || (p + p2) % 2 !== 0) return null
-    const qd = r.int(1, 6)
-    if (qd === 2 * p) return null
     const R = Math.max(p, p2) + r.int(1, 3)
+    // 같은 v(t)·같은 구간이면 같은 문제가 되도록 (나)의 구간 끝 q 를 (p, p2, R) 로 정한다 (조건만 다른 중복 방지)
+    let qd = ((p * 7 + (p2 + 2) * 3 + R) % 6) + 1
+    if (qd === 2 * p) qd = (qd % 6) + 1
     return { p, p2, qd, R }
   },
   build: ({ p, p2, qd, R }, r) => {
@@ -785,8 +786,10 @@ const maxInt: SuTemplate<{ a: number; k: number; p: number; h: number; rr: numbe
       ...answerI(r, ans, [h - a * (rr - p) ** 2, h + a * (rr - vx) ** 2, ans + a, ans - 1, -ans, h]),
       solution: lines(
         `$g'(t) = f(t + ${k}) - f(t)$ 이고 $g(t)$ 는 $t = ${p}$ 에서 최대이므로 $g'(${p}) = 0$, 즉 $f(${p + k}) = f(${p})$`,
-        `따라서 이차함수 $y = f(x)$ 의 그래프의 축은 $x = \\frac{${p} + ${paren(p + k)}}{2} = ${vx}$ 이고, $f(x) = ${-a === -1 ? "-" : -a}${fac(vx)}^{2} + m$ 으로 놓을 수 있다.`,
-        `$g(${p}) = ${intTex(p, p + k, "f(x)")} = ${intTex(-k / 2, k / 2, `(${-a === -1 ? "-" : -a}s^{2} + m)`, "s")} = ${k}m - ${q(a * k ** 3, 12).tex()} = ${M.tex()}$ 에서 $m = ${h}$`,
+        `이때 $g'(t) = f(t + ${k}) - f(t)$ 는 기울기가 $${-2 * a * k}$ 인 일차함수이므로 $t = ${p}$ 의 좌우에서 부호가 양에서 음으로 바뀌어, $g(t)$ 는 $t = ${p}$ 에서 실제로 최대이다.`,
+        `따라서 이차함수 $y = f(x)$ 의 그래프의 축은 $x = \\frac{${plus(p, p + k)}}{2} = ${vx}$ 이고, $f(x) = ${-a === -1 ? "-" : -a}${fac(vx)}^{2} + m$ 으로 놓을 수 있다.`,
+        `$x = ${texShift(-vx, "s")}$ 로 놓으면 $g(${p}) = ${intTex(p, p + k, "f(x)")} = ${intTex(-k / 2, k / 2, `(${-a === -1 ? "-" : -a}s^{2} + m)`, "s")}$`,
+        `계산하면 $${k}m - ${q(a * k ** 3, 12).tex()} = ${M.tex()}$ 에서 $m = ${h}$`,
         `따라서 $f(x) = ${texPoly(f)}$ 이고 $f(${rr}) = ${ans}$`
       ),
       score: 4,
@@ -835,7 +838,10 @@ const areaCond: SuTemplate<{ s: number; tgt: number; st: number[]; k: number }> 
     for (let i = 0; i < trueSt.length; i++)
       for (let j = i + 1; j < trueSt.length; j++) {
         const pr = [trueSt[i], trueSt[j]]
-        if (cs.filter((c) => pr.every((x) => AC_STAT[x].ok(c))).length === 1) pairs.push(pr)
+        const n2 = cs.filter((c) => pr.every((x) => AC_STAT[x].ok(c))).length
+        // 두 조건을 함께 써야만 하나로 정해지고, 하나만으로는 정해지지 않아야 한다
+        const single = pr.map((x) => cs.filter((c) => AC_STAT[x].ok(c)).length)
+        if (n2 === 1 && single.every((n) => n >= 2)) pairs.push(pr)
       }
     if (!pairs.length) return null
     return { s, tgt, st: r.pick(pairs), k: r.pick([-3, -2, 2, 3, 4]) }
@@ -852,7 +858,9 @@ const areaCond: SuTemplate<{ s: number; tgt: number; st: number[]; k: number }> 
       ...answerI(r, ans, [...cs.filter((c) => c !== T).map((c) => ev(acF(c), k)), ans + 1, -ans]),
       solution: lines(
         `(가)에서 $f(x) = 0$ 의 서로 다른 실근은 $0$ 과 $a \\ (a \\ne 0)$ 뿐이므로 $f(x) = x^{2}(x - a)$ 또는 $f(x) = x(x - a)^{2}$`,
-        `두 경우 모두 넓이는 $\\left| ${intTex(0, "a", "x^{2}(x - a)")} \\right| = \\left| ${intTex(0, "a", "x(x - a)^{2}")} \\right| = \\frac{a^{4}}{12}$ 이므로 (나)에서 $a^{4} = ${s ** 4}$, $a = ${s}$ 또는 $a = ${-s}$`,
+        `넓이는 $f(x) = x^{2}(x - a)$ 일 때 $\\left| ${intTex(0, "a", "x^{2}(x - a)")} \\right| = \\frac{a^{4}}{12}$ 이고,`,
+        `$f(x) = x(x - a)^{2}$ 일 때도 $\\left| ${intTex(0, "a", "x(x - a)^{2}")} \\right| = \\frac{a^{4}}{12}$ 이다.`,
+        `(나)에서 $a^{4} = ${s ** 4}$ 이므로 $a = ${s}$ 또는 $a = ${-s}$`,
         `네 후보 ${cs.map((c) => `$${name(c)}$`).join(", ")} 중`,
         `(다)를 만족시키는 것은 ${cs.filter((c) => AC_STAT[st[0]].ok(c)).map((c) => `$${name(c)}$`).join(", ")}`,
         `(라)를 만족시키는 것은 ${cs.filter((c) => AC_STAT[st[1]].ok(c)).map((c) => `$${name(c)}$`).join(", ")}`,
@@ -863,6 +871,13 @@ const areaCond: SuTemplate<{ s: number; tgt: number; st: number[]; k: number }> 
   },
   // 원점을 지나는 최고차항 1 삼차함수의 계수를 모두 시도하며 조건을 수치로 확인
   verify: ({ s, st, k }) => {
+    const all = acSearch(s, st, k)
+    // 조건 (다), (라) 중 하나를 빼면 함수가 하나로 정해지지 않아야 한다
+    if (acSearch(s, [st[0]], k, 2).length < 2 || acSearch(s, [st[1]], k, 2).length < 2) return NaN
+    return only(all) ?? NaN
+  },
+}
+function acSearch(s: number, st: number[], k: number, stopAt = Infinity) {
     const S = s ** 4 / 12
     const found: number[] = []
     for (let c2 = -14; c2 <= 14; c2++)
@@ -892,9 +907,9 @@ const areaCond: SuTemplate<{ s: number; tgt: number; st: number[]; k: number }> 
         const area = Math.abs(simpson(f, Math.min(0, other), Math.max(0, other), 4))
         if (Math.abs(area - S) > 1e-9) continue
         found.push(f(k))
+        if (found.length >= stopAt) return found
       }
-    return only(found) ?? NaN
-  },
+    return found
 }
 
 /** 기함수·우함수의 정적분으로 삼차함수 결정 */

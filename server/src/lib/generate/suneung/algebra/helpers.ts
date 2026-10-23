@@ -9,7 +9,7 @@ export type Sd = { a: Q; b: Q; k: number }
 
 /** a + b√k (k는 제곱 인수를 빼서 정리) */
 export function sd(a: number | Q, b: number | Q = 0, k = 1): Sd {
-  let A = Q.of(a)
+  const A = Q.of(a)
   let B = Q.of(b)
   if (k < 1 || !Number.isInteger(k)) throw new Error(`√ 안이 자연수가 아니에요: ${k}`)
   const [o, i] = sqrtParts(k)

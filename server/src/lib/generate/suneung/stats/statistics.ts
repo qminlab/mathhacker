@@ -776,7 +776,7 @@ const normalTwoCond: SuTemplate<{ m: number; s: number; z1: number; z2: number; 
     if (!Number.isInteger(m + z1 * s) || !Number.isInteger(m + z2 * s)) return null
     const askMs = r.chance(0.3)
     let z3: number | null = r.pick(Z_STEPS)
-    let z4: number | null = r.pick(Z_STEPS)
+    const z4: number | null = r.pick(Z_STEPS)
     if (r.chance(0.5)) z3 = null
     else if (z3 >= z4) return null
     if ((z3 !== null && !Number.isInteger(m + z3 * s)) || !Number.isInteger(m + z4 * s)) return null

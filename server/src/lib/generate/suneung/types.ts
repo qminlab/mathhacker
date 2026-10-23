@@ -48,6 +48,8 @@ export type SuProblem = {
   score: 2 | 3 | 4
 }
 
+// 템플릿마다 매개변수 모양이 달라 목록에서는 any로 받는다
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type SuTemplate<P = any> = {
   /** 과목 안에서 겹치지 않는 이름 (문제 id의 일부, 바꾸면 id가 바뀐다) */
   id: string

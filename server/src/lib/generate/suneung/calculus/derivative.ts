@@ -1,9 +1,20 @@
 // 미적분Ⅰ · 미분 (12미적Ⅰ-02-01 ~ 10)
-import { deriv, isShortOk, texSqrt, limitAt, q, roots, short, signed, texPoly, texShift, paren, term } from "../kit"
+import { deriv, gcd, isShortOk, sqrtParts, texSqrt, limitAt, q, roots, short, signed, texPoly, texShift, paren, term } from "../kit"
 import type { SuTemplate } from "../types"
-import { answerI, ask, cases, countRoots, gridCount, gridVals, cx, dcs, ev, fac, facs, head, lines, mcI, mcQ, nz, only, solveLinear, times, U_DIFF } from "./helpers"
+import { answerI, ask, cases, coefTex, plus, countRoots, gridCount, gridVals, cx, dcs, ev, fac, facs, head, lines, mcI, mcQ, nz, only, solveLinear, times, U_DIFF } from "./helpers"
 
 const U = U_DIFF
+/** (b ± √D)/2 를 약분해서 TeX로 */
+const rootTex = (b: number, D: number, sgn: number) => {
+  const [o, inner] = sqrtParts(D)
+  const g = gcd(gcd(Math.abs(b), o), 2)
+  const B = b / g
+  const O = o / g
+  const den = 2 / g
+  const rad = inner === 1 ? String(O) : `${O === 1 ? "" : O}\\sqrt{${inner}}`
+  const num = B === 0 ? `${sgn < 0 ? "-" : ""}${rad}` : `${B} ${sgn < 0 ? "-" : "+"} ${rad}`
+  return den === 1 ? num : `\\frac{${num}}{${den}}`
+}
 const fx = (cs: number[], x: number | string) => texPoly(cs).replace(/x/g, typeof x === "number" ? `(${x})` : x)
 
 // ───────────────────────── 1단계 ─────────────────────────
@@ -73,7 +84,7 @@ const defn1: SuTemplate<{ f: number[]; k: number; m: number }> = {
       text: `함수 $f(x) = ${texPoly(f)}$ 에 대하여 $\\lim_{h \\to 0} \\frac{f(${kh}) - f(${k})}{h}$ 의 값은?`,
       ...mcI(r, ans, [D, -ans, (m + 1) * D, (m - 1) * D, ev(f, k) * m, ans + 1]),
       solution: lines(
-        `$\\lim_{h \\to 0} \\frac{f(${kh}) - f(${k})}{h} = ${m} \\times \\lim_{h \\to 0} \\frac{f(${kh}) - f(${k})}{${cx(m, "h")}} = ${m}f'(${k})$`,
+        `$\\lim_{h \\to 0} \\frac{f(${kh}) - f(${k})}{h} = ${m === -1 ? "-" : `${m} \\times `}\\lim_{h \\to 0} \\frac{f(${kh}) - f(${k})}{${cx(m, "h")}} = ${coefTex(m)}f'(${k})$`,
         `$f'(x) = ${texPoly(d)}$ 이므로 $f'(${k}) = ${D}$`,
         `따라서 구하는 값은 $${times(m, D)} = ${ans}$`
       ),
@@ -101,8 +112,8 @@ const tangent1: SuTemplate<{ f: number[]; k: number; v: number }> = {
       ...mcI(r, ans, [v === 0 ? y0 + m * k : m + y0 + m * k, v === 0 ? m : y0, v === 0 ? -n : m - n, ans + 1, ans - 1, y0]),
       solution: lines(
         `$y' = ${texPoly(d)}$ 이므로 점 $(${k}, ${y0})$ 에서의 접선의 기울기는 $${fx(d, k)} = ${m}$`,
-        `접선의 방정식은 $y ${signed(-y0)} = ${m}(${texShift(k)})$, 즉 $y = ${texPoly([m, n])}$`,
-        `따라서 $a = ${m}$, $b = ${n}$ 이므로 $${v === 0 ? "b" : "a + b"} = ${ans}$`
+        m === 0 ? `기울기가 $0$ 이므로 접선의 방정식은 $y = ${y0}$` : `접선의 방정식은 $y${y0 === 0 ? "" : ` ${signed(-y0)}`} = ${coefTex(m)}(${texShift(k)})$, 즉 $y = ${texPoly([m, n])}$`,
+        v === 0 ? `따라서 $b = ${n}$` : `따라서 $a = ${m}$, $b = ${n}$ 이므로 $a + b = ${plus(m, n)} = ${ans}$`
       ),
       score: 2,
     }
@@ -164,7 +175,7 @@ const defn2: SuTemplate<{ A: number; B: number; k: number; a: number; b: number;
         solution: lines(
           `분자에 $f(${k})$ 를 빼고 더하면`,
           `$\\lim_{h \\to 0} \\frac{f(${p1}) - f(${k})}{h} + \\lim_{h \\to 0} \\frac{f(${k}) - f(${p2})}{h}$`,
-          `따라서 구하는 값은 $${a}f'(${k}) + ${b}f'(${k}) = ${a + b}f'(${k}) = ${times(a + b, B)} = ${ans}$`
+          `따라서 구하는 값은 $${coefTex(a)}f'(${k}) + ${coefTex(b)}f'(${k}) = ${a + b}f'(${k}) = ${times(a + b, B)} = ${ans}$`
         ),
         score: 3,
       }
@@ -189,7 +200,7 @@ const defn2: SuTemplate<{ A: number; B: number; k: number; a: number; b: number;
       solution: lines(
         `$g(x) = xf(x)$ 라 하면 $g(${k}) = ${k === 1 ? "" : paren(k)}f(${k})$ 이므로 주어진 극한은 $g'(${k})$ 이다.`,
         `곱의 미분법에 의하여 $g'(x) = f(x) + xf'(x)$`,
-        `따라서 $g'(${k}) = f(${k}) + ${paren(k)}f'(${k}) = ${A} ${signed(k * B)} = ${ans}$`
+        `따라서 $g'(${k}) = f(${k}) + ${k === 1 ? "" : paren(k)}f'(${k}) = ${plus(A, k * B)} = ${ans}$`
       ),
       score: 3,
     }
@@ -218,9 +229,9 @@ const diffable: SuTemplate<{ v: number; k: number; a: number; c: number; w: numb
       const d = -2 * k ** 3 - a * k * k
       A = a
       B = 3 * k * k + 2 * a * k
-      f = cases([`x^{3} + ax^{2}`, `x < ${k}`], [`bx ${signed(d)}`, `x \\ge ${k}`])
+      f = cases([`x^{3} + ax^{2}`, `x < ${k}`], [`bx${term(d, "")}`, `x \\ge ${k}`])
       sol = [
-        `$x = ${k}$ 에서 연속이므로 $${paren(k)}^{3} + ${paren(k)}^{2}a = ${paren(k)}b ${signed(d)}$, 즉 $${texPoly([k * k, 0], "a")} ${k < 0 ? "+" : "-"} ${cx(Math.abs(k), "b")} = ${d - k ** 3}$`,
+        `$x = ${k}$ 에서 연속이므로 $${k ** 3} + ${texPoly([k * k, 0], "a")} = ${texPoly([k, 0], "b")}${term(d, "")}$, 즉 $${texPoly([k * k, 0], "a")} ${k < 0 ? "+" : "-"} ${cx(Math.abs(k), "b")} = ${d - k ** 3}$`,
         `$x = ${k}$ 에서 미분계수가 같아야 하므로 $3 \\times ${paren(k)}^{2} + 2 \\times ${paren(k)} \\times a = b$, 즉 $b = ${texPoly([2 * k, 3 * k * k], "a")}$`,
         `두 식을 연립하면 $a = ${A}$, $b = ${B}$`,
       ]
@@ -240,7 +251,7 @@ const diffable: SuTemplate<{ v: number; k: number; a: number; c: number; w: numb
     return {
       text: `함수 $f(x) = ${f}$ 가 실수 전체의 집합에서 미분가능할 때, $${tgt}$ 의 값은? (단, $a, b$ 는 상수이다.)`,
       ...mcI(r, ans, w === 0 ? [A - B, -A + B, B, A + B + 1, A + B - 1, 2 * A + B] : [-A * B, A * B + A, A * B - B, A + B, A * (B + 1)]),
-      solution: lines(`$f(x)$ 가 $x = ${k}$ 에서 미분가능하려면 $x = ${k}$ 에서 연속이고 좌미분계수와 우미분계수가 같아야 한다.`, ...sol, `따라서 $${tgt} = ${w === 0 ? `${A} ${signed(B)}` : times(A, B)} = ${ans}$`),
+      solution: lines(`$f(x)$ 가 $x = ${k}$ 에서 미분가능하려면 $x = ${k}$ 에서 연속이고 좌미분계수와 우미분계수가 같아야 한다.`, ...sol, `따라서 $${tgt} = ${w === 0 ? plus(A, B) : times(A, B)} = ${ans}$`),
       score: 3,
     }
   },
@@ -337,7 +348,7 @@ const incrRange: SuTemplate<{ p: number; rr: number; s: number; e: number }> = {
     const ans = hi - lo + 1
     // f(x) = s(x³ - a x² + (pa + r)x) + e
     const lin = texPoly([p, rr], "a")
-    const ftex = s === 1 ? `x^{3} - ax^{2} + (${lin})x ${signed(e)}` : `-x^{3} + ax^{2} - (${lin})x ${signed(e)}`
+    const ftex = s === 1 ? `x^{3} - ax^{2} + (${lin})x${term(e, "")}` : `-x^{3} + ax^{2} - (${lin})x${term(e, "")}`
     const word = s === 1 ? "증가" : "감소"
     return {
       text: `함수 $f(x) = ${ftex}$ 가 실수 전체의 집합에서 ${word}하도록 하는 정수 $a$ 의 개수를 구하시오.`,
@@ -346,7 +357,7 @@ const incrRange: SuTemplate<{ p: number; rr: number; s: number; e: number }> = {
         s === 1 ? `$f'(x) = 3x^{2} - 2ax + (${lin})$` : `$f'(x) = -3x^{2} + 2ax - (${lin}) = -\\{3x^{2} - 2ax + (${lin})\\}$`,
         `$f(x)$ 가 실수 전체에서 ${word}하려면 모든 실수 $x$ 에 대하여 $f'(x) ${s === 1 ? "\\ge" : "\\le"} 0$ 이어야 하므로 이차방정식 $3x^{2} - 2ax + (${lin}) = 0$ 의 판별식 $\\frac{D}{4} \\le 0$`,
         `$\\frac{D}{4} = a^{2} - 3(${lin}) = ${texPoly([1, -3 * p, -3 * rr], "a")} \\le 0$`,
-        `$\\frac{${3 * p} - ${texSqrt(D)}}{2} \\le a \\le \\frac{${3 * p} + ${texSqrt(D)}}{2}$ 이므로 정수 $a$ 는 $${lo}, ${lo + 1}, \\cdots, ${hi}$`,
+        `$${rootTex(3 * p, D, -1)} \\le a \\le ${rootTex(3 * p, D, 1)}$ 이므로 정수 $a$ 는 $${lo}, ${lo + 1}, \\cdots, ${hi}$`,
         `따라서 정수 $a$ 의 개수는 $${ans}$`
       ),
       score: 3,
@@ -388,11 +399,11 @@ const extVal: SuTemplate<{ al: number; be: number; m: number; s: number }> = {
     const ans = ev(f, maxX)
     const diff = (be - al) ** 3
     return {
-      text: `함수 $f(x) = ${texPoly([2 * s, 0, 0, 0])} + ax^{2} + bx + c$ 가 $x = ${minX}$ 에서 극소, $x = ${maxX}$ 에서 극대이고 극솟값이 $${m}$ 일 때, 함수 $f(x)$ 의 극댓값${isShortOk(ans) ? "을 구하시오." : "은?"} (단, $a, b, c$ 는 상수이다.)`,
+      text: `함수 $f(x) = ${texPoly([2 * s, 0, 0, 0])} + ax^{2} + bx + c$ 가 ${minX < maxX ? `$x = ${minX}$ 에서 극소, $x = ${maxX}$ 에서 극대` : `$x = ${maxX}$ 에서 극대, $x = ${minX}$ 에서 극소`}이고 극솟값이 $${m}$ 일 때, 함수 $f(x)$ 의 극댓값${isShortOk(ans) ? "을 구하시오." : "은?"} (단, $a, b, c$ 는 상수이다.)`,
       ...answerI(r, ans, [m - diff, m + diff / 2, ans + 1, ans - 1, -ans, m + 2 * diff]),
       solution: lines(
         `$f'(x) = ${texPoly([6 * s, 0, 0])} + 2ax + b$ 이고 $f'(${minX}) = f'(${maxX}) = 0$ 이므로 $f'(x) = ${s === 1 ? "6" : "-6"}${facs(1, [al, be])}$`,
-        `즉 $2a = ${-6 * s * (al + be)}$, $b = ${6 * s * al * be}$ 에서 $a = ${-3 * s * (al + be)}$, $b = ${6 * s * al * be}$`,
+        `계수를 비교하면 $2a = ${-6 * s * (al + be)}$ 에서 $a = ${-3 * s * (al + be)}$ 이고 $b = ${6 * s * al * be}$`,
         `$f(${minX}) = ${ev(base, minX)} + c = ${m}$ 에서 $c = ${c}$, 즉 $f(x) = ${texPoly(f)}$`,
         `따라서 극댓값은 $f(${maxX}) = ${ans}$`
       ),
@@ -536,10 +547,12 @@ const tanExt: SuTemplate<{ v: number; b: number; c: number; p: number; qq: numbe
         solution: lines(
           `접점의 $x$ 좌표를 $s$ 라 하면 접선은 $y = (${texPoly([2, b], "s")})(x - s) + ${texPoly([1, b, c], "s")}$`,
           `그 접선이 점 $(${p}, ${qq})$ 를 지나므로 $${qq} = (${texPoly([2, b], "s")})(${p} - s) + ${texPoly([1, b, c], "s")}$, 정리하면 $${texPoly([1, -2 * p, K], "s")} = 0$`,
-          `두 근을 $s_1, s_2$ 라 하면 $s_1 + s_2 = ${2 * p}$, $s_1 s_2 = ${K}$ 이고, 기울기는 $2s_1 ${signed(b)}$, $2s_2 ${signed(b)}$`,
+          `두 근을 $s_1, s_2$ 라 하면 $s_1 + s_2 = ${2 * p}$, $s_1 s_2 = ${K}$ 이고, 기울기는 $2s_1${term(b, "")}$, $2s_2${term(b, "")}$`,
           w === 0
-            ? `기울기의 곱은 $4s_1 s_2 + ${paren(2 * b)}(s_1 + s_2) + ${b * b} = ${times(4, K)} + ${paren(2 * b)} \\times ${paren(2 * p)} + ${b * b} = ${ans}$`
-            : `기울기의 합은 $2(s_1 + s_2) + ${paren(2 * b)} = ${times(2, 2 * p)} ${signed(2 * b)} = ${ans}$`
+            ? b === 0
+              ? `기울기의 곱은 $4s_1 s_2 = ${times(4, K)} = ${ans}$`
+              : `기울기의 곱은 $4s_1 s_2 + ${paren(2 * b)}(s_1 + s_2) + ${b * b} = ${times(4, K)} + ${paren(2 * b)} \\times ${paren(2 * p)} + ${b * b} = ${ans}$`
+            : b === 0 ? `기울기의 합은 $2(s_1 + s_2) = ${times(2, 2 * p)} = ${ans}$` : `기울기의 합은 $2(s_1 + s_2) + ${paren(2 * b)} = ${times(2, 2 * p)} ${signed(2 * b)} = ${ans}$`
         ),
         score: 3,
       }
@@ -555,7 +568,7 @@ const tanExt: SuTemplate<{ v: number; b: number; c: number; p: number; qq: numbe
       solution: lines(
         `접점의 $x$ 좌표를 $s$ 라 하면 접선은 $y = (${texPoly(dcs(f), "s")})(x - s) + ${texPoly(f, "s")}$`,
         `그 접선이 점 A 를 지나므로 $${y0} = (${texPoly(dcs(f), "s")})(${p} - s) + ${texPoly(f, "s")}$`,
-        `정리하면 $${fac(p, "s")}^{2}${p + a === 0 ? "s" : `(2s ${signed(p + a)})`} = 0$ 이고, $s \\ne ${p}$ 이므로 $s = ${t}$`,
+        `정리하면 $${fac(p, "s")}^{2}${fac(t, "s")} = 0$ 이고, $s \\ne ${p}$ 이므로 $s = ${t}$`,
         `따라서 구하는 기울기는 $f'(${t}) = ${ans}$`
       ),
       score: 4,
@@ -753,12 +766,12 @@ const cubicGraph: SuTemplate<{ w: number; d: number; h: number; sg: number; k: n
       text: `최고차항의 계수가 $1$ 인 삼차함수 $f(x)$ 가 다음 조건을 만족시킨다.\n(가) $f'(${a}) = f'(${b})$\n(나) 방정식 $f(x) = 0$ 은 서로 다른 두 실근을 갖고, 두 실근의 합은 $${S}$ 이다.\n이때 $f(${k})$ ${ask(ans)}`,
       ...answerI(r, ans, [fAlt(k), ev(f, k + 1), ev(f, 2 * w - k), ans + 2 * B, -ans, ans + 1]),
       solution: lines(
-        `$f'(x)$ 는 이차함수이고 그래프가 직선 $x = \\frac{${a} + ${paren(b)}}{2} = ${w}$ 에 대하여 대칭이므로 $f'(x) = 3${fac(w)}^{2} + p$ 꼴이다. 즉 $f(x) = ${fac(w)}^{3} + p${fac(w)} + q$`,
+        `$f'(x)$ 는 이차함수이고 그래프가 직선 $x = \\frac{${plus(a, b)}}{2} = ${w}$ 에 대하여 대칭이므로 $f'(x) = 3${fac(w)}^{2} + p$ 꼴이다. 즉 $f(x) = ${fac(w)}^{3} + p${fac(w)} + q$`,
         `방정식 $f(x) = 0$ 이 서로 다른 두 실근을 가지려면 $f(x)$ 가 극값을 갖고 극값 중 하나가 $0$ 이어야 한다. $p = -3m^{2} \\ (m > 0)$ 이라 하면 극값을 갖는 $x$ 는 $${w} \\pm m$`,
         `(i) 극솟값 $f(${w} + m) = 0$ 일 때: $f(x) = (${texShift(w)} - m)^{2}(${texShift(w)} + 2m)$ 이고 두 실근의 합은 $${2 * w} - m$`,
         `(ii) 극댓값 $f(${w} - m) = 0$ 일 때: $f(x) = (${texShift(w)} + m)^{2}(${texShift(w)} - 2m)$ 이고 두 실근의 합은 $${2 * w} + m$`,
         `두 실근의 합이 $${S}$ 이므로 ${sg === 1 ? `(i)에서 $m = ${h}$ ((ii)이면 $m = ${hOther}$ 로 $m > 0$ 에 모순)` : `(ii)에서 $m = ${h}$ ((i)이면 $m = ${hOther}$ 로 $m > 0$ 에 모순)`}`,
-        `따라서 $f(x) = ${sg === 1 ? `(${texShift(w + h)})^{2}(${texShift(w - 2 * h)})` : `(${texShift(w - h)})^{2}(${texShift(w + 2 * h)})`} = ${texPoly(f)}$ 이고 $f(${k}) = ${ans}$`
+        `따라서 $f(x) = ${sg === 1 ? `${fac(w + h)}^{2}${fac(w - 2 * h)}` : `${fac(w - h)}^{2}${fac(w + 2 * h)}`} = ${texPoly(f)}$ 이고 $f(${k}) = ${ans}$`
       ),
       score: 4,
     }
@@ -898,7 +911,18 @@ const nonDiff: SuTemplate<ND> = {
         if (ok && !opts.some((o) => o.length === 1 && (o[0] === i || o[0] === j))) opts.push([i, j])
       }
     if (!opts.length) return null
-    return { al, be, tgt, st: r.pick(opts), k: r.pick([-2, -1, 1, 2, 3]) }
+    const st = r.pick(opts)
+    // (가) 없이 (나)만으로는 c 가 하나로 정해지지 않아야 한다
+    const base = ndBase(al, be)
+    const want = st.map((i) => ND_STAT[i].f(cs[tgt].L, cs[tgt].V, cs[tgt].R))
+    let free = 0
+    for (let c = -210; c <= 210; c++) {
+      const f = [...base.slice(0, 4), c]
+      const got = [ndCount(f, [0, al, be], -0.5), ndCount(f, [0, al, be], 0), ndCount(f, [0, al, be], 0.5)]
+      if (st.every((i, j) => got[i] === want[j])) free++
+    }
+    if (free < 2) return null
+    return { al, be, tgt, st, k: r.pick([-2, -1, 1, 2, 3]) }
   },
   build: ({ al, be, tgt, st, k }, r) => {
     const cs = ndCandidates(al, be)
@@ -943,14 +967,17 @@ const nonDiff: SuTemplate<ND> = {
       }
       return n
     }
+    let free = 0 // (가) 없이 (나)만 만족시키는 c 의 개수
     for (let c = -210; c <= 210; c++) {
       const L = H(c, -0.25)
       const V = H(c, 0)
       const R = H(c, 0.25)
+      if (st.every((s, i) => [L, V, R][s] === want[i])) free++
       if (L === V && V === R) continue
       const got = [L, V, R]
       if (st.every((s, i) => got[s] === want[i])) found.push(ev(base, k) + c)
     }
+    if (free < 2) return NaN
     return only(found) ?? NaN
   },
 }

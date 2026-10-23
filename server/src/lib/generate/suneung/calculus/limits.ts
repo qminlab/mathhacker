@@ -3,7 +3,7 @@ import { limitAt, q, roots, short, signed, texPoly, texShift, paren, term } from
 import type { Choice } from "../types"
 import { mc } from "../kit"
 import type { SuTemplate } from "../types"
-import { answerI, ask, cases, lines, cx, ev, fac, facs, head, mcI, mcQ, nz, only, range, solveLinear, times, U_LIM } from "./helpers"
+import { answerI, ask, cases, cmul, coefTex, lines, plus, cx, ev, fac, facs, head, mcI, mcQ, nz, only, range, solveLinear, times, U_LIM } from "./helpers"
 
 const U = U_LIM
 
@@ -38,8 +38,8 @@ const factorLimit: SuTemplate<{ a: number; b: number; v: number }> = {
           ? `$${texPoly(num)} = ${facs(1, [a, b])}$ 이므로 $\\frac{${texPoly(num)}}{${denTex}} = ${b === 0 ? "x" : texShift(b)} \\ (x \\ne ${a})$`
           : `$${texPoly(num)} = ${facs(1, [a, b])}$, $${texPoly(den)} = ${facs(1, [a, -a])}$ 이므로 $\\frac{${texPoly(num)}}{${denTex}} = \\frac{${b === 0 ? "x" : texShift(b)}}{${texShift(-a)}} \\ (x \\ne ${a})$`,
         v === 0
-          ? `따라서 구하는 극한값은 $${a} ${signed(-b)} = ${ans.tex()}$`
-          : `따라서 구하는 극한값은 $\\frac{${a} ${signed(-b)}}{${a} ${signed(a)}} = ${ans.tex()}$`
+          ? `따라서 구하는 극한값은 $${plus(a, -b)} = ${ans.tex()}$`
+          : `따라서 구하는 극한값은 $\\frac{${plus(a, -b)}}{${2 * a}} = ${ans.tex()}$`
       ),
       score: 2,
     }
@@ -123,7 +123,7 @@ const oneSided: SuTemplate<{ k: number; p: number; c: number; m: number; n: numb
       solution: lines(
         `$x \\to ${k}-$ 이면 $x < ${k}$ 이므로 $\\lim_{x \\to ${k}-} f(x) = \\lim_{x \\to ${k}-} (${texPoly([1, p, c])}) = ${L}$`,
         `$x \\to ${k}+$ 이면 $x > ${k}$ 이므로 $\\lim_{x \\to ${k}+} f(x) = \\lim_{x \\to ${k}+} (${texPoly([m, n])}) = ${R}$`,
-        `따라서 구하는 값은 $${L} ${op} ${paren(R)} = ${ans}$`
+        `따라서 구하는 값은 $${R === 0 ? `${L}` : `${L} ${op} ${paren(R)}`} = ${ans}$`
       ),
       score: 2,
     }
@@ -155,9 +155,9 @@ const contConst: SuTemplate<{ v: number; k: number; m: number; p: number; c: num
         text: `함수 $f(x) = ${f}$ 가 실수 전체의 집합에서 연속일 때, 상수 $a$ 의 값은?`,
         ...mcI(r, ans, [R, R + m * k, -ans, ans + 1, ans - 1, m * k - R]),
         solution: lines(
-          `두 식은 각각 연속이므로 $x = ${k}$ 에서 연속이면 된다. 즉 $\\lim_{x \\to ${k}-} f(x) = f(${k})$`,
-          `$\\lim_{x \\to ${k}-} f(x) = ${times(m, k)} + a = ${m * k} + a$, $f(${k}) = ${R}$`,
-          `$${m * k} + a = ${R}$ 에서 $a = ${ans}$`
+          `각 구간에서 $f(x)$ 는 다항함수이므로 $x = ${k}$ 에서 연속이면 된다. 즉 $\\lim_{x \\to ${k}-} f(x) = f(${k})$`,
+          `$\\lim_{x \\to ${k}-} f(x) = ${m * k === 0 ? "a" : `${m * k} + a`}$, $f(${k}) = ${R}$`,
+          m * k === 0 ? `따라서 $a = ${ans}$` : `$${m * k} + a = ${R}$ 에서 $a = ${ans}$`
         ),
         score: 3,
       }
@@ -207,11 +207,11 @@ const coefLimit: SuTemplate<{ c: number; e: number; v: number; w: number }> = {
       ...mcI(r, ans, wrongs),
       solution: lines(
         `$x \\to ${c}$ 일 때 (분모) $\\to 0$ 이고 극한값이 존재하므로 (분자) $\\to 0$ 이어야 한다.`,
-        `즉 $${c * c} ${signed(c)}a + b = 0$ 에서 $b = ${texPoly([-c, -c * c], "a")}$ 이고, 분자는 $x^{2} + ax ${c * c >= 0 ? "-" : "+"} ${c * c} ${c >= 0 ? "-" : "+"} ${Math.abs(c)}a = (${texShift(c)})(${texShift(-c)} + a)$`,
+        `즉 $${c * c}${term(c, "a")} + b = 0$ 에서 $b = ${texPoly([-c, -c * c], "a")}$ 이고, 분자는 $x^{2} + ax ${c * c >= 0 ? "-" : "+"} ${c * c} ${c >= 0 ? "-" : "+"} ${cx(Math.abs(c), "a")} = (${texShift(c)})(${texShift(-c)} + a)$`,
         v === 0
           ? `$\\lim_{x \\to ${c}} (${texShift(-c)} + a) = ${2 * c} + a = ${L.tex()}$ 이므로 $a = ${a}$`
           : `$\\lim_{x \\to ${c}} \\frac{${texShift(-c)} + a}{${texShift(-c)}} = \\frac{${2 * c} + a}{${2 * c}} = ${L.tex()}$ 이므로 $a = ${a}$`,
-        `$b = ${texPoly([-c, -c * c], "a")} = ${b}$ 이므로 $${target} = ${w === 0 ? `${a} ${signed(b)}` : times(a, b)} = ${ans}$`
+        `$b = ${texPoly([-c, -c * c], "a")} = ${b}$ 이므로 $${target} = ${w === 0 ? plus(a, b) : times(a, b)} = ${ans}$`
       ),
       score: 3,
     }
@@ -254,7 +254,9 @@ const polyDet: SuTemplate<{ v: number; C: number; A: number; B: number; k: numbe
         text: `다항함수 $f(x)$ 가 $\\lim_{x \\to \\infty} \\frac{f(x) - ${texPoly([C, 0, 0, 0])}}{x^{2}} = ${A}$, $\\lim_{x \\to 0} \\frac{f(x)}{x} = ${B}$ 를 만족시킬 때, $f(${k})$ ${ask(ans)}`,
         ...answerI(r, ans, [ev([C, A, B, 1], k), ev([C, B, A, 0], k), ev([C, A, 0, B], k), ev([C, -A, B, 0], k), ans + 1, ans - 1]),
         solution: lines(
-          `첫 번째 조건에서 $f(x) - ${texPoly([C, 0, 0, 0])}$ 은 최고차항의 계수가 $${A}$ 인 이차 이하의 다항식${A === 0 ? "이고 이차항이 없다" : "이다"}. 즉 $f(x) = ${texPoly([C, A, 0, 0])} + px + q$ 로 놓을 수 있다.`,
+          A === 0
+            ? `첫 번째 조건에서 $f(x) - ${texPoly([C, 0, 0, 0])}$ 은 일차 이하의 다항식이다. (이차 이상의 항이 있으면 극한값이 $0$ 이 아니다.) 즉 $f(x) = ${texPoly([C, 0, 0, 0])} + px + q$ 로 놓을 수 있다.`
+            : `첫 번째 조건에서 $f(x) - ${texPoly([C, 0, 0, 0])}$ 은 이차항의 계수가 $${A}$ 인 이차식이다. 즉 $f(x) = ${texPoly([C, A, 0, 0])} + px + q$ 로 놓을 수 있다.`,
           `두 번째 조건에서 $x \\to 0$ 일 때 (분모) $\\to 0$ 이므로 (분자) $\\to 0$, 즉 $f(0) = q = 0$`,
           `$\\lim_{x \\to 0} \\frac{f(x)}{x} = \\lim_{x \\to 0} (${texPoly([C, A, 0])} + p) = p = ${B}$ 이므로 $f(x) = ${texPoly(f)}$`,
           `따라서 $f(${k}) = ${ans}$`
@@ -439,10 +441,10 @@ const limProp: SuTemplate<{ al: number; be: number; ga: number; de: number; F: n
       text: `두 함수 $f(x), g(x)$ 에 대하여 $${lim} \\{${comb(al, be)}\\} = ${P}$, $${lim} \\{${comb(ga, de)}\\} = ${R}$ 일 때, $${lim} f(x)g(x)$ 의 값은?`,
       ...mcI(r, ans, [F + G, -ans, P * R, ans + 1, ans - 1, F * F + G * G, F - G]),
       solution: lines(
-        `$h_1(x) = ${comb(al, be)}$, $h_2(x) = ${comb(ga, de)}$ 이라 하면 $f(x), g(x)$ 는 $h_1(x), h_2(x)$ 의 일차결합으로 나타낼 수 있다.`,
-        `$${term(de, "h_1(x)", true)}${term(-be, "h_2(x)")} = ${term(al * de - be * ga, "f(x)", true)}$, $${term(-ga, "h_1(x)", true)}${term(al, "h_2(x)")} = ${term(al * de - be * ga, "g(x)", true)}$`,
-        `극한의 성질에 의하여 $${lim} f(x) = \\frac{${times(de, P)} ${signed(-be * R)}}{${al * de - be * ga}} = ${F}$, $${lim} g(x) = \\frac{${times(-ga, P)} ${signed(al * R)}}{${al * de - be * ga}} = ${G}$`,
-        `따라서 $${lim} f(x)g(x) = ${times(F, G)} = ${ans}$`
+        `주어진 두 식을 연립하면 $f(x)$ 와 $g(x)$ 를 각각 $${comb(al, be)}$, $${comb(ga, de)}$ 의 상수배의 합으로 나타낼 수 있으므로 $${lim} f(x)$, $${lim} g(x)$ 의 값이 존재한다.`,
+        `$${lim} f(x) = \\alpha$, $${lim} g(x) = \\beta$ 라 하면 극한의 성질에 의하여 $${term(al, "\\alpha", true)}${term(be, "\\beta")} = ${P}$, $${term(ga, "\\alpha", true)}${term(de, "\\beta")} = ${R}$`,
+        `두 식을 연립하면 $\\alpha = ${F}$, $\\beta = ${G}$`,
+        `따라서 $${lim} f(x)g(x) = \\alpha\\beta = ${times(F, G)} = ${ans}$`
       ),
       score: 2,
     }
@@ -477,9 +479,9 @@ const contTwo: SuTemplate<{ s: number; t: number; m1: number; m2: number; u: num
       ...mcI(r, ans, [ev(Qd, s) + sg * ev(Qd, t), a + m1 * s * 2 + sg * b, a + sg * (b + 2 * m2 * t), -ans, ans + 1, ans - 1]),
       solution: lines(
         `각 구간에서 $f(x)$ 는 다항함수이므로 $x = ${s}$, $x = ${t}$ 에서 연속이면 된다.`,
-        `$x = ${s}$ 에서: $${times(m1, s)} + a = ${ev(Qd, s)}$ 이므로 $a = ${a}$`,
-        `$x = ${t}$ 에서: $${texPoly(Qd).replace(/x/g, `(${t})`)} = ${times(m2, t)} + b$ 이므로 $b = ${b}$`,
-        `따라서 $${tgt} = ${a} ${signed(sg * b)} = ${ans}$`
+        `$x = ${s}$ 에서: $${m1 * s === 0 ? "a" : `${m1 * s} + a`} = ${ev(Qd, s)}$${m1 * s === 0 ? "" : ` 이므로 $a = ${a}$`}`,
+        `$x = ${t}$ 에서: $${texPoly(Qd).replace(/x/g, `(${t})`)} = ${m2 * t === 0 ? "b" : `${m2 * t} + b`}$ 이므로 $b = ${b}$`,
+        `따라서 $${tgt} = ${plus(a, sg * b)} = ${ans}$`
       ),
       score: 3,
     }
@@ -517,8 +519,8 @@ const cubicDet: SuTemplate<{ al: number; be: number; A: number; m: number; k: nu
       solution: lines(
         `두 극한에서 (분모) $\\to 0$ 이고 극한값이 존재하므로 $f(${al}) = 0$, $f(${be}) = 0$ 이다.`,
         `$f(x)$ 는 삼차함수이므로 $f(x) = ${facs(1, [al, be])}(ax + b) \\ (a \\ne 0)$ 로 놓을 수 있다.`,
-        `$\\lim_{x \\to ${al}} ${fac(be)}(ax + b) = ${al === 0 ? `${al - be}b` : `${al - be}(${texPoly([al, 0], "a")} + b)`} = ${P}$ 에서 $${al === 0 ? "" : `${texPoly([al, 0], "a")} + `}b = ${g1.tex()}$`,
-        `$\\lim_{x \\to ${be}} ${fac(al)}(ax + b) = ${be === 0 ? `${be - al}b` : `${be - al}(${texPoly([be, 0], "a")} + b)`} = ${R}$ 에서 $${be === 0 ? "" : `${texPoly([be, 0], "a")} + `}b = ${g2.tex()}$`,
+        `$\\lim_{x \\to ${al}} ${fac(be)}(ax + b) = ${al === 0 ? cmul(al - be, "b") : `${coefTex(al - be)}(${texPoly([al, 0], "a")} + b)`} = ${P}$ 에서 $${al === 0 ? "" : `${texPoly([al, 0], "a")} + `}b = ${g1.tex()}$`,
+        `$\\lim_{x \\to ${be}} ${fac(al)}(ax + b) = ${be === 0 ? cmul(be - al, "b") : `${coefTex(be - al)}(${texPoly([be, 0], "a")} + b)`} = ${R}$ 에서 $${be === 0 ? "" : `${texPoly([be, 0], "a")} + `}b = ${g2.tex()}$`,
         `두 식을 연립하면 $a = ${A}$, $b = ${m}$ 이므로 $f(x) = ${facs(1, [al, be])}(${texPoly([A, m])})$`,
         `따라서 $f(${k}) = ${times(k - al, k - be, A * k + m)} = ${ans}$`
       ),
@@ -560,9 +562,9 @@ const contProd: SuTemplate<{ s: number; rr: number; c0: number; n: number; L: nu
       ...answerI(r, ans, [(n + s) * (n - rr), (n - s) * (n + rr), (n - c0) * (n - s) + G, ans + 1, ans - 1, -ans]),
       solution: lines(
         `$f(x)$ 는 $x = ${s}$ 에서만 불연속일 수 있으므로 $x = ${s}$ 에서 $f(x)g(x)$ 가 연속이면 된다.`,
-        `$\\lim_{x \\to ${s}-} f(x)g(x) = ${ev(L, s)}g(${s})$, $\\lim_{x \\to ${s}+} f(x)g(x) = f(${s})g(${s}) = ${ev(Rr, s)}g(${s})$`,
-        `$${ev(L, s)}g(${s}) = ${ev(Rr, s)}g(${s})$ 에서 $g(${s}) = 0$ 이므로 $g(x) = ${fac(s)}(x - c)$ 로 놓을 수 있다.`,
-        `$g(${c0}) = ${times(c0 - s)}(${c0} - c) = ${G}$ 에서 $c = ${rr}$, 즉 $g(x) = ${facs(1, [s, rr])}$`,
+        `$\\lim_{x \\to ${s}-} f(x)g(x) = ${cmul(ev(L, s), `g(${s})`)}$, $\\lim_{x \\to ${s}+} f(x)g(x) = f(${s})g(${s}) = ${cmul(ev(Rr, s), `g(${s})`)}$`,
+        `$${cmul(ev(L, s), `g(${s})`)} = ${cmul(ev(Rr, s), `g(${s})`)}$ 에서 $g(${s}) = 0$ 이므로 $g(x) = ${fac(s)}(x - c)$ 로 놓을 수 있다.`,
+        `$g(${c0}) = ${coefTex(c0 - s)}(${c0} - c) = ${G}$ 에서 $c = ${rr}$, 즉 $g(x) = ${facs(1, [s, rr])}$`,
         `따라서 $g(${n}) = ${times(n - s, n - rr)} = ${ans}$`
       ),
       score: 4,
@@ -604,10 +606,10 @@ const radCoef: SuTemplate<{ v: number; c: number; d: number; m: number; s: numbe
         text: `두 상수 $a, b$ 에 대하여 $\\lim_{x \\to \\infty} (\\sqrt{ax^{2} + bx} - ${cx(c)}) = ${d}$ 일 때, $a + b$ 의 값은? (단, $a > 0$)`,
         ...mcI(r, ans, [c + b, a + c * d, a - b, a + d, c * c + 4 * c * d, ans + 1]),
         solution: lines(
-          `$\\sqrt{ax^{2} + bx} - ${cx(c)} = \\frac{${a === 1 ? "" : "("}a ${signed(-c * c)}${a === 1 ? "" : ")"}x^{2} + bx}{\\sqrt{ax^{2} + bx} + ${cx(c)}}$ 이므로, $a \\ne ${c * c}$ 이면 분자의 차수가 분모보다 높아 발산한다. 따라서 $a = ${c * c}$`,
+          `$\\sqrt{ax^{2} + bx} - ${cx(c)} = \\frac{(a ${signed(-c * c)})x^{2} + bx}{\\sqrt{ax^{2} + bx} + ${cx(c)}}$ 이므로, $a \\ne ${c * c}$ 이면 분자의 차수가 분모보다 높아 발산한다. 따라서 $a = ${c * c}$`,
           `이때 $\\lim_{x \\to \\infty} \\frac{bx}{\\sqrt{${c * c}x^{2} + bx} + ${cx(c)}} = \\lim_{x \\to \\infty} \\frac{b}{\\sqrt{${c * c} + \\frac{b}{x}} + ${c}} = \\frac{b}{${2 * c}}$`,
           `$\\frac{b}{${2 * c}} = ${d}$ 에서 $b = ${b}$`,
-          `따라서 $a + b = ${a} ${signed(b)} = ${ans}$`
+          `따라서 $a + b = ${plus(a, b)} = ${ans}$`
         ),
         score: 3,
       }
@@ -624,7 +626,7 @@ const radCoef: SuTemplate<{ v: number; c: number; d: number; m: number; s: numbe
         `$x \\to ${m}$ 일 때 (분모) $\\to 0$ 이고 극한값이 존재하므로 (분자) $\\to 0$: $a\\sqrt{${s * s}} - b = 0$, 즉 $b = ${s === 1 ? "" : s}a$`,
         `$\\frac{a\\sqrt{${texPoly([1, n])}} - ${s === 1 ? "" : s}a}{${texShift(m)}} = \\frac{a\\{(${texPoly([1, n])}) - ${s * s}\\}}{(${texShift(m)})(\\sqrt{${texPoly([1, n])}} + ${s})} = \\frac{a}{\\sqrt{${texPoly([1, n])}} + ${s}}$`,
         `$x \\to ${m}$ 일 때 극한값은 $\\frac{a}{${2 * s}} = ${L}$ 이므로 $a = ${a}$, $b = ${b}$`,
-        `따라서 $a + b = ${a} ${signed(b)} = ${ans}$`
+        `따라서 $a + b = ${plus(a, b)} = ${ans}$`
       ),
       score: 3,
     }
@@ -730,7 +732,7 @@ const crossFTex = ({ m, n, s, a, b }: Cross, nTex?: string) =>
   cases([nTex ? `${cx(m)} + ${nTex}` : texPoly([m, n]), "x < 0"], [texPoly([s, -2 * s * a, s * a * a + b]), "x \\ge 0"])
 const crossShape = ({ m, n, s, a, b }: Cross, R0: number, nTex = String(n)) =>
   lines(
-    `$x \\ge 0$ 일 때 $f(x) = ${s === 1 ? "" : "-"}${fac(a)}^{2} ${signed(b)}$ 이므로 $x = ${a}$ 에서 ${s === 1 ? "최솟값" : "최댓값"}을 갖고 그 값은 $${b}$ 이다. 또 $f(0) = ${R0}$ 이다.`,
+    `$x \\ge 0$ 일 때 $f(x) = ${s === 1 ? "" : "-"}${fac(a)}^{2}${term(b, "")}$ 이므로 $x = ${a}$ 에서 ${s === 1 ? "최솟값" : "최댓값"}을 갖고 그 값은 $${b}$ 이다. 또 $f(0) = ${R0}$ 이다.`,
     `$x < 0$ 일 때 $f(x) = ${nTex === String(n) ? texPoly([m, n]) : `${cx(m)} + ${nTex}`}$ 이고, 이 직선은 ${m > 0 ? "증가" : "감소"}하므로 $${nTex}$ 보다 ${m > 0 ? "작은" : "큰"} 모든 값을 정확히 한 번씩 갖는다. ($\\lim_{x \\to 0-} f(x) = ${nTex}$)`
   )
 const crossScan = (c: Cross) => {
@@ -762,7 +764,7 @@ const crossDisc: SuTemplate<Cross> = {
       solution: lines(
         crossShape(c, R0),
         `직선 $y = t$ 를 위아래로 움직이며 교점의 개수를 세면 ${crossTable(c, crit)} 이다.`,
-        `따라서 $g(t)$ 는 $t = ${disc.join(", ")}$ 에서 불연속이고 $S = ${disc.join(" + ").replace(/\+ -/g, "- ")} = ${S}$, 최댓값 $M = ${max}$`,
+        `따라서 $g(t)$ 는 $t = ${disc.join(", ")}$ 에서 불연속이고 $S = ${disc.length > 1 ? `${plus(...disc)} = ` : ""}${S}$, 최댓값 $M = ${max}$`,
         `$S + M = ${S} ${signed(max)} = ${ans}$`
       ),
       score: 4,
@@ -813,7 +815,7 @@ const shiftCont: SuTemplate<Shift> = {
       solution: lines(
         `$\\lim_{x \\to 0-} f(x) = ${A0}$, $f(0) = ${B0}$ 이므로 $f(x)$ 는 $x = 0$ 에서만 불연속이다. $h(x) = f(x)f(x - k)$ 라 하자.`,
         `(i) $k \\ne 0$ 일 때: $h(x)$ 가 불연속일 수 있는 곳은 $x = 0$ 과 $x = k$ 이다.`,
-        `$x = 0$ 에서 $f(x - k)$ 는 연속이므로 $\\lim_{x \\to 0-} h(x) = ${A0}f(-k)$, $h(0) = ${B0}f(-k)$ 가 같아야 하고, $${A0} \\ne ${B0}$ 이므로 $f(-k) = 0$`,
+        `$x = 0$ 에서 $f(x - k)$ 는 연속이므로 $\\lim_{x \\to 0-} h(x) = ${cmul(A0, "f(-k)")}$, $h(0) = ${cmul(B0, "f(-k)")}$ 가 같아야 하고, $${A0} \\ne ${B0}$ 이므로 $f(-k) = 0$`,
         `$x = k$ 에서 $f(x)$ 는 연속이므로 같은 방법으로 $f(k) \\times ${paren(A0)} = f(k) \\times ${paren(B0)}$, 즉 $f(k) = 0$`,
         `$f(x) = 0$ 의 해는 $x = ${Z.join(", ")}$ 이므로 $f(k) = f(-k) = 0$ 인 $k$ 는 $k = ${[...pos.map((x) => -x), ...pos].sort((x, y) => x - y).join(", ")}$`,
         `(ii) $k = 0$ 일 때: $h(x) = \\{f(x)\\}^{2}$ 이고 $x = 0$ 에서 $${A0 * A0}${zero ? " = " : " \\ne "}${B0 * B0}$ 이므로 ${zero ? "연속이다." : "불연속이다."}`,
@@ -864,7 +866,7 @@ const crossParam: SuTemplate<Cross & { T: number }> = {
     const other = c.n === c.b ? R0 : c.b
     const cOther = crossInfo({ ...c, n: other }).disc.length
     return {
-      text: `상수 $n$ 에 대하여 함수 $f(x) = ${crossFTex(c, "n")}$ 이 있다. 실수 $t$ 에 대하여 직선 $y = t$ 와 곡선 $y = f(x)$ 가 만나는 점의 개수를 $g(t)$ 라 하자. 함수 $g(t)$ 가 불연속인 실수 $t$ 의 개수가 $${c.T}$ 일 때, 함수 $g(t)$ 가 불연속인 모든 $t$ 의 값의 합을 $S$ 라 하자. $n + S$ 의 값은?`,
+      text: `상수 $n$ 에 대하여 함수 $f(x) = ${crossFTex(c, "n")}$ 이 있다. 실수 $t$ 에 대하여 직선 $y = t$ 와 곡선 $y = f(x)$ 가 만나는 점의 개수를 $g(t)$ 라 하자. 함수 $g(t)$ 가 불연속인 실수 $t$ 의 개수가 $${c.T}$ 일 때, ${c.T === 1 ? "함수 $g(t)$ 가 불연속인 $t$ 의 값을 $S$ 라 하자" : "함수 $g(t)$ 가 불연속인 모든 $t$ 의 값의 합을 $S$ 라 하자"}. $n + S$ 의 값은?`,
       ...mcI(r, ans, [S, other + S, other + crossInfo({ ...c, n: other }).disc.reduce((x, y) => x + y, 0), ans + 1, ans - 1, c.n]),
       solution: lines(
         crossShape(c, R0, "n"),
@@ -913,13 +915,13 @@ const dblRoot: SuTemplate<{ s: number; rr: number; c0: number; n: number; L: num
     const f = cases([texPoly(L), `x < ${s}`], [texPoly(Rr), `x \\ge ${s}`])
     const wr = [(n - s) * (n - rr) * (n - c0), (n - s) ** 2 * (n + rr), (n + s) ** 2 * (n - rr), ans + 1, ans - 1, -ans]
     return {
-      text: `함수 $f(x) = ${f}$ 와 최고차항의 계수가 $1$ 인 삼차함수 $g(x)$ 가 다음 조건을 만족시킨다.\n(가) 함수 $f(x)g(x)$ 는 실수 전체의 집합에서 연속이다.\n(나) $\\lim_{x \\to ${s}} \\frac{f(x)g(x)}{${texShift(s)}}$ 의 값이 존재한다.\n(다) $g(${c0}) = ${G}$\n이때 $g(${n})$ ${ask(ans)}`,
+      text: `함수 $f(x) = ${f}$ 와 최고차항의 계수가 $1$ 인 삼차함수 $g(x)$ 가 다음 조건을 만족시킨다.\n(가) $\\lim_{x \\to ${s}} \\frac{f(x)g(x)}{${texShift(s)}}$ 의 값이 존재한다.\n(나) $g(${c0}) = ${G}$\n이때 $g(${n})$ ${ask(ans)}`,
       ...answerI(r, ans, wr),
       solution: lines(
         `$\\lim_{x \\to ${s}-} f(x) = ${ev(L, s)}$, $f(${s}) = ${ev(Rr, s)}$ 이므로 $f(x)$ 는 $x = ${s}$ 에서 불연속이다.`,
-        `(가)에서 $${ev(L, s)}g(${s}) = ${ev(Rr, s)}g(${s})$ 이므로 $g(${s}) = 0$, 즉 $g(x) = ${fac(s)}h(x)$ ($h(x)$ 는 최고차항의 계수가 $1$ 인 이차함수)`,
-        `(나)에서 $\\frac{f(x)g(x)}{${texShift(s)}} = f(x)h(x)$ 이고, 좌극한 $${ev(L, s)}h(${s})$ 와 우극한 $${ev(Rr, s)}h(${s})$ 가 같아야 하므로 $h(${s}) = 0$`,
-        `따라서 $g(x) = ${fac(s)}^{2}(x - c)$ 로 놓을 수 있고, (다)에서 $${times((c0 - s) ** 2)}(${c0} - c) = ${G}$ 이므로 $c = ${rr}$`,
+        `(가)에서 (분모) $\\to 0$ 이므로 (분자) $f(x)g(x) \\to 0$ 이어야 한다. ${ev(L, s) === 0 ? `우극한 $${cmul(ev(Rr, s), `g(${s})`)}$ 이 $0$ 이어야 하므로` : ev(Rr, s) === 0 ? `좌극한 $${cmul(ev(L, s), `g(${s})`)}$ 이 $0$ 이어야 하므로` : `좌극한 $${cmul(ev(L, s), `g(${s})`)}$ 와 우극한 $${cmul(ev(Rr, s), `g(${s})`)}$ 가 모두 $0$ 이어야 하므로`} $g(${s}) = 0$`,
+        `즉 $g(x) = ${fac(s)}h(x)$ ($h(x)$ 는 최고차항의 계수가 $1$ 인 이차함수)로 놓으면 $\\frac{f(x)g(x)}{${texShift(s)}} = f(x)h(x)$ 이고, 좌극한 $${cmul(ev(L, s), `h(${s})`)}$ 와 우극한 $${cmul(ev(Rr, s), `h(${s})`)}$ 가 같아야 하므로 $h(${s}) = 0$`,
+        `따라서 $g(x) = ${fac(s)}^{2}(x - c)$ 로 놓을 수 있고, (나)에서 $${coefTex((c0 - s) ** 2)}(${c0} - c) = ${G}$ 이므로 $c = ${rr}$`,
         `$g(${n}) = ${times((n - s) ** 2, n - rr)} = ${ans}$`
       ),
       score: 4,
@@ -932,16 +934,15 @@ const dblRoot: SuTemplate<{ s: number; rr: number; c0: number; n: number; L: num
     for (let c2 = -14; c2 <= 14; c2++)
       for (let c1 = -45; c1 <= 45; c1++) {
         const c0v = G - (c0 ** 3 + c2 * c0 * c0 + c1 * c0)
-        if (Math.abs(s ** 3 + c2 * s * s + c1 * s + c0v) > 1e-6 * (1 + Math.abs(c0v))) continue // 연속이려면 g(s) 가 0 (빠른 거르기)
+        // 분모가 0 으로 가므로 극한이 있으려면 분자도 0 으로 가야 한다 (g(s) 가 0 이 아니면 빠르게 거른다)
+        if (Math.abs(s ** 3 + c2 * s * s + c1 * s + c0v) > 1e-9) continue
         const g = (x: number) => ev([1, c2, c1, c0v], x)
         const h = (x: number) => f(x) * g(x)
-        const e = 1e-9
-        if (Math.abs(h(s - e) - h(s)) > 1e-6 || Math.abs(h(s + e) - h(s)) > 1e-6) continue
-        // 좌·우 기울기: 단순근이면 차이가 |도약| × |g'(s)| ≥ 1, 중근이면 0
+        // h(x)/(x-s) 의 좌·우 값: g(s)≠0 이면 크게 벌어지고, 단순근이면 차이가 |도약| × |g'(s)| ≥ 1, 중근이면 0
         const d = 1e-6
         const lq = h(s - d) / -d
         const rq = h(s + d) / d
-        if (Math.abs(lq - rq) > 0.1) continue
+        if (!(Math.abs(lq) < 1e4) || Math.abs(lq - rq) > 0.1) continue
         found.push(g(n))
       }
     return only(found) ?? NaN
