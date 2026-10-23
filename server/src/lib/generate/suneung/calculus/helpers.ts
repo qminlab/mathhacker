@@ -138,3 +138,34 @@ export const lines = (...ls: (string | false | null | undefined)[]) => {
   const xs = ls.filter((l): l is string => !!l)
   return xs.map((l, i) => (l.endsWith("$") && i + 1 < xs.length && xs[i + 1].startsWith("$") ? `${l}.` : l)).join("\n")
 }
+
+/** 격자 위 함숫값 (verify 전용) */
+export const gridVals = (f: (x: number) => number, lo: number, hi: number, perUnit = 64) => {
+  const n = Math.round((hi - lo) * perUnit)
+  const out = new Float64Array(n + 1)
+  for (let i = 0; i <= n; i++) out[i] = f(lo + i / perUnit)
+  return out
+}
+/**
+ * 격자 값으로 방정식 v(x) = k 의 서로 다른 실근 개수 (verify 전용)
+ * - 부호가 바뀌면 근 하나, 격자점에서 |v - k| < tol 이면 그 점이 근 (중근도 한 번)
+ * - 중근이 격자점 위에 있을 때만 정확하다 (정수점 극값)
+ */
+export function gridCount(vals: ArrayLike<number>, k: number, tol = 1e-9) {
+  let n = 0
+  let last = 0 // 마지막 0이 아닌 부호
+  let zeroRun = false
+  for (let i = 0; i < vals.length; i++) {
+    const y = vals[i] - k
+    if (Math.abs(y) < tol) {
+      if (!zeroRun) n++
+      zeroRun = true
+      continue
+    }
+    const s = y > 0 ? 1 : -1
+    if (last !== 0 && s !== last && !zeroRun) n++
+    last = s
+    zeroRun = false
+  }
+  return n
+}

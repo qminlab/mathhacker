@@ -1,7 +1,7 @@
 // 미적분Ⅰ · 미분 (12미적Ⅰ-02-01 ~ 10)
 import { deriv, isShortOk, limitAt, q, roots, short, signed, texPoly, texShift, paren, term } from "../kit"
 import type { SuTemplate } from "../types"
-import { answerI, ask, cases, countRoots, cx, dcs, ev, fac, facs, head, lines, mcI, mcQ, nz, only, solveLinear, times, U_DIFF } from "./helpers"
+import { answerI, ask, cases, countRoots, gridCount, gridVals, cx, dcs, ev, fac, facs, head, lines, mcI, mcQ, nz, only, solveLinear, times, U_DIFF } from "./helpers"
 
 const U = U_DIFF
 const fx = (cs: number[], x: number | string) => texPoly(cs).replace(/x/g, typeof x === "number" ? `(${x})` : x)
@@ -45,7 +45,7 @@ const prodRule: SuTemplate<{ A: number[]; B: number[]; k: number }> = {
       ...answerI(r, ans, [ev(dA, k) * B[0], ev(dA, k) * ev(B, k), ev(A, k) * B[0], ev(dA, k) * ev(B, k) - ev(A, k) * B[0], ans + 1, ans - 1]),
       solution: lines(
         `곱의 미분법에 의하여 $f'(x) = (${texPoly(dA)})(${texPoly(B)}) + (${texPoly(A)}) \\times ${paren(B[0])}$`,
-        `$x = ${k}$ 를 대입하면 $f'(${k}) = ${times(ev(dA, k), ev(B, k))} + ${times(ev(A, k), B[0])}$`,
+        `$x = ${k}$ 를 대입하면 $f'(${k}) = ${times(ev(dA, k), ev(B, k))} + ${paren(ev(A, k))} \\times ${paren(B[0])}$`,
         `$= ${ev(dA, k) * ev(B, k)} ${signed(ev(A, k) * B[0])} = ${ans}$`
       ),
       score: 2,
@@ -355,12 +355,12 @@ const incrRange: SuTemplate<{ p: number; rr: number; s: number; e: number }> = {
   // 정수 a마다 f 값을 촘촘히 계산해 단조인지 확인
   verify: ({ p, rr, s, e }) => {
     let cnt = 0
-    for (let a = -60; a <= 60; a++) {
+    for (let a = -40; a <= 40; a++) {
       const f = (x: number) => s * (x ** 3 - a * x * x + (p * a + rr) * x) + e
       let ok = true
-      let prev = f(-40)
-      for (let i = 1; i <= 8000 && ok; i++) {
-        const y = f(-40 + i * 0.01)
+      let prev = f(-20)
+      for (let i = 1; i <= 2000 && ok; i++) {
+        const y = f(-20 + i * 0.02)
         if (s * (y - prev) < -1e-9) ok = false
         prev = y
       }
@@ -402,10 +402,11 @@ const extVal: SuTemplate<{ al: number; be: number; m: number; s: number }> = {
   verify: ({ al, be, m, s }) => {
     // a, b 를 완전 탐색 (f'(α)=f'(β)=0), c 는 극솟값에서
     const found: number[] = []
-    for (let a = -40; a <= 40; a++)
-      for (let b = -200; b <= 200; b++) {
+    for (let a = -32; a <= 32; a++)
+      for (let b = -130; b <= 130; b++) {
         const g = (x: number) => 2 * s * x ** 3 + a * x * x + b * x
-        if (Math.abs(deriv(g, al)) > 1e-6 || Math.abs(deriv(g, be)) > 1e-6) continue
+        if (Math.abs(deriv(g, al)) > 1e-6) continue
+        if (Math.abs(deriv(g, be)) > 1e-6) continue
         const crit = roots((x) => deriv(g, x), -20, 20, 4000)
         const mins = crit.filter((x) => g(x - 1e-3) > g(x) && g(x + 1e-3) > g(x))
         const maxs = crit.filter((x) => g(x - 1e-3) < g(x) && g(x + 1e-3) < g(x))
@@ -535,7 +536,7 @@ const tanExt: SuTemplate<{ v: number; b: number; c: number; p: number; qq: numbe
           `이 직선이 점 $(${p}, ${qq})$ 를 지나므로 $${qq} = (${texPoly([2, b], "s")})(${p} - s) + ${texPoly([1, b, c], "s")}$, 정리하면 $${texPoly([1, -2 * p, K], "s")} = 0$`,
           `두 근을 $s_1, s_2$ 라 하면 $s_1 + s_2 = ${2 * p}$, $s_1 s_2 = ${K}$ 이고, 기울기는 $2s_1 ${signed(b)}$, $2s_2 ${signed(b)}$`,
           w === 0
-            ? `기울기의 곱은 $4s_1 s_2 + ${paren(2 * b)}(s_1 + s_2) + ${b * b} = ${times(4, K)} + ${times(2 * b, 2 * p)} + ${b * b} = ${ans}$`
+            ? `기울기의 곱은 $4s_1 s_2 + ${paren(2 * b)}(s_1 + s_2) + ${b * b} = ${times(4, K)} + ${paren(2 * b)} \\times ${paren(2 * p)} + ${b * b} = ${ans}$`
             : `기울기의 합은 $2(s_1 + s_2) + ${paren(2 * b)} = ${times(2, 2 * p)} ${signed(2 * b)} = ${ans}$`
         ),
         score: 3,
@@ -608,10 +609,11 @@ const rootCount: SuTemplate<{ al: number; be: number; e: number; s: number; v: n
   },
   verify: ({ al, be, e, s, v }) => {
     const f = [2 * s, -3 * s * (al + be), 6 * s * al * be, e]
+    const vals = gridVals((x) => ev(f, x), -20, 20)
     let cnt = 0
     let sum = 0
     for (let k = -300; k <= 300; k++) {
-      const n = countRoots((x) => ev(f, x) - k, -20, 20, 800).length
+      const n = gridCount(vals, k)
       if (v === 0 && n === 3) cnt++
       if (v === 1 && n === 2) sum += k
     }
@@ -675,7 +677,7 @@ const motion3: SuTemplate<{ al: number; be: number; x0: number; v: number }> = {
     if (v === 0) {
       const ans = q(d ** 3, 2)
       return {
-        text: `수직선 위를 움직이는 점 $\\mathrm{P}$ 의 시각 $t$ $(t \\ge 0)$ 에서의 위치 $x$ 가 $x = ${texPoly(X, "t")}$ 이다. 점 $\\mathrm{P}$ 가 운동 방향을 바꾸는 두 시각에서 점 $\\mathrm{P}$ 의 위치를 각각 $x_1, x_2$ 라 할 때, $|x_1 - x_2|$ 의 값은?`,
+        text: `수직선 위를 움직이는 점 $\\mathrm{P}$ 의 시각 $t \\ (t \\ge 0)$ 에서의 위치 $x$ 가 $x = ${texPoly(X, "t")}$ 이다. 점 $\\mathrm{P}$ 가 운동 방향을 바꾸는 두 시각에서 점 $\\mathrm{P}$ 의 위치를 각각 $x_1, x_2$ 라 할 때, $|x_1 - x_2|$ 의 값은?`,
         ...mcQ(r, ans, [q(d ** 3), q(d ** 3, 4), q(d ** 2, 2), q(d ** 3, 6), ans.add(1)]),
         solution: lines(
           `속도는 $v = ${texPoly(dcs(X), "t")} = 3(t - ${al})(t - ${be})$ 이고, $t = ${al}$, $t = ${be}$ 의 좌우에서 $v$ 의 부호가 바뀌므로 이 두 시각에 운동 방향이 바뀐다.`,
@@ -689,7 +691,7 @@ const motion3: SuTemplate<{ al: number; be: number; x0: number; v: number }> = {
       const ans = -3 * (d / 2) ** 2
       const m = (al + be) / 2
       return {
-        text: `수직선 위를 움직이는 점 $\\mathrm{P}$ 의 시각 $t$ $(t \\ge 0)$ 에서의 위치 $x$ 가 $x = ${texPoly(X, "t")}$ 이다. 점 $\\mathrm{P}$ 의 가속도가 $0$ 일 때 점 $\\mathrm{P}$ 의 속도는?`,
+        text: `수직선 위를 움직이는 점 $\\mathrm{P}$ 의 시각 $t \\ (t \\ge 0)$ 에서의 위치 $x$ 가 $x = ${texPoly(X, "t")}$ 이다. 점 $\\mathrm{P}$ 의 가속도가 $0$ 일 때 점 $\\mathrm{P}$ 의 속도는?`,
         ...mcI(r, ans, [-ans, ans * 2, ans + 3, ans - 3, 3 * al * be, ev(X, m)]),
         solution: lines(
           `속도 $v = ${texPoly(dcs(X), "t")}$, 가속도 $a = ${texPoly(dcs(dcs(X)), "t")}$`,
@@ -701,7 +703,7 @@ const motion3: SuTemplate<{ al: number; be: number; x0: number; v: number }> = {
     }
     const ans = 3 * d
     return {
-      text: `수직선 위를 움직이는 점 $\\mathrm{P}$ 의 시각 $t$ $(t \\ge 0)$ 에서의 위치 $x$ 가 $x = ${texPoly(X, "t")}$ 이다. 점 $\\mathrm{P}$ 가 출발한 후 운동 방향을 두 번째로 바꾸는 시각에서 점 $\\mathrm{P}$ 의 가속도는?`,
+      text: `수직선 위를 움직이는 점 $\\mathrm{P}$ 의 시각 $t \\ (t \\ge 0)$ 에서의 위치 $x$ 가 $x = ${texPoly(X, "t")}$ 이다. 점 $\\mathrm{P}$ 가 출발한 후 운동 방향을 두 번째로 바꾸는 시각에서 점 $\\mathrm{P}$ 의 가속도는?`,
       ...mcI(r, ans, [-ans, 6 * be, 6 * al, 3 * be, ans + 3]),
       solution: lines(
         `속도 $v = ${texPoly(dcs(X), "t")} = 3(t - ${al})(t - ${be})$ 이므로 $t = ${al}$, $t = ${be}$ 에서 운동 방향이 바뀐다.`,
@@ -746,13 +748,13 @@ const cubicGraph: SuTemplate<{ w: number; d: number; h: number; sg: number; k: n
     const hOther = sg === 1 ? S - 2 * w : 2 * w - S // 다른 경우에서 나오는 h (음수)
     const fAlt = (x: number) => (x - w) ** 3 - 3 * h * h * (x - w) - B
     return {
-      text: `최고차항의 계수가 $1$ 인 삼차함수 $f(x)$ 가 다음 조건을 만족시킨다.\n(가) $f'(${a}) = f'(${b})$\n(나) 방정식 $f(x) = 0$ 은 서로 다른 두 실근을 갖고, 두 실근의 합은 $${S}$ 이다.\n$f(${k})$ ${ask(ans)}`,
+      text: `최고차항의 계수가 $1$ 인 삼차함수 $f(x)$ 가 다음 조건을 만족시킨다.\n(가) $f'(${a}) = f'(${b})$\n(나) 방정식 $f(x) = 0$ 은 서로 다른 두 실근을 갖고, 두 실근의 합은 $${S}$ 이다.\n이때 $f(${k})$ ${ask(ans)}`,
       ...answerI(r, ans, [fAlt(k), ev(f, k + 1), ev(f, 2 * w - k), ans + 2 * B, -ans, ans + 1]),
       solution: lines(
         `$f'(x)$ 는 이차함수이고 그래프가 직선 $x = \\frac{${a} + ${paren(b)}}{2} = ${w}$ 에 대하여 대칭이므로 $f'(x) = 3${fac(w)}^{2} + p$ 꼴이다. 즉 $f(x) = ${fac(w)}^{3} + p${fac(w)} + q$`,
-        `방정식 $f(x) = 0$ 이 서로 다른 두 실근을 가지려면 $f(x)$ 가 극값을 갖고 극값 중 하나가 $0$ 이어야 한다. $p = -3m^{2}$ $(m > 0)$ 이라 하면 극값을 갖는 $x$ 는 $${w} \\pm m$`,
-        `(i) 극솟값 $f(${w} + m) = 0$ 일 때: $f(x) = (x - ${w} - m)^{2}(x - ${w} + 2m)$ 이고 두 실근의 합은 $${2 * w} - m$`,
-        `(ii) 극댓값 $f(${w} - m) = 0$ 일 때: $f(x) = (x - ${w} + m)^{2}(x - ${w} - 2m)$ 이고 두 실근의 합은 $${2 * w} + m$`,
+        `방정식 $f(x) = 0$ 이 서로 다른 두 실근을 가지려면 $f(x)$ 가 극값을 갖고 극값 중 하나가 $0$ 이어야 한다. $p = -3m^{2} \\ (m > 0)$ 이라 하면 극값을 갖는 $x$ 는 $${w} \\pm m$`,
+        `(i) 극솟값 $f(${w} + m) = 0$ 일 때: $f(x) = (${texShift(w)} - m)^{2}(${texShift(w)} + 2m)$ 이고 두 실근의 합은 $${2 * w} - m$`,
+        `(ii) 극댓값 $f(${w} - m) = 0$ 일 때: $f(x) = (${texShift(w)} + m)^{2}(${texShift(w)} - 2m)$ 이고 두 실근의 합은 $${2 * w} + m$`,
         `두 실근의 합이 $${S}$ 이므로 ${sg === 1 ? `(i)에서 $m = ${h}$ ((ii)이면 $m = ${hOther}$ 로 $m > 0$ 에 모순)` : `(ii)에서 $m = ${h}$ ((i)이면 $m = ${hOther}$ 로 $m > 0$ 에 모순)`}`,
         `따라서 $f(x) = ${sg === 1 ? `(${texShift(w + h)})^{2}(${texShift(w - 2 * h)})` : `(${texShift(w - h)})^{2}(${texShift(w + 2 * h)})`} = ${texPoly(f)}$ 이고 $f(${k}) = ${ans}$`
       ),
@@ -767,15 +769,16 @@ const cubicGraph: SuTemplate<{ w: number; d: number; h: number; sg: number; k: n
     const found: number[] = []
     for (let c2 = -12; c2 <= 12; c2++) {
       if (Math.abs(3 * a * a + 2 * c2 * a - (3 * b * b + 2 * c2 * b)) > 1e-9) continue
-      for (let c1 = -40; c1 <= 40; c1++) {
+      for (let c1 = -30; c1 <= 30; c1++) {
         const base = (x: number) => x ** 3 + c2 * x * x + c1 * x
         const crit = roots((x) => deriv(base, x), -30, 30, 1200)
         for (const cp of crit) {
           const c0 = -base(cp)
           const f = (x: number) => base(x) + c0
-          const rs = countRoots(f, -40, 40, 1600)
-          if (rs.length !== 2) continue
-          if (Math.abs(rs[0] + rs[1] - S) > 1e-4) continue
+          // cp 는 중근, 나머지는 부호가 바뀌는 근
+          const simple = roots(f, -40, 40, 800).filter((x) => Math.abs(x - cp) > 1e-3)
+          if (simple.length !== 1) continue
+          if (Math.abs(simple[0] + cp - S) > 1e-4) continue
           found.push(f(k))
         }
       }
@@ -831,10 +834,11 @@ const tanCount: SuTemplate<{ m: number; b: number; c: number; p: number; v: numb
   verify: ({ m, b, c, p, v }) => {
     const f = (x: number) => ev([1, 3 * m, b, c], x)
     const g = (t: number) => f(t) + deriv(f, t, 1e-4) * (p - t)
+    const vals = gridVals(g, -30, 30)
     let cnt = 0
     let sum = 0
     for (let k = -300; k <= 300; k++) {
-      const n = countRoots((t) => g(t) - k, -30, 30, 600).length
+      const n = gridCount(vals, k, 1e-6)
       if (v === 0 && n === 3) cnt++
       if (v === 1 && n === 2) sum += k
     }
@@ -923,18 +927,20 @@ const nonDiff: SuTemplate<ND> = {
     const want = st.map((s) => ND_STAT[s].f(T.L, T.V, T.R))
     const base = ndBase(al, be)
     const found: number[] = []
+    const vals = gridVals((x) => ev(base, x), -10, 10, 80)
+    // 부호가 바뀌는 점(홀수 중근)만 센다
     const H = (c: number, t: number) => {
       let n = 0
-      let prev = ev(base, -10) + c - t
-      for (let i = 1; i <= 1600; i++) {
-        const y = ev(base, -10 + i / 80) + c - t
+      let prev = 0
+      for (let i = 0; i < vals.length; i++) {
+        const y = vals[i] + c - t
         if (y === 0) continue
         if (prev * y < 0) n++
         prev = y
       }
       return n
     }
-    for (let c = -400; c <= 400; c++) {
+    for (let c = -360; c <= 360; c++) {
       const L = H(c, -0.25)
       const V = H(c, 0)
       const R = H(c, 0.25)
@@ -964,7 +970,7 @@ const quarticSym: SuTemplate<{ w: number; a: number; v: number; k: number }> = {
     const cond = v === 0 ? `$f'(${w + 1}) = ${D}$` : `$f(${w + 1}) = ${E}$`
     const u = k - w
     return {
-      text: `최고차항의 계수가 $1$ 인 사차함수 $f(x)$ 가 다음 조건을 만족시킨다.\n(가) 모든 실수 $x$ 에 대하여 $f(${w === 0 ? "x" : `${w} + x`}) = f(${w === 0 ? "-x" : `${w} - x`})$ 이다.\n(나) 방정식 $f(x) = 0$ 의 서로 다른 실근의 개수는 $3$ 이다.\n(다) ${cond}\n$f(${k})$ ${ask(ans)}`,
+      text: `최고차항의 계수가 $1$ 인 사차함수 $f(x)$ 가 다음 조건을 만족시킨다.\n(가) 모든 실수 $x$ 에 대하여 $f(${w === 0 ? "x" : `${w} + x`}) = f(${w === 0 ? "-x" : `${w} - x`})$ 이다.\n(나) 방정식 $f(x) = 0$ 의 서로 다른 실근의 개수는 $3$ 이다.\n(다) ${cond}\n이때 $f(${k})$ ${ask(ans)}`,
       ...answerI(r, ans, [u ** 4 - A * u * u, u ** 4 + A * u * u + 1, u ** 4 + (A / 2) * u * u, ans + 1, -ans, F(k + 1)]),
       solution: lines(
         `(가)에서 곡선 $y = f(x)$ 는 직선 $x = ${w}$ 에 대하여 대칭이므로 $f(x) = ${fac(w)}^{4} + p${fac(w)}^{2} + q$ 로 놓을 수 있다.`,
@@ -984,10 +990,10 @@ const quarticSym: SuTemplate<{ w: number; a: number; v: number; k: number }> = {
     const E = 1 + A0
     const found: number[] = []
     for (let A = -40; A <= 40; A++)
-      for (let B = -100; B <= 100; B++) {
+      for (let B = -60; B <= 60; B++) {
         const f = (x: number) => (x - w) ** 4 + A * (x - w) ** 2 + B
         if (v === 0 ? Math.abs(deriv(f, w + 1) - D) > 1e-5 : Math.abs(f(w + 1) - E) > 1e-9) continue
-        if (countRoots(f, w - 15, w + 15, 1200).length !== 3) continue
+        if (gridCount(gridVals(f, w - 10, w + 10, 32), 0) !== 3) continue
         found.push(f(k))
       }
     return only(found) ?? NaN

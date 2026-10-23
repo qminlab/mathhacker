@@ -85,6 +85,52 @@ describe("수능 문제 은행", () => {
     }
   })
 
+  it("숫자 뒤 조사가 맞다 (예: 9를, 1을, 6으로, 4였을)", () => {
+    // 숫자를 읽었을 때 마지막 소리의 받침: 0영 1일 2이 3삼 4사 5오 6육 7칠 8팔 9구, 10십 100백 1000천 10000만
+    const lastSound = (num: string) => {
+      const d = num.replace(/\D/g, "")
+      if (!d || /^0+$/.test(d)) return { batchim: true, rieul: false }
+      const nz = d.replace(/0+$/, "")
+      const zeros = d.length - nz.length
+      if (zeros > 0) return { batchim: true, rieul: false }
+      const last = nz[nz.length - 1]
+      return { batchim: "013678".includes(last), rieul: "178".includes(last) }
+    }
+    const pairs: [string, string][] = [["을", "를"], ["은", "는"], ["이", "가"], ["과", "와"], ["이었", "였"]]
+    const bad: string[] = []
+    for (const p of all) {
+      for (const s of [p.text, p.solution, ...(p.choices ?? [])]) {
+        // "$...9$ 를" 처럼 숫자로 끝나는 수식 바로 뒤의 조사
+        for (const m of s.matchAll(/(\d+(?:\.\d+)?)\$\s?(으로|로|을|를|은|는|이었|였|이|가|과|와)(?=[\s,.)]|$)/g)) {
+          const { batchim, rieul } = lastSound(m[1])
+          const j = m[2]
+          let ok = true
+          if (j === "으로") ok = batchim && !rieul
+          else if (j === "로") ok = !batchim || rieul
+          else for (const [withB, without] of pairs) {
+            if (j === withB) ok = batchim
+            if (j === without) ok = !batchim
+          }
+          if (!ok) bad.push(`${where(p)} → "${m[0]}"`)
+        }
+      }
+    }
+    expect(bad.slice(0, 20), `조사 오류 ${bad.length}개`).toEqual([])
+  })
+
+  it("해설 문장이 마침표로 끊긴 뒤 '='로 이어지지 않고, 정의되지 않은 조합 기호가 없다", () => {
+    for (const p of all) {
+      const ls = p.solution.split("\n")
+      for (let i = 1; i < ls.length; i++)
+        expect(/\.\s*$/.test(ls[i - 1]) && /^\s*\$?\s*=/.test(ls[i]), `해설 줄 끊김 ${where(p)}: ${ls[i - 1]} / ${ls[i]}`).toBe(false)
+      for (const s of [p.text, p.solution])
+        for (const m of s.matchAll(/_\{?(\d+)\}?\\mathrm\{[CPH]\}_\{?(\d+)\}?/g)) {
+          const kind = m[0].includes("H") ? "H" : "CP"
+          if (kind === "CP") expect(Number(m[2]) <= Number(m[1]), `${where(p)}: ${m[0]}`).toBe(true)
+        }
+    }
+  })
+
   it("수식이 모두 MathJax로 그려진다", () => {
     const cache = new Set<string>()
     for (const p of all) {

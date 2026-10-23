@@ -684,8 +684,8 @@ const inverseLine: SuTemplate<{ v: 0 | 1; b: number; c: number; p: number }> = {
       solution: sol(
         `$${f}$ 에서 $x$ 와 $y$ 를 바꾸어 정리하면 $${g}$ 이므로 두 함수는 서로 역함수이고, 두 그래프는 직선 $y = x$ 에 대하여 대칭이다.`,
         `직선 $y = -x ${signed(k)}$ 는 직선 $y = x$ 와 수직이므로 점 $\\mathrm{A}(s, t)$ 에 대하여 $\\mathrm{B}(t, s)$ 이다.`,
-        `점 $\\mathrm{A}$ 는 $${f}$ 위에 있고 $s + t = ${k}$ 이다. 왼쪽 식 $s + ${v === 0 ? `${b}^{${texShift(c, "s")}}` : `${b}^{s}${c === 0 ? "" : ` ${signed(c)}`}`}$ 는 $s$ 에 대하여 증가하므로 $s = ${p}$ 가 유일한 해이다.`,
-        `따라서 $\\mathrm{A}(${p}, ${y})$, $\\mathrm{B}(${y}, ${p})$ 이고 $\\overline{\\mathrm{AB}}^{2} = (${y} ${signed(-p)})^{2} \\times 2 = ${ans}$`
+        `점 $\\mathrm{A}$ 는 $${f}$ 위에 있고 $s + t = ${k}$ 이므로 $s + ${v === 0 ? `${b}^{${texShift(c, "s")}}` : `${b}^{s}${c === 0 ? "" : ` ${signed(c)}`}`} = ${k}$ 이다. 좌변은 $s$ 에 대하여 증가하므로 이 방정식의 해는 $s = ${p}$ 하나뿐이다.`,
+        `따라서 $\\mathrm{A}(${p}, ${y})$, $\\mathrm{B}(${y}, ${p})$ 이고 $\\overline{\\mathrm{AB}}^{2} = (${y} - ${p < 0 ? `(${p})` : p})^{2} \\times 2 = ${ans}$`
       ),
       score: 4,
     }
