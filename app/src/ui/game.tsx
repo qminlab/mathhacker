@@ -16,9 +16,11 @@ import type { Progress as ProgressData } from "@/lib/progress"
 import { levelInfo, levelTitle } from "@/lib/progress"
 import { Chip, Progress } from "./controls"
 import { Text } from "./Text"
-import { color } from "./theme"
+import { schemes } from "./theme"
+import { useColors } from "./ThemeProvider"
 
 export function FlameIcon({ size = 20, lit = true }: { size?: number; lit?: boolean }) {
+  const color = useColors()
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path
@@ -31,6 +33,7 @@ export function FlameIcon({ size = 20, lit = true }: { size?: number; lit?: bool
 }
 
 export function StarIcon({ size = 20, filled = true }: { size?: number; filled?: boolean }) {
+  const color = useColors()
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path
@@ -89,6 +92,7 @@ const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"]
 
 /** 최근 7일: 푼 날은 불꽃 */
 export function WeekFlames({ week }: { week: ProgressData["week"] }) {
+  const color = useColors()
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
       {week.map((d, i) => {
@@ -139,6 +143,7 @@ export function BadgeTile({
   goal: number
   size?: "sm" | "md"
 }) {
+  const color = useColors()
   const disc = size === "sm" ? 56 : 72
   return (
     <View style={{ alignItems: "center", gap: 6, opacity: earned ? 1 : 0.9 }} accessible accessibilityLabel={`${name} 뱃지 ${earned ? "획득" : `${current}/${goal}`}`}>
@@ -197,7 +202,8 @@ export function XpPop({ amount, visible }: { amount: number; visible: boolean })
   )
 }
 
-const CONFETTI = [color.primary, color.mint, color.coral, color.sun, color.sky, color.flame]
+const L = schemes.light
+const CONFETTI = [L.primary, L.mint, L.coral, L.sun, L.sky, L.flame]
 
 /** 한 번 터지는 꽃가루 (결과 화면 한 곳에서만) */
 export function Confetti({ count = 26 }: { count?: number }) {

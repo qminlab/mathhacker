@@ -12,11 +12,13 @@ import { Icon } from "@/ui/Icon"
 import { useFormFactor } from "@/ui/layout"
 import { Screen } from "@/ui/Screen"
 import { Text } from "@/ui/Text"
-import { color, space } from "@/ui/theme"
+import { space } from "@/ui/theme"
+import { useColors } from "@/ui/ThemeProvider"
 
 type Filter = "all" | "todo" | "wrong"
 
 export default function WorkbookScreen() {
+  const color = useColors()
   const { id } = useLocalSearchParams<{ id: string }>()
   const workbookId = Number(id)
   const q = useWorkbook(workbookId)

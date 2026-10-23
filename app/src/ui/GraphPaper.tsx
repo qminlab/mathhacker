@@ -2,20 +2,24 @@
 import { useState } from "react"
 import { StyleSheet, View, type ViewProps } from "react-native"
 import Svg, { Defs, Path, Pattern, Rect } from "react-native-svg"
-import { color, GRID } from "./theme"
+import { GRID, type Colors } from "./theme"
+import { useColors } from "./ThemeProvider"
 
 export function GraphPaper({
   children,
   style,
   cell = GRID,
-  base = color.paper,
+  base,
+  palette,
   faint = false,
   onLayout,
   ...rest
-}: ViewProps & { cell?: number; base?: string; faint?: boolean }) {
+}: ViewProps & { cell?: number; base?: string; faint?: boolean; /** 테마와 상관없이 쓸 색 (풀이판 종이) */ palette?: Colors }) {
+  const themed = useColors()
+  const color = palette ?? themed
   const [size, setSize] = useState({ w: 0, h: 0 })
   const major = cell * 5
-  const minorColor = faint ? "#E6EBF2" : color.grid
+  const minorColor = faint ? color.bg : color.grid
   const majorColor = faint ? color.grid : color.gridStrong
   return (
     <View
@@ -25,7 +29,7 @@ export function GraphPaper({
         setSize({ w: Math.ceil(width), h: Math.ceil(height) })
         onLayout?.(e)
       }}
-      style={[{ backgroundColor: base }, style]}
+      style={[{ backgroundColor: base ?? color.paper }, style]}
     >
       {size.w > 0 ? (
         // 웹에서 Svg는 크기를 안 주면 300×150이 되므로 잰 크기를 그대로 준다

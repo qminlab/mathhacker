@@ -1,20 +1,26 @@
 // 문제집 목록
 import { Link, router } from "expo-router"
-import { Pressable, View } from "react-native"
+import { useState } from "react"
+import { Pressable, ScrollView, View } from "react-native"
+import { GradeChip } from "@/features/GradePicker"
 import { IngestList } from "@/features/IngestList"
-import { useWorkbooks } from "@/lib/data"
+import { useSettings, useWorkbooks } from "@/lib/data"
+import { GRADE_LABEL, gradeOrder, GRADES, type Grade } from "@/lib/grades"
 import type { WorkbookSummary } from "@/lib/types"
 import { Button, Empty, ErrorNote, Progress } from "@/ui/controls"
 import { Grid } from "@/ui/Grid"
 import { useFormFactor } from "@/ui/layout"
-import { Screen } from "@/ui/Screen"
+import { Screen, SectionTitle } from "@/ui/Screen"
 import { Text } from "@/ui/Text"
-import { color, LIP, radius, space, tones, type Tone } from "@/ui/theme"
+import { LIP, radius, space, type Tone } from "@/ui/theme"
+import { useColors, useTones } from "@/ui/ThemeProvider"
 
 const COVERS: Tone[] = ["primary", "sky", "mint", "coral", "flame", "sun"]
 
 /** 문제집 카드: 색 표지 + 진행 막대. 표지 색은 문제집마다 고정 */
 function WorkbookCard({ w }: { w: WorkbookSummary }) {
+  const color = useColors()
+  const tones = useTones()
   const rate = w.solved ? Math.round((w.correct / w.solved) * 100) : null
   const missingAnswers = w.total - w.with_answer
   const t = tones[COVERS[w.id % COVERS.length]]
@@ -80,26 +86,49 @@ function WorkbookCard({ w }: { w: WorkbookSummary }) {
 
 export default function LibraryScreen() {
   const books = useWorkbooks()
+  const settings = useSettings()
   const { isPhone } = useFormFactor()
+  const all = books.data ?? []
+  // 내 문제집(과 예전 공용 문제집) / 학년별 공용 문제집
+  const mine = all.filter((w) => !w.grade)
+  const shared = all.filter((w) => w.grade).sort((a, b) => gradeOrder(a.grade) - gradeOrder(b.grade) || a.id - b.id)
+  const sharedGrades = GRADES.filter((g) => shared.some((w) => w.grade === g))
+  const [picked, setPicked] = useState<Grade | null>(null)
+  const grade: Grade | undefined = picked ?? (settings.data?.grade && sharedGrades.includes(settings.data.grade) ? settings.data.grade : sharedGrades[0])
+  const gradeBooks = shared.filter((w) => w.grade === grade)
 
   return (
     <Screen
       title="문제집"
-      subtitle="올린 문제지가 한 문제씩 정리돼 있어요"
+      subtitle="내가 올린 문제지와 학년별 공용 문제집"
       refreshing={books.isRefetching}
       onRefresh={() => books.refetch()}
       action={<Button label="문제지 올리기" icon="upload" onPress={() => router.push("/upload")} size={isPhone ? "sm" : "md"} />}
     >
       <IngestList limit={5} />
       {books.error ? <ErrorNote message={(books.error as Error).message} onRetry={() => books.refetch()} /> : null}
-      {books.data && books.data.length === 0 ? (
+
+      <SectionTitle>내 문제집</SectionTitle>
+      {books.data && mine.length === 0 ? (
         <Empty
-          title="아직 문제집이 없어요"
+          title="아직 올린 문제지가 없어요"
           body="가지고 있는 문제지 PDF를 올리면 문제 번호를 찾아 한 문제씩 잘라 둡니다. 빠른정답 PDF도 올리면 자동으로 채점해요."
           action={<Button label="문제지 올리기" icon="upload" onPress={() => router.push("/upload")} />}
         />
       ) : null}
-      <Grid items={books.data ?? []} minWidth={280} gap={space.lg} keyOf={(w) => w.id} render={(w) => <WorkbookCard w={w} />} />
+      <Grid items={mine} minWidth={280} gap={space.lg} keyOf={(w) => w.id} render={(w) => <WorkbookCard w={w} />} />
+
+      {shared.length ? (
+        <>
+          <SectionTitle>공용 문제집</SectionTitle>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, paddingBottom: 4 }}>
+            {sharedGrades.map((g) => (
+              <GradeChip key={g} label={GRADE_LABEL[g]} selected={g === grade} onPress={() => setPicked(g)} />
+            ))}
+          </ScrollView>
+          <Grid items={gradeBooks} minWidth={280} gap={space.lg} keyOf={(w) => w.id} render={(w) => <WorkbookCard w={w} />} />
+        </>
+      ) : null}
       {isPhone ? <View style={{ height: 72 }} /> : null}
     </Screen>
   )

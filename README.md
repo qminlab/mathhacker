@@ -35,6 +35,8 @@
 | 📅 **오늘의 세트** | 매일 안 푼 문제 중에서 정해 둔 개수만큼 골라 줍니다. 순서대로 풀기도 됩니다. |
 | 📝 **오답노트** | 틀리거나 포기한 문제가 모이고, 다시 맞히면 빠집니다. |
 | 📊 **기록** | 날짜별로 푼 양, 단원별 정답률(약한 단원부터), 공부한 시간. |
+| 🧩 **학년별 공용 문제** | 유아~고3, 49개 단원 2,000여 문제. 코드로 만든 오리지널 문제라 저작권 걱정이 없고, 정답도 코드가 계산합니다. |
+| 🌙 **다크 모드** | 기기 설정을 따르고, 설정에서 라이트·다크를 직접 고를 수도 있습니다. |
 
 화면은 **패드 → 폰 → 컴퓨터** 순서로 설계했습니다. 패드와 컴퓨터는 왼쪽 레일과 넓은 풀이판, 폰은 아래 탭 막대와 아래쪽 답 패널을 씁니다.
 
@@ -93,6 +95,15 @@ cd server
 npm install
 cp .env.example .env.local     # SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, MATHPIX_APP_ID/KEY
 npm run dev                    # http://localhost:3000/api/health
+```
+
+공용 문제 넣기 (스키마를 다시 실행한 뒤, 한 번만):
+
+```bash
+npm run seed:public -- --dry        # 개수만 확인
+npm run seed:public                 # 전체 학년 (그림을 그려 Storage에 올리고 문제를 저장, 여러 번 돌려도 같은 결과)
+npm run seed:public -- --grades k,e1
+npm run preview:public -- ./preview 2   # 넣지 않고 PNG로 미리 보기
 ```
 
 배포는 [Vercel](https://vercel.com)에 `server/`를 Root Directory로 지정하고 같은 환경변수를 넣으면 됩니다. 처리 함수는 최대 300초로 설정돼 있습니다.
@@ -173,7 +184,8 @@ supabase/schema.sql          테이블 · RLS · 함수 · Storage 정책
 ## ⚖️ 저작권 안내
 
 Math Hacker는 **본인이 가진 문제지를 개인 학습용으로 정리하는 도구**입니다. 올린 문제지와 잘라 낸 문제 이미지는 올린 사람만 볼 수 있습니다.
-시중 문제집 PDF나 그 OCR 결과를 다른 사람과 공유하거나 공개 배포하지 마세요. 이 레포의 예제 문제(`app/assets/demo`)는 직접 만든 문제입니다.
+시중 문제집 PDF나 그 OCR 결과를 다른 사람과 공유하거나 공개 배포하지 마세요. 이 레포의 예제 문제(`app/assets/demo`)와 공용 문제(`server/src/lib/generate`)는 직접 만든 문제입니다. 수능·모의고사 기출은 평가원·교육청에 저작권이 있어 공용으로 넣지 않으며, 가진 사람이 직접 올려 혼자 보는 용도로만 쓰세요.
+문제 그림에 쓰는 글꼴 IBM Plex Sans KR은 [SIL OFL](server/assets/fonts/OFL.txt)을 따릅니다.
 
 ## 라이선스
 

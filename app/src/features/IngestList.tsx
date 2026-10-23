@@ -6,7 +6,8 @@ import { backend, keys, useIngests } from "@/lib/data"
 import type { IngestSession } from "@/lib/types"
 import { Button, Progress, Sheet } from "@/ui/controls"
 import { Text } from "@/ui/Text"
-import { color, space } from "@/ui/theme"
+import { space } from "@/ui/theme"
+import { useColors } from "@/ui/ThemeProvider"
 
 function describe(s: IngestSession) {
   const what = s.kind === "answers" ? "답지" : "문제지"
@@ -25,6 +26,7 @@ function describe(s: IngestSession) {
 
 /** 최근 24시간 안의 처리 기록만 보여 준다 */
 export function IngestList({ limit = 3 }: { limit?: number }) {
+  const color = useColors()
   const { data } = useIngests()
   const qc = useQueryClient()
   const retry = useMutation({

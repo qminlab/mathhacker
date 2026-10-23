@@ -105,7 +105,7 @@ export const supabaseBackend: Backend = {
     const row = check(
       await supabase
         .from("user_settings")
-        .select("daily_count, time_per_problem_sec, grading_mode, stylus_only")
+        .select("daily_count, time_per_problem_sec, grading_mode, stylus_only, grade")
         .eq("user_id", id)
         .maybeSingle()
     )

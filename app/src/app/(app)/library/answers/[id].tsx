@@ -11,9 +11,11 @@ import { Icon } from "@/ui/Icon"
 import { useFormFactor } from "@/ui/layout"
 import { Screen } from "@/ui/Screen"
 import { Text } from "@/ui/Text"
-import { color, font, radius, space } from "@/ui/theme"
+import { font, radius, space } from "@/ui/theme"
+import { useColors } from "@/ui/ThemeProvider"
 
 export default function AnswersScreen() {
+  const color = useColors()
   const { id } = useLocalSearchParams<{ id: string }>()
   const workbookId = Number(id)
   const q = useWorkbook(workbookId)

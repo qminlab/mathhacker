@@ -7,7 +7,7 @@ import { Jua_400Regular } from "@expo-google-fonts/jua"
 import { NanumPenScript_400Regular } from "@expo-google-fonts/nanum-pen-script"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useFonts } from "expo-font"
-import { DefaultTheme, Stack, ThemeProvider } from "expo-router"
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router"
 import * as SplashScreen from "expo-splash-screen"
 import { StatusBar } from "expo-status-bar"
 import { useEffect, useState } from "react"
@@ -15,17 +15,13 @@ import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { AuthProvider, useAuth } from "@/lib/auth"
 import { isConfigured } from "@/lib/env"
-import { color } from "@/ui/theme"
 import { SetupNeeded } from "@/features/SetupNeeded"
+import { AppThemeProvider, useTheme } from "@/ui/ThemeProvider"
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
-const navTheme = {
-  ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: color.paper, card: color.sheet, primary: color.blue, text: color.ink, border: color.grid },
-}
-
 function RootNavigator() {
+  const { color } = useTheme()
   const { session, loading } = useAuth()
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync().catch(() => {})
@@ -47,6 +43,24 @@ function RootNavigator() {
   )
 }
 
+/** 테마에 맞춘 내비게이션 색, 상태 막대 */
+function Themed({ children }: { children: React.ReactNode }) {
+  const { scheme, color } = useTheme()
+  const base = scheme === "dark" ? DarkTheme : DefaultTheme
+  const navTheme = {
+    ...base,
+    colors: { ...base.colors, background: color.paper, card: color.sheet, primary: color.blue, text: color.ink, border: color.grid },
+  }
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.paper }}>
+      <ThemeProvider value={navTheme}>
+        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        {children}
+      </ThemeProvider>
+    </GestureHandlerRootView>
+  )
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     IBMPlexSansKR_400Regular,
@@ -65,11 +79,10 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.paper }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider value={navTheme}>
-            <StatusBar style="dark" />
+    <AppThemeProvider>
+      <Themed>
+        <SafeAreaProvider>
+          <QueryClientProvider client={queryClient}>
             {isConfigured ? (
               <AuthProvider>
                 <RootNavigator />
@@ -77,9 +90,9 @@ export default function RootLayout() {
             ) : (
               <SetupNeeded />
             )}
-          </ThemeProvider>
-        </QueryClientProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </Themed>
+    </AppThemeProvider>
   )
 }

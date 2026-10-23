@@ -4,7 +4,8 @@ import { RefreshControl, ScrollView, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFormFactor } from "./layout"
 import { Text } from "./Text"
-import { color, space } from "./theme"
+import { space } from "./theme"
+import { useColors } from "./ThemeProvider"
 
 export function Screen({
   title,
@@ -26,6 +27,7 @@ export function Screen({
   /** 제목 대신 맨 위에 둘 것 (홈의 상태 막대 등) */
   top?: ReactNode
 }) {
+  const color = useColors()
   const insets = useSafeAreaInsets()
   const { contentMax, gutter, isPhone } = useFormFactor()
   return (

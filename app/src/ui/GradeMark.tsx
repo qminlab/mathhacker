@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated"
 import Svg, { Path } from "react-native-svg"
-import { color } from "./theme"
+import { useColors } from "./ThemeProvider"
 
 const AnimatedPath = Animated.createAnimatedComponent(Path)
 
@@ -37,6 +37,7 @@ export function GradeMark({
   delay?: number
   strokeWidth?: number
 }) {
+  const color = useColors()
   const reduced = useReducedMotion()
   const isCircle = kind === "correct"
   const length = isCircle ? CIRCLE_LENGTH : SLASH_LENGTH

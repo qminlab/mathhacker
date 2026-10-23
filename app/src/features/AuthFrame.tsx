@@ -7,7 +7,8 @@ import { FlameIcon, StarIcon } from "@/ui/game"
 import { useFormFactor } from "@/ui/layout"
 import { Mascot } from "@/ui/Mascot"
 import { Text } from "@/ui/Text"
-import { color, LIP, radius, space } from "@/ui/theme"
+import { LIP, radius, space } from "@/ui/theme"
+import { useColors } from "@/ui/ThemeProvider"
 
 function Perk({ icon, children }: { icon: ReactNode; children: string }) {
   return (
@@ -45,6 +46,7 @@ function Brand({ compact }: { compact: boolean }) {
 }
 
 export function AuthFrame({ children }: { children: ReactNode }) {
+  const color = useColors()
   const { isPhone, width } = useFormFactor()
   const split = !isPhone && width >= 900
 

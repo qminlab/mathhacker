@@ -154,6 +154,20 @@ alter table public.problems add column if not exists answer_source text
   check (answer_source in ('ocr', 'manual'));
 alter table public.problems add column if not exists hint          text;
 
+-- v0.4: 코드로 만든 공용 문제 (학년별 문제집)
+alter table public.workbooks add column if not exists grade text;
+alter table public.workbooks drop constraint if exists workbooks_grade_check;
+alter table public.workbooks add constraint workbooks_grade_check
+  check (grade is null or grade in ('k','e1','e2','e3','e4','e5','e6','m1','m2','m3','h1','h2','h3'));
+create index if not exists workbooks_public_grade_idx on public.workbooks (grade) where owner_id is null;
+alter table public.problems drop constraint if exists problems_answer_source_check;
+alter table public.problems add constraint problems_answer_source_check
+  check (answer_source in ('ocr', 'manual', 'generated'));
+alter table public.user_settings add column if not exists grade text;
+alter table public.user_settings drop constraint if exists user_settings_grade_check;
+alter table public.user_settings add constraint user_settings_grade_check
+  check (grade is null or grade in ('k','e1','e2','e3','e4','e5','e6','m1','m2','m3','h1','h2','h3'));
+
 create index if not exists problems_workbook_idx
   on public.problems (workbook_id, workbook_number);
 create index if not exists problems_reading_order_idx
@@ -261,6 +275,26 @@ as $$
     select 1 from public.workbooks w
     where w.id = p_workbook_id
       and (w.owner_id is null or w.owner_id = auth.uid() or public.is_admin())
+  );
+$$;
+
+-- 오늘의 세트에 들어갈 수 있는 문제집: 내 것, 학년 없는 공용, 내가 고른 학년의 공용
+create or replace function public.in_my_pool(p_workbook_id bigint)
+returns boolean
+language sql
+stable
+security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.workbooks w
+    where w.id = p_workbook_id
+      and (
+        w.owner_id = auth.uid()
+        or (w.owner_id is null and (
+          w.grade is null
+          or w.grade = (select s.grade from public.user_settings s where s.user_id = auth.uid())
+        ))
+      )
   );
 $$;
 
@@ -385,7 +419,7 @@ begin
   from (
     select p.id
     from problems p
-    where public.can_view_workbook(p.workbook_id)
+    where public.in_my_pool(p.workbook_id)
       and p.image_path is not null
       and not exists (
         select 1 from attempts a where a.problem_id = p.id and a.user_id = auth.uid()
@@ -505,27 +539,29 @@ as $$
 $$;
 
 -- 문제집 목록 + 내 진행 상황
+drop function if exists public.my_workbooks();
 create or replace function public.my_workbooks()
 returns table (
   id bigint, title text, unit text, chapter text, is_mine boolean, created_at timestamptz,
-  total int, with_answer int, solved int, correct int, wrong int
+  total int, with_answer int, solved int, correct int, wrong int, grade text
 )
 language sql
 stable
 security invoker set search_path = public
 as $$
-  select w.id, w.title, w.unit, w.chapter, (w.owner_id = auth.uid()) as is_mine, w.created_at,
+  select w.id, w.title, w.unit, w.chapter, coalesce(w.owner_id = auth.uid(), false) as is_mine, w.created_at,
          count(p.id)::int,
          count(p.id) filter (where p.answer is not null)::int,
          count(la.problem_id)::int,
          count(la.problem_id) filter (where la.result = 'correct')::int,
-         count(la.problem_id) filter (where la.result in ('wrong', 'gave_up'))::int
+         count(la.problem_id) filter (where la.result in ('wrong', 'gave_up'))::int,
+         w.grade
   from workbooks w
   left join problems p on p.workbook_id = w.id
   left join my_latest_attempts la on la.problem_id = p.id
   where w.owner_id is null or w.owner_id = auth.uid() or public.is_admin()
   group by w.id
-  order by w.created_at desc;
+  order by coalesce(w.owner_id = auth.uid(), false) desc, w.created_at desc, w.id;
 $$;
 
 -- 문제집 안 문제 + 내 마지막 결과 (읽는 순서대로)

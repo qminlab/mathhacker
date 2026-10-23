@@ -2,7 +2,8 @@
 import { Pressable, TextInput, View } from "react-native"
 import { choiceLabels } from "@/lib/answers"
 import { Text } from "@/ui/Text"
-import { color, font, LIP, radius, space } from "@/ui/theme"
+import { font, LIP, radius, space } from "@/ui/theme"
+import { useColors } from "@/ui/ThemeProvider"
 
 export function AnswerPad({
   choice,
@@ -21,6 +22,7 @@ export function AnswerPad({
   compact?: boolean
   onToggleType: () => void
 }) {
+  const color = useColors()
   const size = compact ? 54 : 60
   return (
     <View style={{ gap: space.sm }}>

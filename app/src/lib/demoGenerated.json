@@ -1,0 +1,146 @@
+[
+ {
+  "key": "k/count",
+  "title": "유아 · 수 세기",
+  "grade": "k",
+  "unit": "수 세기",
+  "problems": [
+   {
+    "file": "k-count-1.png",
+    "number": 1,
+    "raw_text": "사과는 모두 몇 개일까요?\n① $4$  ② $5$  ③ $6$  ④ $7$  ⑤ $8$",
+    "answer": "3",
+    "hint": "하나씩 손가락으로 짚으며 세어 보세요."
+   },
+   {
+    "file": "k-count-2.png",
+    "number": 2,
+    "raw_text": "$9$ 바로 다음 수는 무엇일까요?\n① $8$  ② $9$  ③ $10$  ④ $11$  ⑤ $12$",
+    "answer": "3",
+    "hint": "1, 2, 3, … 소리 내어 세어 보세요."
+   },
+   {
+    "file": "k-count-3.png",
+    "number": 3,
+    "raw_text": "가장 큰 수는 무엇일까요?\n① $1$  ② $3$  ③ $6$  ④ $9$  ⑤ $10$",
+    "answer": "5",
+    "hint": null
+   },
+   {
+    "file": "k-count-4.png",
+    "number": 4,
+    "raw_text": "별는 모두 몇 개일까요?\n① $7$  ② $8$  ③ $9$  ④ $10$  ⑤ $11$",
+    "answer": "3",
+    "hint": "하나씩 손가락으로 짚으며 세어 보세요."
+   }
+  ]
+ },
+ {
+  "key": "e3/muldiv",
+  "title": "초3 · 곱셈과 나눗셈",
+  "grade": "e3",
+  "unit": "곱셈과 나눗셈",
+  "problems": [
+   {
+    "file": "e3-muldiv-1.png",
+    "number": 1,
+    "raw_text": "$31 \\times 9$ 를 계산하세요.",
+    "answer": "279",
+    "hint": null
+   },
+   {
+    "file": "e3-muldiv-2.png",
+    "number": 2,
+    "raw_text": "$24 \\times 11$ 를 계산하세요.",
+    "answer": "264",
+    "hint": null
+   },
+   {
+    "file": "e3-muldiv-3.png",
+    "number": 3,
+    "raw_text": "$85 \\div 8$ 의 몫과 나머지를 차례로 구할 때, 나머지는 얼마일까요?",
+    "answer": "5",
+    "hint": "8 × 몫 + 나머지 = 85"
+   },
+   {
+    "file": "e3-muldiv-4.png",
+    "number": 4,
+    "raw_text": "구슬 27개를 3명에게 똑같이 나누어 주면 한 사람이 몇 개씩 가질까요?",
+    "answer": "9",
+    "hint": null
+   }
+  ]
+ },
+ {
+  "key": "m3/quadratic",
+  "title": "중3 · 인수분해와 이차방정식",
+  "grade": "m3",
+  "unit": "인수분해와 이차방정식",
+  "problems": [
+   {
+    "file": "m3-quadratic-1.png",
+    "number": 1,
+    "raw_text": "$x^2 - 5x - 14 = (x - a)(x - b)$ 일 때, $a^2 + b^2$ 의 값은?",
+    "answer": "53",
+    "hint": null
+   },
+   {
+    "file": "m3-quadratic-2.png",
+    "number": 2,
+    "raw_text": "이차방정식 $x^2 - 7x + 10 = 0$ 의 두 근 중 큰 근은?\n① $-5$  ② $-2$  ③ $2$  ④ $5$  ⑤ $6$",
+    "answer": "4",
+    "hint": null
+   },
+   {
+    "file": "m3-quadratic-3.png",
+    "number": 3,
+    "raw_text": "$x^2 + 6x + 8 = (x - a)(x - b)$ 일 때, $a^2 + b^2$ 의 값은?",
+    "answer": "20",
+    "hint": null
+   },
+   {
+    "file": "m3-quadratic-4.png",
+    "number": 4,
+    "raw_text": "이차방정식 $x^2 - 5x + 4 = 0$ 의 두 근 중 큰 근은?\n① $-4$  ② $-1$  ③ $1$  ④ $4$  ⑤ $5$",
+    "answer": "4",
+    "hint": null
+   }
+  ]
+ },
+ {
+  "key": "h2/sequence",
+  "title": "고2 · 수열",
+  "grade": "h2",
+  "unit": "수열",
+  "problems": [
+   {
+    "file": "h2-sequence-1.png",
+    "number": 1,
+    "raw_text": "첫째항이 $8$, 공차가 $5$ 인 등차수열의 제 $8$ 항은?\n① $35$  ② $38$  ③ $43$  ④ $48$  ⑤ $280$",
+    "answer": "3",
+    "hint": null
+   },
+   {
+    "file": "h2-sequence-2.png",
+    "number": 2,
+    "raw_text": "첫째항이 $2$, 공비가 $2$ 인 등비수열의 첫째항부터 제 $5$ 항까지의 합은?",
+    "answer": "62",
+    "hint": null
+   },
+   {
+    "file": "h2-sequence-3.png",
+    "number": 3,
+    "raw_text": "$\\displaystyle\\sum_{k=1}^{12} (3k)$ 의 값은?",
+    "answer": "234",
+    "hint": null
+   },
+   {
+    "file": "h2-sequence-4.png",
+    "number": 4,
+    "raw_text": "첫째항이 $2$, 공차가 $6$ 인 등차수열의 제 $14$ 항은?\n① $74$  ② $78$  ③ $80$  ④ $86$  ⑤ $156$",
+    "answer": "3",
+    "hint": null
+   }
+  ]
+ }
+]

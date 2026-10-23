@@ -5,7 +5,8 @@ import type { Result } from "@/lib/types"
 import type { PressState } from "@/ui/controls"
 import { GradeMark } from "@/ui/GradeMark"
 import { Text } from "@/ui/Text"
-import { color, LIP, radius, space, tones } from "@/ui/theme"
+import { LIP, radius, space } from "@/ui/theme"
+import { useColors, useTones } from "@/ui/ThemeProvider"
 
 export function ProblemThumb({
   number,
@@ -22,6 +23,8 @@ export function ProblemThumb({
   onPress?: () => void
   height?: number
 }) {
+  const color = useColors()
+  const tones = useTones()
   return (
     <Pressable
       onPress={onPress}

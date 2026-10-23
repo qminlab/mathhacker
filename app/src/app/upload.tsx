@@ -11,7 +11,8 @@ import { Button, Field, IconButton, Segmented, Sheet, type PressState } from "@/
 import { Icon } from "@/ui/Icon"
 import { useFormFactor } from "@/ui/layout"
 import { Text } from "@/ui/Text"
-import { color, radius, space } from "@/ui/theme"
+import { radius, space } from "@/ui/theme"
+import { useColors } from "@/ui/ThemeProvider"
 
 type Kind = "problems" | "answers"
 
@@ -21,6 +22,7 @@ function sizeLabel(bytes?: number) {
 }
 
 export default function UploadScreen() {
+  const color = useColors()
   const params = useLocalSearchParams<{ kind?: string; workbookId?: string }>()
   const insets = useSafeAreaInsets()
   const { isPhone } = useFormFactor()

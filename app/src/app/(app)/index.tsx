@@ -4,7 +4,7 @@ import { router } from "expo-router"
 import { Pressable, View } from "react-native"
 import { IngestList } from "@/features/IngestList"
 import { useStartPractice } from "@/features/practice/useStartPractice"
-import { useDaily, useProfile, useProgress, useWorkbooks, useWrongNotes } from "@/lib/data"
+import { useDaily, useProfile, useProgress, useSettings, useWorkbooks, useWrongNotes } from "@/lib/data"
 import { badgeState, EMPTY_PROGRESS, xpFor } from "@/lib/progress"
 import { Button, ErrorNote, Progress, Sheet } from "@/ui/controls"
 import { BadgeTile, LevelBar, LevelChip, StreakChip, WeekFlames } from "@/ui/game"
@@ -13,7 +13,8 @@ import { useFormFactor } from "@/ui/layout"
 import { Mascot, MascotSays } from "@/ui/Mascot"
 import { Screen } from "@/ui/Screen"
 import { Text } from "@/ui/Text"
-import { color, LIP, radius, space, tones, type Tone } from "@/ui/theme"
+import { LIP, radius, space, type Tone } from "@/ui/theme"
+import { useColors, useTones } from "@/ui/ThemeProvider"
 
 function greeting(name: string | null | undefined) {
   const h = new Date().getHours()
@@ -22,7 +23,10 @@ function greeting(name: string | null | undefined) {
 }
 
 function QuestCard() {
+  const color = useColors()
   const daily = useDaily()
+  const settings = useSettings()
+  const noGrade = !settings.data?.grade
   const { isPhone } = useFormFactor()
 
   if (daily.isLoading) return <View style={{ height: 230, borderRadius: radius.card, backgroundColor: color.primarySoft }} />
@@ -56,7 +60,7 @@ function QuestCard() {
             </Text>
             {total === 0 ? (
               <Text variant="headline" weight="display" tone="white">
-                문제지를 올리면 퀘스트가 생겨요
+                {noGrade ? "학년을 고르면 바로 퀘스트가 생겨요" : "문제지를 올리면 퀘스트가 생겨요"}
               </Text>
             ) : finished ? (
               <Text variant="headline" weight="display" tone="white">
@@ -88,7 +92,9 @@ function QuestCard() {
           </View>
         ) : null}
 
-        {total === 0 ? (
+        {total === 0 && noGrade ? (
+          <Button label="학년 고르기" icon="play" kind="sun" size="lg" onPress={() => router.push("/settings")} />
+        ) : total === 0 ? (
           <Button label="문제지 올리기" icon="upload" kind="secondary" size="lg" onPress={() => router.push("/upload")} />
         ) : !finished ? (
           <Button
@@ -128,6 +134,7 @@ function StreakCard() {
 }
 
 function LevelCard() {
+  const color = useColors()
   const { data } = useProgress()
   const p = data ?? EMPTY_PROGRESS
   const next = badgeState(p).find((b) => !b.earned)
@@ -166,6 +173,7 @@ function Tile({
   onPress: () => void
   loading?: boolean
 }) {
+  const tones = useTones()
   const t = tones[tone]
   return (
     <Pressable onPress={onPress} disabled={loading} accessibilityRole="button" accessibilityLabel={`${title}, ${body}`} style={{ flex: 1, minWidth: 150 }}>

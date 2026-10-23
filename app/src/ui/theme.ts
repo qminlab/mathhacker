@@ -6,7 +6,7 @@
 // - 해(노랑)는 XP·별, 주황은 연속 학습 불꽃
 // 입체감은 그림자 대신 아래쪽 "턱"(lip) 한 줄로 낸다: 버튼·카드가 같은 방식이라 한 세트로 보인다.
 
-export const palette = {
+const light = {
   primary: "#6D4AFF",
   primaryDeep: "#4E2FD9",
   primarySoft: "#ECE7FF",
@@ -19,7 +19,10 @@ export const palette = {
   sun: "#FFC233",
   sunDeep: "#E0A100",
   sunSoft: "#FFF3D1",
+  sunText: "#9A6600", // 노랑 바탕 위에서도 읽히는 글자색
+  mintText: "#0E9A6E",
   flame: "#FF8A3D",
+  flameDeep: "#E06A1C",
   flameSoft: "#FFE9DA",
   sky: "#3DB6FF",
   skyDeep: "#1A8FD6",
@@ -31,23 +34,67 @@ export const palette = {
   ink: "#1F1A3D",
   inkSoft: "#6B6790",
   inkFaint: "#A19DBF",
-} as const
+  onTint: "#E3DCFF", // 보라 그라데이션 위의 흐린 글자
+}
 
-/** 예전 이름 → 새 팔레트 (풀이판 등 공용 조각이 쓰는 이름) */
-export const color = {
-  ...palette,
-  paper: palette.bg,
-  sheet: palette.surface,
-  grid: palette.line,
-  gridStrong: palette.lineStrong,
-  blue: palette.primary,
-  blueSoft: palette.primarySoft,
-  blueDeep: palette.primaryDeep,
-  red: palette.coral,
-  redSoft: palette.coralSoft,
-  highlighter: palette.sun,
-  highlighterSoft: palette.sunSoft,
-} as const
+export type Palette = { [K in keyof typeof light]: string }
+
+/** 다크: 밤하늘 보라 바탕, 색은 조금 더 밝게, soft는 어두운 색조 */
+const dark: Palette = {
+  primary: "#8467FF",
+  primaryDeep: "#5638E0",
+  primarySoft: "#2D2660",
+  mint: "#1FCB95",
+  mintDeep: "#10966C",
+  mintSoft: "#163D35",
+  coral: "#FF6877",
+  coralDeep: "#CF3A4C",
+  coralSoft: "#47222C",
+  sun: "#FFC94D",
+  sunDeep: "#C9920F",
+  sunSoft: "#3B3119",
+  sunText: "#FFD36B",
+  mintText: "#3FE0AE",
+  flame: "#FF934D",
+  flameDeep: "#D2651E",
+  flameSoft: "#41291B",
+  sky: "#47BBFF",
+  skyDeep: "#1C86C9",
+  skySoft: "#16304A",
+  bg: "#120F26",
+  surface: "#1D1938",
+  line: "#2E294F",
+  lineStrong: "#433C6E",
+  ink: "#F2F0FF",
+  inkSoft: "#B3AED6",
+  inkFaint: "#7B76A3",
+  onTint: "#E3DCFF",
+}
+
+function withAliases(p: Palette) {
+  return {
+    ...p,
+    paper: p.bg,
+    sheet: p.surface,
+    grid: p.line,
+    gridStrong: p.lineStrong,
+    blue: p.primary,
+    blueSoft: p.primarySoft,
+    blueDeep: p.primaryDeep,
+    red: p.coral,
+    redSoft: p.coralSoft,
+    highlighter: p.sun,
+    highlighterSoft: p.sunSoft,
+  }
+}
+
+export type Colors = ReturnType<typeof withAliases>
+export type Scheme = "light" | "dark"
+
+export const schemes: Record<Scheme, Colors> = { light: withAliases(light), dark: withAliases(dark) }
+
+/** 풀이판 종이는 다크 모드에서도 밝게 둔다 (문제 이미지가 흰 바탕이고, 펜 색이 그대로 보이게) */
+export const paper = schemes.light
 
 export const font = {
   regular: "IBMPlexSansKR_400Regular",
@@ -78,13 +125,16 @@ export const LIP = 4
 export const GRID = 24
 
 export type Tone = "primary" | "mint" | "coral" | "sun" | "sky" | "flame" | "white"
+export type ToneSet = Record<Tone, { face: string; lip: string; soft: string; on: string }>
 
-export const tones: Record<Tone, { face: string; lip: string; soft: string; on: string }> = {
-  primary: { face: palette.primary, lip: palette.primaryDeep, soft: palette.primarySoft, on: "#FFFFFF" },
-  mint: { face: palette.mint, lip: palette.mintDeep, soft: palette.mintSoft, on: "#FFFFFF" },
-  coral: { face: palette.coral, lip: palette.coralDeep, soft: palette.coralSoft, on: "#FFFFFF" },
-  sun: { face: palette.sun, lip: palette.sunDeep, soft: palette.sunSoft, on: palette.ink },
-  sky: { face: palette.sky, lip: palette.skyDeep, soft: palette.skySoft, on: "#FFFFFF" },
-  flame: { face: palette.flame, lip: "#E06A1C", soft: palette.flameSoft, on: "#FFFFFF" },
-  white: { face: palette.surface, lip: palette.lineStrong, soft: palette.bg, on: palette.primary },
+export function makeTones(p: Colors): ToneSet {
+  return {
+    primary: { face: p.primary, lip: p.primaryDeep, soft: p.primarySoft, on: "#FFFFFF" },
+    mint: { face: p.mint, lip: p.mintDeep, soft: p.mintSoft, on: "#FFFFFF" },
+    coral: { face: p.coral, lip: p.coralDeep, soft: p.coralSoft, on: "#FFFFFF" },
+    sun: { face: p.sun, lip: p.sunDeep, soft: p.sunSoft, on: "#1F1A3D" },
+    sky: { face: p.sky, lip: p.skyDeep, soft: p.skySoft, on: "#FFFFFF" },
+    flame: { face: p.flame, lip: p.flameDeep, soft: p.flameSoft, on: "#FFFFFF" },
+    white: { face: p.surface, lip: p.lineStrong, soft: p.bg, on: p.primary },
+  }
 }

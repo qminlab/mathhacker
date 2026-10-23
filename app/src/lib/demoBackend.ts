@@ -1,6 +1,8 @@
 // 체험 모드: 서버 없이 기기 안에서만 도는 예제 데이터 (EXPO_PUBLIC_DEMO=1)
 // 예제 문제는 직접 만든 문제이고 실제 교재 내용이 아니다.
 import type { Backend } from "./backend"
+import demoGenerated from "./demoGenerated.json"
+import { GEN_IMAGES } from "./demoGeneratedImages"
 import { localGrade } from "./answers"
 import { xpFor, type Progress } from "./progress"
 import {
@@ -24,7 +26,7 @@ const IMAGES: Record<string, number> = {
 }
 
 const CHOICES = "(1) (2) (3) (4) (5)"
-const problems: Problem[] = [
+const mine: Problem[] = [
   { n: 1, unit: "지수함수", text: `f(x)=2^x, f(3)+f(1) ${CHOICES}`, answer: "3", score: 3 },
   { n: 2, unit: "로그함수", text: `log2 8 + log3 9 ${CHOICES}`, answer: "3", score: 3 },
   { n: 3, unit: "수열", text: "등차수열 a10", answer: "39", score: 4 },
@@ -45,9 +47,36 @@ const problems: Problem[] = [
   hint: p.n === 6 ? "산술평균과 기하평균의 관계를 떠올려 보세요." : null,
 }))
 
+// 공용(코드로 만든) 문제집 몇 개: server의 npm run export:demo 로 만든다
+const publicBooks = (demoGenerated as { key: string; title: string; grade: string; unit: string; problems: { file: string; number: number; raw_text: string; answer: string; hint: string | null }[] }[]).map(
+  (b, i) => ({
+    id: 100 + i,
+    title: b.title,
+    unit: b.unit,
+    grade: b.grade,
+    problems: b.problems.map(
+      (p): Problem => ({
+        id: `gen-${b.key}-${p.number}`,
+        workbook_id: 100 + i,
+        workbook_number: p.number,
+        page: 1,
+        score: null,
+        unit: b.unit,
+        raw_text: p.raw_text,
+        image_path: `gen/${p.file}`,
+        answer: p.answer,
+        answer_source: "generated",
+        hint: p.hint,
+      })
+    ),
+  })
+)
+const problems: Problem[] = [...mine, ...publicBooks.flatMap((b) => b.problems)]
+const IMAGE_ALL: Record<string, number> = { ...IMAGES, ...GEN_IMAGES }
+
 const state = {
   nickname: "체험생",
-  settings: { ...DEFAULT_SETTINGS, daily_count: 4 } as Settings,
+  settings: { ...DEFAULT_SETTINGS, daily_count: 4, grade: "h2" } as Settings,
   attempts: [] as Attempt[],
   sessions: [] as PracticeSession[],
   workbookTitle: "지수와 로그 예제 문제집",
@@ -82,8 +111,21 @@ function latest(pid: string) {
   return [...state.attempts].reverse().find((a) => a.problem_id === pid) ?? null
 }
 
-function summary(): WorkbookSummary {
-  const results = problems.map((p) => latest(p.id)?.result ?? null)
+function counts(list: Problem[]) {
+  const results = list.map((p) => latest(p.id)?.result ?? null)
+  return {
+    total: list.length,
+    with_answer: list.filter((p) => p.answer).length,
+    solved: results.filter(Boolean).length,
+    correct: results.filter((r) => r === "correct").length,
+    wrong: results.filter((r) => r === "wrong" || r === "gave_up").length,
+  }
+}
+
+function summary(id = 1): WorkbookSummary {
+  const pub = publicBooks.find((b) => b.id === id)
+  if (pub)
+    return { id, title: pub.title, unit: pub.unit, chapter: null, is_mine: false, created_at: new Date(Date.now() - 30 * 86400_000).toISOString(), grade: pub.grade, ...counts(pub.problems) }
   return {
     id: 1,
     title: state.workbookTitle,
@@ -91,12 +133,14 @@ function summary(): WorkbookSummary {
     chapter: "기본 다지기",
     is_mine: true,
     created_at: new Date(Date.now() - 7 * 86400_000).toISOString(),
-    total: problems.length,
-    with_answer: problems.length,
-    solved: results.filter(Boolean).length,
-    correct: results.filter((r) => r === "correct").length,
-    wrong: results.filter((r) => r === "wrong" || r === "gave_up").length,
+    grade: null,
+    ...counts(mine),
   }
+}
+
+/** 오늘의 세트 후보: 내 문제 + 고른 학년의 공용 문제 */
+function pool() {
+  return problems.filter((p) => p.workbook_id === 1 || publicBooks.find((b) => b.id === p.workbook_id)?.grade === state.settings.grade)
 }
 
 function newSession(mode: PracticeSession["mode"], ids: string[]): PracticeSession {
@@ -131,13 +175,13 @@ export const demoBackend: Backend = {
   },
   async workbooks() {
     await wait()
-    return [summary()]
+    return [summary(), ...publicBooks.map((b) => summary(b.id))]
   },
-  async workbook() {
+  async workbook(id) {
     await wait()
     return {
-      workbook: summary(),
-      problems: problems.map((p) => ({ ...p, last_result: latest(p.id)?.result ?? null })),
+      workbook: summary(id),
+      problems: problems.filter((p) => p.workbook_id === id).map((p) => ({ ...p, last_result: latest(p.id)?.result ?? null })),
     }
   },
   async renameWorkbook(_id, title) {
@@ -167,14 +211,15 @@ export const demoBackend: Backend = {
     const today = new Date().toISOString().slice(0, 10)
     const existing = state.sessions.find((s) => s.mode === "daily" && s.day === today)
     if (existing && existing.problem_ids.length) return existing
-    const unsolved = problems.filter((p) => !latest(p.id)).map((p) => p.id)
+    const unsolved = pool().filter((p) => !latest(p.id)).map((p) => p.id)
     return newSession("daily", unsolved.slice(0, state.settings.daily_count))
   },
-  async startSession(mode) {
+  async startSession(mode, workbookId) {
+    const inBook = workbookId ? problems.filter((p) => p.workbook_id === workbookId) : problems
     const ids =
       mode === "wrong"
-        ? problems.filter((p) => ["wrong", "gave_up"].includes(latest(p.id)?.result ?? "")).map((p) => p.id)
-        : problems.filter((p) => !latest(p.id)).map((p) => p.id)
+        ? inBook.filter((p) => ["wrong", "gave_up"].includes(latest(p.id)?.result ?? "")).map((p) => p.id)
+        : inBook.filter((p) => !latest(p.id)).map((p) => p.id)
     return ids.length ? newSession(mode, ids) : null
   },
   async startWith(mode, ids) {
@@ -215,7 +260,7 @@ export const demoBackend: Backend = {
     await wait()
     return problems
       .filter((p) => ["wrong", "gave_up"].includes(latest(p.id)?.result ?? ""))
-      .map((p) => ({ ...p, workbook_title: state.workbookTitle, last_wrong_at: latest(p.id)!.created_at }))
+      .map((p) => ({ ...p, workbook_title: summary(p.workbook_id ?? 1).title, last_wrong_at: latest(p.id)!.created_at }))
   },
   async progress(): Promise<Progress> {
     const scored = state.attempts.filter((a) => a.result !== "pending")
@@ -291,7 +336,7 @@ export const demoBackend: Backend = {
   },
   async imageSources(paths) {
     const out: Record<string, number> = {}
-    for (const p of paths) if (IMAGES[p]) out[p] = IMAGES[p]
+    for (const p of paths) if (IMAGE_ALL[p]) out[p] = IMAGE_ALL[p]
     return out
   },
 }

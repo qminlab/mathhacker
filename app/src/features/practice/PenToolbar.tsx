@@ -1,11 +1,12 @@
 // 풀이판 도구: 펜 색, 지우개, 되돌리기, 전부 지우기
 import { Pressable, View } from "react-native"
 import { IconButton } from "@/ui/controls"
-import { color, radius, space } from "@/ui/theme"
+import { paper, radius, space } from "@/ui/theme"
+import { useColors } from "@/ui/ThemeProvider"
 import type { Tool } from "./DrawingCanvas"
 
 // 빨강은 채점 표시 전용이라 펜 색에서 뺐다
-export const PEN_COLORS = [color.blue, "#24272C", "#2E8B6E"] as const
+export const PEN_COLORS = [paper.primary, "#24272C", "#2E8B6E"] as const
 
 export function PenToolbar({
   tool,
@@ -28,6 +29,7 @@ export function PenToolbar({
   vertical?: boolean
   compact?: boolean
 }) {
+  const color = useColors()
   return (
     <View
       style={{
@@ -50,7 +52,7 @@ export function PenToolbar({
           <Pressable
             key={c}
             accessibilityRole="button"
-            accessibilityLabel={c === color.blue ? "파란 펜" : c === "#24272C" ? "검은 펜" : "초록 펜"}
+            accessibilityLabel={c === paper.primary ? "파란 펜" : c === "#24272C" ? "검은 펜" : "초록 펜"}
             accessibilityState={{ selected }}
             onPress={() => {
               setPenColor(c)

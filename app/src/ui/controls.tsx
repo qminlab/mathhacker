@@ -15,7 +15,8 @@ import {
 import { Icon, type IconName } from "./Icon"
 import { Mascot, type Mood } from "./Mascot"
 import { Text } from "./Text"
-import { color, font, LIP, radius, space, tones, type Tone } from "./theme"
+import { font, LIP, radius, space, type Tone } from "./theme"
+import { useColors, useTones } from "./ThemeProvider"
 
 /** 웹(react-native-web)은 hovered·focused도 넘겨 준다 */
 export type PressState = PressableStateCallbackType & { hovered?: boolean; focused?: boolean }
@@ -50,6 +51,8 @@ export function Button({
   size?: "sm" | "md" | "lg"
   style?: StyleProp<ViewStyle>
 }) {
+  const color = useColors()
+  const tones = useTones()
   const height = { sm: 40, md: 50, lg: 60 }[size]
   const isDisabled = disabled || loading
   const textVariant = size === "lg" ? "title" : size === "sm" ? "body" : "bodyLarge"
@@ -136,6 +139,7 @@ export function IconButton({
   size?: number
   style?: StyleProp<ViewStyle>
 }) {
+  const color = useColors()
   return (
     <Pressable
       accessibilityRole="button"
@@ -169,6 +173,8 @@ export function Sheet({
   tone,
   ...rest
 }: ViewProps & { padded?: boolean; tone?: Tone }) {
+  const color = useColors()
+  const tones = useTones()
   const t = tone ? tones[tone] : null
   return (
     <View
@@ -201,6 +207,8 @@ export function Chip({
   tone?: Tone
   style?: StyleProp<ViewStyle>
 }) {
+  const color = useColors()
+  const tones = useTones()
   const t = tones[tone]
   return (
     <View
@@ -232,6 +240,7 @@ export function Field({
   ref,
   ...rest
 }: TextInputProps & { label: string; hint?: string; error?: string | null; ref?: Ref<TextInputRef> }) {
+  const color = useColors()
   return (
     <View style={{ gap: 6 }}>
       <Text variant="small" weight="bold" tone="soft">
@@ -281,6 +290,8 @@ export function Progress({
   height?: number
   tone?: Tone
 }) {
+  const color = useColors()
+  const tones = useTones()
   const ratio = total > 0 ? Math.min(1, value / total) : 0
   const t = tones[tone]
   return (
@@ -308,6 +319,7 @@ export function Segmented<T extends string | number>({
   options: { value: T; label: string }[]
   onChange: (v: T) => void
 }) {
+  const color = useColors()
   return (
     <View
       accessibilityRole="radiogroup"
@@ -359,6 +371,7 @@ export function Empty({ title, body, action, mood = "think" }: { title: string; 
 }
 
 export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const color = useColors()
   return (
     <Sheet style={{ borderColor: color.coralSoft, borderBottomColor: color.coralSoft, gap: space.sm }}>
       <Text weight="bold">{message}</Text>

@@ -25,7 +25,8 @@ import { GraphPaper } from "@/ui/GraphPaper"
 import { Icon } from "@/ui/Icon"
 import { useFormFactor } from "@/ui/layout"
 import { Text } from "@/ui/Text"
-import { color, LIP, radius, space, tones, type Tone } from "@/ui/theme"
+import { LIP, radius, space, type Tone, paper } from "@/ui/theme"
+import { useColors, useTones } from "@/ui/ThemeProvider"
 
 type Submitted = { result: Result; correctAnswer: string | null; userAnswer: string }
 
@@ -116,6 +117,7 @@ function initialProgress(bundle: SessionBundle, startAt?: string) {
 }
 
 function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; settings: Settings; startAt?: string }) {
+  const color = useColors()
   const id = bundle.session.id
   const images = useImageSources(bundle.problems.map((p) => p.image_path))
   const qc = useQueryClient()
@@ -380,7 +382,7 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
   const imageWidth: number | `${number}%` = isPhone ? `${Math.round(Math.min(100, 92 * imageScale))}%` : (sidePanel ? 560 : 520) * imageScale
 
   const board = (
-    <GraphPaper style={{ flex: 1, overflow: "hidden" }} base={color.surface}>
+    <GraphPaper style={{ flex: 1, overflow: "hidden" }} palette={paper} base={paper.surface}>
       {/* 문제는 왼쪽 위에 고정, 나머지 전부가 풀이 공간 */}
       <View
         style={{ position: "absolute", left: isPhone ? space.md : space.lg, top: isPhone ? space.md : space.lg, width: imageWidth, maxWidth: isPhone ? "92%" : "70%" }}
@@ -514,6 +516,7 @@ function ResultCard({
   last: boolean
   onNext: () => void
 }) {
+  const tones = useTones()
   const answer = displayAnswer(submitted.correctAnswer, choice)
   const r = submitted.result
   const tone: Tone = r === "correct" ? "mint" : r === "pending" ? "sky" : "coral"
@@ -588,6 +591,8 @@ function Summary({
   onReview: (index: number) => void
   retrying: boolean
 }) {
+  const color = useColors()
+  const tones = useTones()
   const insets = useSafeAreaInsets()
   const { isPhone } = useFormFactor()
   const graded = problems.map((p) => states[p.id]?.submitted?.result ?? null)

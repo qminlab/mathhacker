@@ -1,6 +1,6 @@
 // 선 아이콘 (24 그리드, 볼펜 굵기). 외부 아이콘 패키지 없이 필요한 것만 그린다.
 import Svg, { Circle, G, Path, Rect } from "react-native-svg"
-import { color } from "./theme"
+import { useColors } from "./ThemeProvider"
 
 export type IconName =
   | "today" | "books" | "wrong" | "stats" | "settings"
@@ -81,7 +81,7 @@ const paths: Record<IconName, (c: string) => React.ReactNode> = {
 export function Icon({
   name,
   size = 22,
-  tint = color.ink,
+  tint,
   strokeWidth = 1.8,
 }: {
   name: IconName
@@ -89,10 +89,12 @@ export function Icon({
   tint?: string
   strokeWidth?: number
 }) {
+  const color = useColors()
+  const stroke = tint ?? color.ink
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <G fill="none" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-        {paths[name](tint)}
+        {paths[name](stroke)}
       </G>
     </Svg>
   )

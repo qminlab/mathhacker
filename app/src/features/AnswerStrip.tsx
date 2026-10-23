@@ -3,11 +3,13 @@ import { View } from "react-native"
 import type { Result } from "@/lib/types"
 import { GradeMark } from "@/ui/GradeMark"
 import { Text } from "@/ui/Text"
-import { color, tones } from "@/ui/theme"
+import { useColors, useTones } from "@/ui/ThemeProvider"
 
 export type StripCell = { key: string; label: string; result: Result | null; current?: boolean }
 
 export function AnswerStrip({ cells, size = 44 }: { cells: StripCell[]; size?: number }) {
+  const color = useColors()
+  const tones = useTones()
   return (
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, alignSelf: "flex-start" }}>
       {cells.map((c) => (

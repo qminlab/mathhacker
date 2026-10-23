@@ -11,7 +11,8 @@ import { Icon, type IconName } from "@/ui/Icon"
 import { useFormFactor } from "@/ui/layout"
 import { Mascot } from "@/ui/Mascot"
 import { Text } from "@/ui/Text"
-import { color, LIP, radius, space } from "@/ui/theme"
+import { LIP, radius, space } from "@/ui/theme"
+import { useColors } from "@/ui/ThemeProvider"
 
 const TABS: { name: string; href: "/" | "/library" | "/wrong" | "/stats" | "/settings"; label: string; icon: IconName }[] = [
   { name: "index", href: "/", label: "홈", icon: "today" },
@@ -31,6 +32,7 @@ type TabButtonProps = Omit<TabTriggerSlotProps, "ref"> & {
 }
 
 function TabButton({ label, icon, variant, isFocused, ref, ...props }: TabButtonProps) {
+  const color = useColors()
   const tint = isFocused ? color.primary : color.inkFaint
   if (variant === "bar") {
     return (
@@ -92,6 +94,7 @@ function RailHeader({ wide }: { wide: boolean }) {
 }
 
 function RailFooter({ wide }: { wide: boolean }) {
+  const color = useColors()
   const { data: profile } = useProfile()
   const { data: progress } = useProgress()
   if (!profile) return null
@@ -132,6 +135,7 @@ function RailFooter({ wide }: { wide: boolean }) {
 }
 
 export default function AppLayout() {
+  const color = useColors()
   const { form, landscape } = useFormFactor()
   const insets = useSafeAreaInsets()
   const variant: Variant = form === "phone" ? "bar" : form === "desktop" || landscape ? "sidebar" : "rail"

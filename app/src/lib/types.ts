@@ -1,3 +1,4 @@
+import type { Grade } from "./grades"
 // 앱 전체에서 쓰는 데이터 모양 (supabase/schema.sql과 맞춘다)
 
 export type Result = "pending" | "correct" | "wrong" | "gave_up"
@@ -11,6 +12,8 @@ export type Settings = {
   time_per_problem_sec: number
   grading_mode: GradingMode
   stylus_only: boolean
+  /** 공용 문제를 받을 학년 (없으면 내 문제집만) */
+  grade: Grade | null
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -18,6 +21,7 @@ export const DEFAULT_SETTINGS: Settings = {
   time_per_problem_sec: 300,
   grading_mode: "instant",
   stylus_only: false,
+  grade: null,
 }
 
 export type WorkbookSummary = {
@@ -32,6 +36,8 @@ export type WorkbookSummary = {
   solved: number
   correct: number
   wrong: number
+  /** 공용(코드로 만든) 문제집의 학년 */
+  grade: string | null
 }
 
 export type Problem = {
@@ -44,7 +50,7 @@ export type Problem = {
   raw_text: string | null
   image_path: string | null
   answer: string | null
-  answer_source: "ocr" | "manual" | null
+  answer_source: "ocr" | "manual" | "generated" | null
   hint: string | null
 }
 

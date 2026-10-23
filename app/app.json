@@ -6,7 +6,7 @@
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "mathhacker",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#F6F8FB",
     "ios": {
       "bundleIdentifier": "com.qminlab.mathhacker",

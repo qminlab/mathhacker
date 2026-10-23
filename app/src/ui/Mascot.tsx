@@ -13,7 +13,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated"
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from "react-native-svg"
-import { palette } from "./theme"
+import { schemes } from "./theme"
+import { useColors } from "./ThemeProvider"
+
+// 마스코트 몸 색은 테마와 상관없이 같다
+const palette = schemes.light
 
 export type Mood = "happy" | "cheer" | "sad" | "wow" | "sleepy" | "think"
 
@@ -135,16 +139,17 @@ export function Mascot({ mood = "happy", size = 96, bounce = true }: { mood?: Mo
 
 /** 마스코트 + 말풍선 */
 export function MascotSays({ mood, children, size = 72 }: { mood: Mood; children: React.ReactNode; size?: number }) {
+  const color = useColors()
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
       <Mascot mood={mood} size={size} />
       <View
         style={{
           flexShrink: 1,
-          backgroundColor: palette.surface,
+          backgroundColor: color.surface,
           borderRadius: 18,
           borderWidth: 2,
-          borderColor: palette.line,
+          borderColor: color.line,
           paddingHorizontal: 14,
           paddingVertical: 10,
         }}
@@ -158,10 +163,10 @@ export function MascotSays({ mood, children, size = 72 }: { mood: Mood; children
             marginTop: -7,
             width: 14,
             height: 14,
-            backgroundColor: palette.surface,
+            backgroundColor: color.surface,
             borderLeftWidth: 2,
             borderBottomWidth: 2,
-            borderColor: palette.line,
+            borderColor: color.line,
             transform: [{ rotate: "45deg" }],
           }}
         />

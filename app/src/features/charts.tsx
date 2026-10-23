@@ -5,7 +5,8 @@ import { useState } from "react"
 import { Pressable, View } from "react-native"
 import Svg, { Line, Path } from "react-native-svg"
 import { Text } from "@/ui/Text"
-import { color, space } from "@/ui/theme"
+import { space } from "@/ui/theme"
+import { useColors } from "@/ui/ThemeProvider"
 
 /** 위쪽 모서리만 4px 둥근 막대 (바닥선에 붙는다) */
 function barPath(x: number, y: number, w: number, h: number, r = 8) {
@@ -19,6 +20,7 @@ function dayLabel(iso: string) {
 }
 
 export function DailyBars({ data }: { data: { day: string; total: number; correct: number }[] }) {
+  const color = useColors()
   const [width, setWidth] = useState(0)
   const lastWithData = [...data].reverse().find((d) => d.total > 0)
   const [selected, setSelected] = useState<string | null>(lastWithData?.day ?? null)
@@ -96,6 +98,7 @@ export function DailyBars({ data }: { data: { day: string; total: number; correc
 }
 
 export function UnitBars({ data }: { data: { unit: string; total: number; correct: number }[] }) {
+  const color = useColors()
   return (
     <View style={{ gap: space.md }} accessibilityRole="list">
       {data.map((u) => {

@@ -6,12 +6,16 @@ import { confirmAsync, notify } from "@/features/practice/useStartPractice"
 import { signOut, useAuth } from "@/lib/auth"
 import { backend, keys, useProfile, useSaveSettings, useSettings } from "@/lib/data"
 import { DEFAULT_SETTINGS, type Settings } from "@/lib/types"
+import { GradePicker } from "@/features/GradePicker"
+import { GRADE_LABEL } from "@/lib/grades"
 import { Button, Field, Segmented, Sheet } from "@/ui/controls"
 import { Screen } from "@/ui/Screen"
 import { Text } from "@/ui/Text"
-import { color, radius, space } from "@/ui/theme"
+import { radius, space } from "@/ui/theme"
+import { setThemePref, useColors, useThemePref, type ThemePref } from "@/ui/ThemeProvider"
 
 function Row({ title, body, children }: { title: string; body?: string; children: React.ReactNode }) {
+  const color = useColors()
   return (
     <View style={{ gap: space.sm, paddingVertical: space.md, borderTopWidth: 1, borderTopColor: color.grid }}>
       <View style={{ gap: 2 }}>
@@ -28,6 +32,7 @@ function Row({ title, body, children }: { title: string; body?: string; children
 }
 
 function Stepper({ value, onChange, min, max, step, unit }: { value: number; onChange: (v: number) => void; min: number; max: number; step: number; unit: string }) {
+  const color = useColors()
   const btn = (label: string, next: number, disabled: boolean) => (
     <Pressable
       accessibilityRole="button"
@@ -53,7 +58,32 @@ function Stepper({ value, onChange, min, max, step, unit }: { value: number; onC
   )
 }
 
+function ThemeSheet() {
+  const pref = useThemePref()
+  return (
+    <Sheet style={{ paddingVertical: space.sm }}>
+      <Text variant="title" weight="display" style={{ paddingVertical: space.sm }}>
+        화면
+      </Text>
+      <Row title="테마" body={pref === "system" ? "기기 설정에 맞춰 밝게·어둡게 바뀌어요." : "이 기기에서만 적용돼요."}>
+        <View style={{ maxWidth: 420 }}>
+          <Segmented<ThemePref>
+            value={pref}
+            onChange={setThemePref}
+            options={[
+              { value: "system", label: "기기 설정" },
+              { value: "light", label: "라이트" },
+              { value: "dark", label: "다크" },
+            ]}
+          />
+        </View>
+      </Row>
+    </Sheet>
+  )
+}
+
 export default function SettingsScreen() {
+  const color = useColors()
   const settingsQ = useSettings()
   const save = useSaveSettings()
   const profile = useProfile()
@@ -83,10 +113,22 @@ export default function SettingsScreen() {
 
   return (
     <Screen title="설정">
+      <ThemeSheet />
       <Sheet style={{ paddingVertical: space.sm }}>
         <Text variant="title" weight="bold" style={{ paddingVertical: space.sm }}>
           풀이
         </Text>
+        <View style={{ paddingVertical: space.md, gap: space.md }}>
+          <View style={{ gap: 2 }}>
+            <Text weight="display">학년</Text>
+            <Text variant="small" tone="soft">
+              {s.grade
+                ? `${GRADE_LABEL[s.grade]} 공용 문제가 오늘의 퀘스트에 섞여 나와요. 오늘 세트가 이미 있으면 내일부터 바뀌어요.`
+                : "고르면 그 학년의 공용 문제(코드로 만든 오리지널 문제)가 오늘의 퀘스트에 들어가요."}
+            </Text>
+          </View>
+          <GradePicker value={s.grade} onChange={(g) => set({ grade: g })} />
+        </View>
         <Row title="오늘의 세트 문제 수" body="매일 안 푼 문제 중에서 이만큼 골라요. 바꾸면 내일 세트부터 적용돼요.">
           <Stepper value={s.daily_count} onChange={(v) => set({ daily_count: v })} min={1} max={50} step={1} unit="문제" />
         </Row>
