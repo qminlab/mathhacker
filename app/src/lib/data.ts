@@ -19,6 +19,11 @@ export const keys = {
   stats: (days: number) => ["stats", days] as const,
   images: (paths: string[]) => ["images", ...paths] as const,
   daily: ["daily"] as const,
+  progress: ["progress"] as const,
+}
+
+export function useProgress() {
+  return useQuery({ queryKey: keys.progress, queryFn: () => backend.progress() })
 }
 
 export function useProfile() {
@@ -107,4 +112,5 @@ export function invalidateProgress(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: keys.wrong })
   qc.invalidateQueries({ queryKey: ["stats"] })
   qc.invalidateQueries({ queryKey: keys.daily })
+  qc.invalidateQueries({ queryKey: keys.progress })
 }

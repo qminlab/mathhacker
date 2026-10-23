@@ -2,6 +2,7 @@
 // 예제 문제는 직접 만든 문제이고 실제 교재 내용이 아니다.
 import type { Backend } from "./backend"
 import { localGrade } from "./answers"
+import { xpFor, type Progress } from "./progress"
 import {
   DEFAULT_SETTINGS,
   type Attempt,
@@ -57,8 +58,8 @@ const state = {
 ;(function seed() {
   const now = Date.now()
   const past: [string, Result, number][] = [
-    ["demo-1", "correct", 5],
-    ["demo-2", "wrong", 4],
+    ["demo-1", "correct", 4],
+    ["demo-2", "wrong", 3],
     ["demo-5", "correct", 2],
     ["demo-6", "gave_up", 1],
   ]
@@ -215,6 +216,50 @@ export const demoBackend: Backend = {
     return problems
       .filter((p) => ["wrong", "gave_up"].includes(latest(p.id)?.result ?? ""))
       .map((p) => ({ ...p, workbook_title: state.workbookTitle, last_wrong_at: latest(p.id)!.created_at }))
+  },
+  async progress(): Promise<Progress> {
+    const scored = state.attempts.filter((a) => a.result !== "pending")
+    const kst = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 10)
+    const today = kst(new Date().toISOString())
+    const days = new Set(scored.map((a) => kst(a.created_at)))
+    const dayBefore = (d: string) => new Date(new Date(`${d}T00:00:00Z`).getTime() - 86400_000).toISOString().slice(0, 10)
+    // 오늘(또는 어제)부터 거꾸로 이어진 날 수
+    let streak = 0
+    let cursor = days.has(today) ? today : dayBefore(today)
+    while (days.has(cursor)) {
+      streak++
+      cursor = dayBefore(cursor)
+    }
+    const sorted = [...days].sort()
+    let best = 0
+    let run = 0
+    let prev = ""
+    for (const d of sorted) {
+      run = prev && dayBefore(d) === prev ? run + 1 : 1
+      best = Math.max(best, run)
+      prev = d
+    }
+    const week = Array.from({ length: 7 }, (_, i) => {
+      let d = today
+      for (let k = 0; k < 6 - i; k++) d = dayBefore(d)
+      return { day: d, active: days.has(d) }
+    })
+    const correctIds = new Set(scored.filter((a) => a.result === "correct").map((a) => a.problem_id))
+    const wrongIds = new Set(scored.filter((a) => a.result === "wrong" || a.result === "gave_up").map((a) => a.problem_id))
+    return {
+      xp: scored.reduce((s, a) => s + xpFor(a.result, a.hint_used), 0),
+      solved: scored.length,
+      correct: scored.filter((a) => a.result === "correct").length,
+      streak,
+      best_streak: best,
+      active_today: days.has(today),
+      today_solved: scored.filter((a) => kst(a.created_at) === today).length,
+      week,
+      perfect_sets: 0,
+      comebacks: [...wrongIds].filter((id) => correctIds.has(id)).length,
+      no_hint_correct: scored.filter((a) => a.result === "correct" && !a.hint_used).length,
+      days_active: days.size,
+    }
   },
   async stats(days) {
     await wait()

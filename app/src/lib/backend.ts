@@ -1,4 +1,5 @@
 // 화면이 쓰는 데이터 기능 목록. 실제 서버(Supabase + API)와 체험 모드 두 가지로 구현한다.
+import type { Progress } from "./progress"
 import type {
   IngestSession,
   PickedFile,
@@ -50,6 +51,7 @@ export interface Backend {
   finishSession(id: number): Promise<void>
   submit(input: SubmitInput): Promise<SubmitResult>
 
+  progress(): Promise<Progress>
   wrongNotes(): Promise<WrongItem[]>
   stats(days: number): Promise<Stats>
 

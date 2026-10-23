@@ -1,48 +1,45 @@
-// 로그인·가입 화면 틀. 패드·컴퓨터는 왼쪽에 브랜드 면, 폰은 위아래로.
-import { useState, type ReactNode } from "react"
+// 로그인·가입 화면 틀. 패드·컴퓨터는 왼쪽에 마스코트 면, 폰은 위아래로.
+import { LinearGradient } from "expo-linear-gradient"
+import type { ReactNode } from "react"
 import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { GradeMark } from "@/ui/GradeMark"
-import { GraphPaper } from "@/ui/GraphPaper"
+import { FlameIcon, StarIcon } from "@/ui/game"
 import { useFormFactor } from "@/ui/layout"
+import { Mascot } from "@/ui/Mascot"
 import { Text } from "@/ui/Text"
-import { color, font, space } from "@/ui/theme"
+import { color, LIP, radius, space } from "@/ui/theme"
+
+function Perk({ icon, children }: { icon: ReactNode; children: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, backgroundColor: "rgba(255,255,255,0.14)", borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 14, alignSelf: "flex-start" }}>
+      {icon}
+      <Text weight="display" tone="white">
+        {children}
+      </Text>
+    </View>
+  )
+}
 
 function Brand({ compact }: { compact: boolean }) {
-  const numberSize = compact ? 56 : 88
-  const [box, setBox] = useState({ w: 0, h: 0 })
-  const mark = box.h * 1.55
   return (
-    <View style={{ gap: space.lg }}>
-      <View style={{ alignSelf: "flex-start", paddingHorizontal: numberSize * 0.2, paddingVertical: numberSize * 0.12 }}>
-        <Text
-          onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
-          style={{ fontFamily: font.bold, fontSize: numberSize, lineHeight: numberSize * 1.05, color: color.blue, letterSpacing: -2 }}
-        >
-          011
-        </Text>
-        {box.w > 0 ? (
-          // 숫자를 감싸도록 동그라미를 옆으로 늘린다
-          <View
-            style={{
-              position: "absolute",
-              left: numberSize * 0.2 + box.w / 2 - mark / 2,
-              top: numberSize * 0.12 + box.h / 2 - mark / 2,
-              transform: [{ scaleX: (box.w * 1.25) / mark }, { rotate: "-4deg" }],
-            }}
-          >
-            <GradeMark kind="correct" size={mark} delay={350} strokeWidth={compact ? 4 : 5} />
-          </View>
-        ) : null}
+    <View style={{ gap: compact ? space.md : space.xl, alignItems: compact ? "center" : "flex-start" }}>
+      <View style={{ width: compact ? 120 : 180, height: compact ? 120 : 180, borderRadius: 100, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }}>
+        <Mascot mood="cheer" size={compact ? 96 : 144} />
       </View>
-      <View style={{ gap: space.xs }}>
-        <Text variant={compact ? "headline" : "display"} weight="bold">
+      <View style={{ gap: space.xs, alignItems: compact ? "center" : "flex-start" }}>
+        <Text style={{ fontSize: compact ? 40 : 60, lineHeight: compact ? 46 : 68 }} weight="display" tone="white">
           Math Hacker
         </Text>
-        <Text variant={compact ? "body" : "bodyLarge"} tone="soft" style={{ maxWidth: 380 }}>
-          가진 문제지를 한 번 올려 두면, 매일 몇 문제씩 꺼내 풀고 채점까지 해 줍니다.
+        <Text variant={compact ? "body" : "bodyLarge"} weight="display" align={compact ? "center" : "left"} style={{ color: "#E3DCFF", maxWidth: 380 }}>
+          내 문제지로 매일 퀘스트 깨기
         </Text>
       </View>
+      {!compact ? (
+        <View style={{ gap: space.sm }}>
+          <Perk icon={<FlameIcon size={20} />}>매일 풀면 불꽃이 이어져요</Perk>
+          <Perk icon={<StarIcon size={20} />}>맞힐수록 XP, 레벨 업</Perk>
+        </View>
+      ) : null}
     </View>
   )
 }
@@ -52,7 +49,7 @@ export function AuthFrame({ children }: { children: ReactNode }) {
   const split = !isPhone && width >= 900
 
   return (
-    <GraphPaper style={{ flex: 1 }}>
+    <LinearGradient colors={["#8A6BFF", color.primary, color.primaryDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <ScrollView
@@ -63,13 +60,13 @@ export function AuthFrame({ children }: { children: ReactNode }) {
               alignItems: split ? "center" : "stretch",
               justifyContent: "center",
               padding: isPhone ? space.lg : space.xxxl,
-              gap: split ? space.xxxl * 1.5 : space.xxl,
+              gap: split ? space.xxxl * 1.5 : space.xl,
               maxWidth: 1100,
               width: "100%",
               alignSelf: "center",
             }}
           >
-            <View style={{ flex: split ? 1 : undefined, paddingTop: isPhone ? space.xl : 0 }}>
+            <View style={{ flex: split ? 1 : undefined, paddingTop: isPhone ? space.lg : 0 }}>
               <Brand compact={!split} />
             </View>
             <View
@@ -78,12 +75,10 @@ export function AuthFrame({ children }: { children: ReactNode }) {
                 maxWidth: 440,
                 width: "100%",
                 alignSelf: split ? "center" : isPhone ? "stretch" : "center",
-                backgroundColor: color.sheet,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: color.grid,
-                borderBottomWidth: 3,
-                borderBottomColor: color.gridStrong,
+                backgroundColor: color.surface,
+                borderRadius: radius.card + 4,
+                borderBottomWidth: LIP + 2,
+                borderBottomColor: "rgba(0,0,0,0.18)",
                 padding: isPhone ? space.lg : space.xl,
                 gap: space.lg,
               }}
@@ -93,6 +88,6 @@ export function AuthFrame({ children }: { children: ReactNode }) {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </GraphPaper>
+    </LinearGradient>
   )
 }

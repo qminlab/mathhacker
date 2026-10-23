@@ -1,4 +1,4 @@
-// 버튼·입력·면 같은 기본 조각
+// 기본 조각: 통통한 입체 버튼, 턱 있는 카드, 입력칸, 진행 막대, 칩
 import type { ComponentRef, ReactNode, Ref } from "react"
 import {
   ActivityIndicator,
@@ -13,16 +13,26 @@ import {
   type ViewStyle,
 } from "react-native"
 import { Icon, type IconName } from "./Icon"
+import { Mascot, type Mood } from "./Mascot"
 import { Text } from "./Text"
-import { color, font, radius, space } from "./theme"
+import { color, font, LIP, radius, space, tones, type Tone } from "./theme"
 
 /** 웹(react-native-web)은 hovered·focused도 넘겨 준다 */
 export type PressState = PressableStateCallbackType & { hovered?: boolean; focused?: boolean }
 
 export type TextInputRef = ComponentRef<typeof TextInput>
 
-type ButtonKind = "primary" | "secondary" | "quiet" | "danger"
+type ButtonKind = "primary" | "secondary" | "quiet" | "danger" | "success" | "sun"
 
+const KIND_TONE: Record<Exclude<ButtonKind, "quiet">, Tone> = {
+  primary: "primary",
+  secondary: "white",
+  danger: "white",
+  success: "mint",
+  sun: "sun",
+}
+
+/** 누르면 턱만큼 쑥 들어가는 입체 버튼 */
 export function Button({
   label,
   kind = "primary",
@@ -40,14 +50,29 @@ export function Button({
   size?: "sm" | "md" | "lg"
   style?: StyleProp<ViewStyle>
 }) {
-  const palette = {
-    primary: { bg: color.blue, fg: "#FFFFFF", border: color.blue },
-    secondary: { bg: color.sheet, fg: color.blue, border: color.gridStrong },
-    quiet: { bg: "transparent", fg: color.inkSoft, border: "transparent" },
-    danger: { bg: color.sheet, fg: color.red, border: color.gridStrong },
-  }[kind]
-  const height = { sm: 36, md: 46, lg: 56 }[size]
+  const height = { sm: 40, md: 50, lg: 60 }[size]
   const isDisabled = disabled || loading
+  const textVariant = size === "lg" ? "title" : size === "sm" ? "body" : "bodyLarge"
+
+  if (kind === "quiet") {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        disabled={isDisabled}
+        {...rest}
+        style={({ pressed }) => [{ height, flexDirection: "row", alignItems: "center", gap: space.sm, paddingHorizontal: space.sm, opacity: isDisabled ? 0.4 : pressed ? 0.6 : 1 }, style]}
+      >
+        {icon ? <Icon name={icon} size={20} tint={color.inkSoft} /> : null}
+        <Text variant="body" weight="bold" tone="soft">
+          {label}
+        </Text>
+      </Pressable>
+    )
+  }
+
+  const t = tones[KIND_TONE[kind]]
+  const fg = kind === "danger" ? color.coral : t.on
+  const outline = kind === "secondary" || kind === "danger"
 
   return (
     <Pressable
@@ -55,40 +80,46 @@ export function Button({
       accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
       disabled={isDisabled}
       {...rest}
-      style={({ pressed, hovered, focused }: PressState) => [
-        {
-          height,
-          paddingHorizontal: size === "sm" ? space.md : space.lg,
-          borderRadius: radius.control,
-          backgroundColor: palette.bg,
-          borderWidth: 1,
-          borderColor: focused ? color.blueDeep : palette.border,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: space.sm,
-          opacity: isDisabled ? 0.45 : pressed ? 0.8 : 1,
-          transform: [{ translateY: pressed ? 1 : 0 }],
-        },
-        hovered && kind === "primary" ? { backgroundColor: color.blueDeep } : null,
-        style,
-      ]}
+      style={[{ opacity: isDisabled ? 0.5 : 1 }, style]}
     >
-      {loading ? (
-        <ActivityIndicator color={palette.fg} />
-      ) : (
-        <>
-          {icon ? <Icon name={icon} size={size === "sm" ? 18 : 20} tint={palette.fg} /> : null}
-          <Text variant={size === "lg" ? "bodyLarge" : size === "sm" ? "small" : "body"} weight="bold" style={{ color: palette.fg }}>
-            {label}
-          </Text>
-        </>
+      {({ pressed, focused }: PressState) => (
+        <View style={{ height: height + LIP }}>
+          {/* 턱 */}
+          <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, height, borderRadius: radius.control, backgroundColor: t.lip }} />
+          {/* 윗면 */}
+          <View
+            style={{
+              height,
+              marginTop: pressed ? LIP : 0,
+              borderRadius: radius.control,
+              backgroundColor: t.face,
+              borderWidth: outline ? 2 : 0,
+              borderColor: focused ? color.primary : color.lineStrong,
+              paddingHorizontal: size === "sm" ? space.md : space.xl,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: space.sm,
+            }}
+          >
+            {loading ? (
+              <ActivityIndicator color={fg} />
+            ) : (
+              <>
+                {icon ? <Icon name={icon} size={size === "sm" ? 18 : 22} tint={fg} strokeWidth={2.4} /> : null}
+                <Text variant={textVariant} weight="display" style={{ color: fg }}>
+                  {label}
+                </Text>
+              </>
+            )}
+          </View>
+        </View>
       )}
     </Pressable>
   )
 }
 
-/** 아이콘만 있는 둥근 버튼 (도구 막대 등) */
+/** 아이콘만 있는 동그란 버튼 */
 export function IconButton({
   icon,
   label,
@@ -116,34 +147,74 @@ export function IconButton({
         {
           width: size,
           height: size,
-          borderRadius: radius.control,
+          borderRadius: size / 2.6,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: active ? color.blueSoft : "transparent",
-          opacity: pressed ? 0.6 : 1,
+          backgroundColor: active ? color.primarySoft : "transparent",
+          transform: [{ scale: pressed ? 0.92 : 1 }],
         },
         style,
       ]}
     >
-      <Icon name={icon} tint={tint ?? (active ? color.blue : color.inkSoft)} />
+      <Icon name={icon} tint={tint ?? (active ? color.primary : color.inkSoft)} strokeWidth={2.2} />
     </Pressable>
   )
 }
 
-/** 종이 한 장 같은 면. 그림자 대신 얇은 테두리와 아래쪽 한 줄로 두께를 준다. */
-export function Sheet({ style, children, padded = true, ...rest }: ViewProps & { padded?: boolean }) {
+/** 카드: 흰 면 + 테두리 + 아래 턱 */
+export function Sheet({
+  style,
+  children,
+  padded = true,
+  tone,
+  ...rest
+}: ViewProps & { padded?: boolean; tone?: Tone }) {
+  const t = tone ? tones[tone] : null
   return (
     <View
       {...rest}
       style={[
         {
-          backgroundColor: color.sheet,
-          borderRadius: radius.sheet,
-          borderWidth: 1,
-          borderColor: color.grid,
-          borderBottomWidth: 2,
-          borderBottomColor: color.gridStrong,
+          backgroundColor: t ? t.face : color.surface,
+          borderRadius: radius.card,
+          borderWidth: 2,
+          borderColor: t ? t.face : color.line,
+          borderBottomWidth: 2 + LIP,
+          borderBottomColor: t ? t.lip : color.line,
           padding: padded ? space.lg : 0,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  )
+}
+
+/** 작은 알약 모양 표시 (🔥 12일, ⭐ Lv.3 …) */
+export function Chip({
+  children,
+  tone = "white",
+  style,
+}: {
+  children: ReactNode
+  tone?: Tone
+  style?: StyleProp<ViewStyle>
+}) {
+  const t = tones[tone]
+  return (
+    <View
+      style={[
+        {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          paddingHorizontal: 12,
+          height: 36,
+          borderRadius: radius.pill,
+          backgroundColor: tone === "white" ? color.surface : t.soft,
+          borderWidth: 2,
+          borderColor: tone === "white" ? color.line : t.soft,
         },
         style,
       ]}
@@ -161,58 +232,73 @@ export function Field({
   ref,
   ...rest
 }: TextInputProps & { label: string; hint?: string; error?: string | null; ref?: Ref<TextInputRef> }) {
-    return (
-      <View style={{ gap: space.xs }}>
-        <Text variant="small" weight="medium" tone="soft">
-          {label}
-        </Text>
-        <TextInput
-          ref={ref}
-          placeholderTextColor={color.inkFaint}
-          {...rest}
-          style={[
-            {
-              height: 48,
-              borderRadius: radius.control,
-              borderWidth: 1,
-              borderColor: error ? color.red : color.gridStrong,
-              backgroundColor: color.sheet,
-              paddingHorizontal: space.md,
-              fontFamily: font.regular,
-              fontSize: 16,
-              color: color.ink,
-            },
-            style,
-          ]}
-        />
-        {error ? (
-          <Text variant="small" tone="red">
-            {error}
-          </Text>
-        ) : hint ? (
-          <Text variant="small" tone="faint">
-            {hint}
-          </Text>
-        ) : null}
-      </View>
-    )
-}
-
-/** 진행 막대: 푼 비율은 파랑, 맞은 비율은 그 위에 진하게 */
-export function Progress({ value, total, height = 6 }: { value: number; total: number; height?: number }) {
-  const ratio = total > 0 ? Math.min(1, value / total) : 0
   return (
-    <View
-      accessibilityRole="progressbar"
-      accessibilityValue={{ min: 0, max: total, now: value }}
-      style={{ height, borderRadius: height, backgroundColor: color.grid, overflow: "hidden" }}
-    >
-      <View style={{ width: `${ratio * 100}%`, height: "100%", backgroundColor: color.blue, borderRadius: height }} />
+    <View style={{ gap: 6 }}>
+      <Text variant="small" weight="bold" tone="soft">
+        {label}
+      </Text>
+      <TextInput
+        ref={ref}
+        placeholderTextColor={color.inkFaint}
+        {...rest}
+        style={[
+          {
+            height: 52,
+            borderRadius: radius.control,
+            borderWidth: 2,
+            borderColor: error ? color.coral : color.line,
+            backgroundColor: color.bg,
+            paddingHorizontal: space.lg,
+            fontFamily: font.medium,
+            fontSize: 16,
+            color: color.ink,
+          },
+          style,
+        ]}
+      />
+      {error ? (
+        <Text variant="small" tone="coral">
+          {error}
+        </Text>
+      ) : hint ? (
+        <Text variant="small" tone="faint">
+          {hint}
+        </Text>
+      ) : null}
     </View>
   )
 }
 
-/** 세그먼트 선택 (설정 등) */
+/** 두툼한 진행 막대 (윗부분에 윤기) */
+export function Progress({
+  value,
+  total,
+  height = 14,
+  tone = "primary",
+}: {
+  value: number
+  total: number
+  height?: number
+  tone?: Tone
+}) {
+  const ratio = total > 0 ? Math.min(1, value / total) : 0
+  const t = tones[tone]
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: total, now: value }}
+      style={{ height, borderRadius: height, backgroundColor: color.line, overflow: "hidden" }}
+    >
+      {ratio > 0 ? (
+        <View style={{ width: `${Math.max(ratio * 100, 6)}%`, height: "100%", borderRadius: height, backgroundColor: t.face }}>
+          <View style={{ position: "absolute", left: height / 2, right: height / 2, top: height * 0.22, height: Math.max(2, height * 0.22), borderRadius: 2, backgroundColor: "#FFFFFF", opacity: 0.35 }} />
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+/** 알약 모양 선택 */
 export function Segmented<T extends string | number>({
   value,
   options,
@@ -225,7 +311,7 @@ export function Segmented<T extends string | number>({
   return (
     <View
       accessibilityRole="radiogroup"
-      style={{ flexDirection: "row", backgroundColor: color.paper, borderRadius: radius.control, padding: 3, borderWidth: 1, borderColor: color.grid }}
+      style={{ flexDirection: "row", backgroundColor: color.line, borderRadius: radius.pill, padding: 4, gap: 4 }}
     >
       {options.map((o) => {
         const selected = o.value === value
@@ -237,16 +323,14 @@ export function Segmented<T extends string | number>({
             onPress={() => onChange(o.value)}
             style={{
               flex: 1,
-              height: 38,
-              borderRadius: radius.control - 3,
+              height: 40,
+              borderRadius: radius.pill,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: selected ? color.sheet : "transparent",
-              borderWidth: selected ? 1 : 0,
-              borderColor: color.gridStrong,
+              backgroundColor: selected ? color.surface : "transparent",
             }}
           >
-            <Text variant="small" weight={selected ? "bold" : "medium"} tone={selected ? "blue" : "soft"}>
+            <Text variant="body" weight="display" tone={selected ? "primary" : "soft"}>
               {o.label}
             </Text>
           </Pressable>
@@ -256,15 +340,16 @@ export function Segmented<T extends string | number>({
   )
 }
 
-/** 빈 화면 안내: 무엇을 하면 되는지 한 줄 + 행동 버튼 */
-export function Empty({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
+/** 빈 화면: 마스코트 + 다음에 할 일 */
+export function Empty({ title, body, action, mood = "think" }: { title: string; body?: string; action?: ReactNode; mood?: Mood }) {
   return (
-    <View style={{ alignItems: "flex-start", gap: space.sm, paddingVertical: space.xl }}>
-      <Text variant="title" weight="bold">
+    <View style={{ alignItems: "center", gap: space.md, paddingVertical: space.xxl }}>
+      <Mascot mood={mood} size={110} />
+      <Text variant="title" weight="display" align="center">
         {title}
       </Text>
       {body ? (
-        <Text tone="soft" style={{ maxWidth: 520 }}>
+        <Text tone="soft" align="center" style={{ maxWidth: 420 }}>
           {body}
         </Text>
       ) : null}
@@ -275,8 +360,8 @@ export function Empty({ title, body, action }: { title: string; body?: string; a
 
 export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <Sheet style={{ borderColor: color.redSoft, gap: space.sm }}>
-      <Text weight="medium">{message}</Text>
+    <Sheet style={{ borderColor: color.coralSoft, borderBottomColor: color.coralSoft, gap: space.sm }}>
+      <Text weight="bold">{message}</Text>
       {onRetry ? <Button label="다시 불러오기" kind="secondary" size="sm" icon="refresh" onPress={onRetry} style={{ alignSelf: "flex-start" }} /> : null}
     </Sheet>
   )

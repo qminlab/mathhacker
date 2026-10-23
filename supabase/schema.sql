@@ -447,6 +447,63 @@ as $$
   limit greatest(1, least(p_limit, 100));
 $$;
 
+-- 게임 요소: 연속 학습, XP, 뱃지 계산에 쓰는 숫자들
+-- XP 규칙 (앱 src/lib/progress.ts와 같게): 맞힘 10 + 힌트 없이 맞히면 5, 틀림 2, 포기 0
+create or replace function public.my_progress()
+returns jsonb
+language sql
+stable
+security invoker set search_path = public
+as $$
+  with mine as (
+    select a.*, (a.created_at at time zone 'Asia/Seoul')::date as day
+    from attempts a
+    where a.user_id = auth.uid() and a.result <> 'pending'
+  ),
+  days as (select distinct day from mine),
+  today as (select (now() at time zone 'Asia/Seoul')::date as d),
+  -- 연속 일수: 날짜에서 순번을 빼면 이어진 날들은 같은 값이 된다
+  runs as (
+    select day, day - (row_number() over (order by day))::int as grp from days
+  ),
+  streaks as (
+    select grp, min(day) as first_day, max(day) as last_day, count(*)::int as len from runs group by grp
+  ),
+  per_session as (
+    select session_id, count(*) as n, count(*) filter (where result = 'correct') as c
+    from mine where session_id is not null group by session_id
+  ),
+  comebacks as (
+    -- 틀렸던 문제를 나중에 맞힌 횟수
+    select count(distinct w.problem_id)::int as n
+    from mine w
+    join mine r on r.problem_id = w.problem_id and r.result = 'correct' and r.created_at > w.created_at
+    where w.result in ('wrong', 'gave_up')
+  )
+  select jsonb_build_object(
+    'xp', coalesce((select sum(case result
+                         when 'correct' then 10 + case when hint_used then 0 else 5 end
+                         when 'wrong' then 2 else 0 end) from mine), 0),
+    'solved', (select count(*) from mine),
+    'correct', (select count(*) from mine where result = 'correct'),
+    'streak', coalesce((
+      select len from streaks, today
+      where last_day >= today.d - 1 order by last_day desc limit 1
+    ), 0),
+    'best_streak', coalesce((select max(len) from streaks), 0),
+    'active_today', exists (select 1 from days, today where day = today.d),
+    'today_solved', (select count(*) from mine, today where day = today.d),
+    'week', (
+      select jsonb_agg(jsonb_build_object('day', g.dd::date, 'active', exists (select 1 from days where day = g.dd::date)) order by g.dd)
+      from today, generate_series(today.d - 6, today.d, interval '1 day') as g(dd)
+    ),
+    'perfect_sets', (select count(*) from per_session where n >= 3 and n = c),
+    'comebacks', (select n from comebacks),
+    'no_hint_correct', (select count(*) from mine where result = 'correct' and not hint_used),
+    'days_active', (select count(*) from days)
+  );
+$$;
+
 -- 문제집 목록 + 내 진행 상황
 create or replace function public.my_workbooks()
 returns table (

@@ -8,7 +8,7 @@ import { Text } from "@/ui/Text"
 import { color, space } from "@/ui/theme"
 
 /** 위쪽 모서리만 4px 둥근 막대 (바닥선에 붙는다) */
-function barPath(x: number, y: number, w: number, h: number, r = 4) {
+function barPath(x: number, y: number, w: number, h: number, r = 8) {
   const rr = Math.min(r, w / 2, h)
   return `M ${x} ${y + h} L ${x} ${y + rr} Q ${x} ${y} ${x + rr} ${y} L ${x + w - rr} ${y} Q ${x + w} ${y} ${x + w} ${y + rr} L ${x + w} ${y + h} Z`
 }
@@ -26,7 +26,7 @@ export function DailyBars({ data }: { data: { day: string; total: number; correc
   const axis = 22
   const max = Math.max(4, ...data.map((d) => d.total))
   const step = width / Math.max(1, data.length)
-  const barW = Math.max(6, Math.min(28, step - 6))
+  const barW = Math.max(8, Math.min(30, step - 6))
   const sel = data.find((d) => d.day === selected)
 
   return (
@@ -54,7 +54,7 @@ export function DailyBars({ data }: { data: { day: string; total: number; correc
                   <Path
                     key={d.day}
                     d={barPath(x, height - axis - h, barW, h)}
-                    fill={color.blue}
+                    fill={color.primary}
                     opacity={selected && selected !== d.day ? 0.45 : 1}
                   />
                 )
@@ -113,8 +113,8 @@ export function UnitBars({ data }: { data: { unit: string; total: number; correc
                 {u.correct}/{u.total}
               </Text>
             </View>
-            <View style={{ height: 8, borderRadius: 4, backgroundColor: color.grid, overflow: "hidden" }}>
-              <View style={{ width: `${rate * 100}%`, height: "100%", borderRadius: 4, backgroundColor: color.blue }} />
+            <View style={{ height: 12, borderRadius: 6, backgroundColor: color.line, overflow: "hidden" }}>
+              <View style={{ width: `${rate * 100}%`, height: "100%", borderRadius: 6, backgroundColor: rate >= 0.7 ? color.mint : rate >= 0.4 ? color.sun : color.coral }} />
             </View>
           </View>
         )

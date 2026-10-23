@@ -4,59 +4,75 @@ import { Pressable, View } from "react-native"
 import { IngestList } from "@/features/IngestList"
 import { useWorkbooks } from "@/lib/data"
 import type { WorkbookSummary } from "@/lib/types"
-import { Button, Empty, ErrorNote, Progress, type PressState } from "@/ui/controls"
+import { Button, Empty, ErrorNote, Progress } from "@/ui/controls"
 import { Grid } from "@/ui/Grid"
 import { useFormFactor } from "@/ui/layout"
 import { Screen } from "@/ui/Screen"
 import { Text } from "@/ui/Text"
-import { color, radius, space } from "@/ui/theme"
+import { color, LIP, radius, space, tones, type Tone } from "@/ui/theme"
 
+const COVERS: Tone[] = ["primary", "sky", "mint", "coral", "flame", "sun"]
+
+/** 문제집 카드: 색 표지 + 진행 막대. 표지 색은 문제집마다 고정 */
 function WorkbookCard({ w }: { w: WorkbookSummary }) {
   const rate = w.solved ? Math.round((w.correct / w.solved) * 100) : null
   const missingAnswers = w.total - w.with_answer
+  const t = tones[COVERS[w.id % COVERS.length]]
+  const complete = w.total > 0 && w.solved >= w.total
   return (
     <Link href={`/library/${w.id}`} asChild>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={`${w.title}, ${w.total}문제 중 ${w.solved}문제 풂`}
-        style={({ pressed, hovered }: PressState) => ({
-          backgroundColor: color.sheet,
-          borderRadius: radius.sheet,
-          borderWidth: 1,
-          borderColor: hovered ? color.blue : color.grid,
-          borderBottomWidth: 2,
-          borderBottomColor: hovered ? color.blue : color.gridStrong,
-          padding: space.lg,
-          gap: space.md,
-          opacity: pressed ? 0.85 : 1,
-        })}
-      >
-        {/* 책등처럼 왼쪽에 파란 띠 */}
-        <View style={{ position: "absolute", left: 0, top: 12, bottom: 12, width: 4, backgroundColor: color.blue, borderTopRightRadius: 2, borderBottomRightRadius: 2 }} />
-        <View style={{ gap: 2 }}>
-          <Text variant="bodyLarge" weight="bold" numberOfLines={2}>
-            {w.title}
-          </Text>
-          {w.unit || w.chapter ? (
-            <Text variant="small" tone="soft" numberOfLines={1}>
-              {[w.unit, w.chapter].filter(Boolean).join(", ")}
-            </Text>
-          ) : null}
-        </View>
-        <Progress value={w.solved} total={w.total} />
-        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: space.sm }}>
-          <Text variant="small" tone="soft" tabular>
-            {w.solved}/{w.total}문제 풂
-          </Text>
-          <Text variant="small" tone={rate === null ? "faint" : "ink"} weight="medium" tabular>
-            {rate === null ? "아직 안 풂" : `정답률 ${rate}%`}
-          </Text>
-        </View>
-        {w.is_mine && w.total > 0 && missingAnswers > 0 ? (
-          <Text variant="small" tone="blue" weight="medium">
-            정답 없는 문제 {missingAnswers}개, 답지를 올려 주세요
-          </Text>
-        ) : null}
+      <Pressable accessibilityRole="link" accessibilityLabel={`${w.title}, ${w.total}문제 중 ${w.solved}문제 풂`}>
+        {({ pressed }) => (
+          <View style={{ paddingTop: pressed ? LIP : 0, paddingBottom: pressed ? 0 : LIP }}>
+            <View
+              style={{
+                backgroundColor: color.surface,
+                borderRadius: radius.card,
+                borderWidth: 2,
+                borderColor: color.line,
+                borderBottomWidth: pressed ? 2 : 2 + LIP,
+                overflow: "hidden",
+              }}
+            >
+              {/* 표지 */}
+              <View style={{ height: 92, backgroundColor: t.face, padding: space.lg, justifyContent: "space-between" }}>
+                <View style={{ position: "absolute", right: -24, top: -24, width: 110, height: 110, borderRadius: 55, backgroundColor: "#FFFFFF", opacity: 0.14 }} />
+                <View style={{ position: "absolute", right: 28, bottom: -36, width: 70, height: 70, borderRadius: 35, backgroundColor: "#FFFFFF", opacity: 0.1 }} />
+                <Text variant="title" weight="display" numberOfLines={2} style={{ color: t.on }}>
+                  {w.title}
+                </Text>
+                {complete ? (
+                  <Text variant="small" weight="display" style={{ color: t.on }}>
+                    다 풀었어요!
+                  </Text>
+                ) : null}
+              </View>
+              <View style={{ padding: space.lg, gap: space.md }}>
+                {w.unit || w.chapter ? (
+                  <Text variant="small" tone="soft" numberOfLines={1}>
+                    {[w.unit, w.chapter].filter(Boolean).join(", ")}
+                  </Text>
+                ) : null}
+                <Progress value={w.solved} total={w.total} tone={COVERS[w.id % COVERS.length]} height={12} />
+                <View style={{ flexDirection: "row", justifyContent: "space-between", gap: space.sm }}>
+                  <Text variant="body" weight="display" tabular>
+                    {w.solved}/{w.total}
+                  </Text>
+                  <Text variant="small" tone={rate === null ? "faint" : "ink"} weight="bold" tabular>
+                    {rate === null ? "아직 안 풂" : `정답률 ${rate}%`}
+                  </Text>
+                </View>
+                {w.is_mine && w.total > 0 && missingAnswers > 0 ? (
+                  <View style={{ backgroundColor: color.sunSoft, borderRadius: radius.chip, paddingHorizontal: space.md, paddingVertical: 8 }}>
+                    <Text variant="small" weight="bold" tone="sun">
+                      정답 없는 문제 {missingAnswers}개, 답지를 올려 주세요
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          </View>
+        )}
       </Pressable>
     </Link>
   )
@@ -69,7 +85,7 @@ export default function LibraryScreen() {
   return (
     <Screen
       title="문제집"
-      subtitle="올린 문제지가 문제 단위로 정리돼 있어요."
+      subtitle="올린 문제지가 한 문제씩 정리돼 있어요"
       refreshing={books.isRefetching}
       onRefresh={() => books.refetch()}
       action={<Button label="문제지 올리기" icon="upload" onPress={() => router.push("/upload")} size={isPhone ? "sm" : "md"} />}
@@ -84,6 +100,7 @@ export default function LibraryScreen() {
         />
       ) : null}
       <Grid items={books.data ?? []} minWidth={280} gap={space.lg} keyOf={(w) => w.id} render={(w) => <WorkbookCard w={w} />} />
+      {isPhone ? <View style={{ height: 72 }} /> : null}
     </Screen>
   )
 }

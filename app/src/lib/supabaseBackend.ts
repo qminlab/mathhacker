@@ -3,6 +3,7 @@ import { File as ExpoFile } from "expo-file-system"
 import { Platform } from "react-native"
 import type { Backend, UploadInput } from "./backend"
 import { env } from "./env"
+import { EMPTY_PROGRESS, type Progress } from "./progress"
 import { supabase } from "./supabase"
 import {
   DEFAULT_SETTINGS,
@@ -239,6 +240,10 @@ export const supabaseBackend: Backend = {
 
   async submit(input) {
     return api("/api/attempts", { method: "POST", body: JSON.stringify(input) })
+  },
+
+  async progress() {
+    return { ...EMPTY_PROGRESS, ...(check(await supabase.rpc("my_progress")) as Partial<Progress>) }
   },
 
   async wrongNotes() {

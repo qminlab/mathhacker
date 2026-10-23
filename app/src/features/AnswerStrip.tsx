@@ -3,13 +3,13 @@ import { View } from "react-native"
 import type { Result } from "@/lib/types"
 import { GradeMark } from "@/ui/GradeMark"
 import { Text } from "@/ui/Text"
-import { color } from "@/ui/theme"
+import { color, tones } from "@/ui/theme"
 
 export type StripCell = { key: string; label: string; result: Result | null; current?: boolean }
 
 export function AnswerStrip({ cells, size = 44 }: { cells: StripCell[]; size?: number }) {
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", borderLeftWidth: 1, borderTopWidth: 1, borderColor: color.gridStrong, alignSelf: "flex-start" }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, alignSelf: "flex-start" }}>
       {cells.map((c) => (
         <View
           key={c.key}
@@ -18,15 +18,16 @@ export function AnswerStrip({ cells, size = 44 }: { cells: StripCell[]; size?: n
           style={{
             width: size,
             height: size,
-            borderRightWidth: 1,
-            borderBottomWidth: 1,
-            borderColor: color.gridStrong,
+            borderRadius: 14,
+            borderWidth: 2,
+            borderBottomWidth: 4,
+            borderColor: c.current ? color.primary : c.result === "correct" ? tones.mint.face : c.result === "wrong" || c.result === "gave_up" ? tones.coral.face : color.line,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: c.current ? color.highlighterSoft : color.sheet,
+            backgroundColor: c.current ? color.primarySoft : c.result === "correct" ? tones.mint.soft : c.result === "wrong" || c.result === "gave_up" ? tones.coral.soft : color.surface,
           }}
         >
-          <Text variant="small" weight="medium" tone={c.result ? "ink" : "faint"} tabular>
+          <Text variant="small" weight="display" tone={c.result ? "ink" : "faint"} tabular>
             {c.label}
           </Text>
           {c.result && c.result !== "pending" ? (

@@ -9,21 +9,23 @@ import { router, useLocalSearchParams } from "expo-router"
 import { useEffect, useState } from "react"
 import { Platform, Pressable, ScrollView, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { AnswerStrip } from "@/features/AnswerStrip"
 import { AnswerPad } from "@/features/practice/AnswerPad"
 import { DrawingCanvas, type Tool } from "@/features/practice/DrawingCanvas"
 import { PEN_COLORS, PenToolbar } from "@/features/practice/PenToolbar"
 import { notify, useStartPractice } from "@/features/practice/useStartPractice"
 import { displayAnswer, formatDuration, isChoiceProblem } from "@/lib/answers"
-import { backend, invalidateProgress, useImageSources, useSessionBundle, useSettings } from "@/lib/data"
+import { backend, invalidateProgress, keys, useImageSources, useProgress, useSessionBundle, useSettings } from "@/lib/data"
+import { levelInfo, levelTitle, newlyEarned, xpFor, type Progress as ProgressData } from "@/lib/progress"
 import { DEFAULT_SETTINGS, type Problem, type Result, type SessionBundle, type Settings, type Stroke } from "@/lib/types"
-import { Button, IconButton, Sheet } from "@/ui/controls"
+import { Button, Chip, IconButton, Sheet } from "@/ui/controls"
+import { BadgeTile, Confetti, FlameIcon, LevelBar, PopIn, StarIcon, XpPop } from "@/ui/game"
+import { Mascot } from "@/ui/Mascot"
 import { GradeMark } from "@/ui/GradeMark"
 import { GraphPaper } from "@/ui/GraphPaper"
 import { Icon } from "@/ui/Icon"
 import { useFormFactor } from "@/ui/layout"
-import { PenText, Text } from "@/ui/Text"
-import { color, radius, space } from "@/ui/theme"
+import { Text } from "@/ui/Text"
+import { color, LIP, radius, space, tones, type Tone } from "@/ui/theme"
 
 type Submitted = { result: Result; correctAnswer: string | null; userAnswer: string }
 
@@ -131,6 +133,11 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
   const [showSummary, setShowSummary] = useState(initial.summary)
   const [imageScale, setImageScale] = useState(1)
   const [aspects, setAspects] = useState<Record<string, number>>({})
+  // 이번에 들어왔을 때의 진행 상황 (레벨업·새 뱃지 판단용)
+  const progressQ = useProgress()
+  const [startProgress] = useState<ProgressData | undefined>(() => qc.getQueryData<ProgressData>(keys.progress))
+  const [gainedHere, setGainedHere] = useState(0)
+  const [lastGain, setLastGain] = useState<{ amount: number; key: number }>({ amount: 0, key: 0 })
 
   const problems = bundle.problems
   const problem = problems[index] as Problem | undefined
@@ -178,6 +185,9 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
         strokes: st.strokes.length ? st.strokes : undefined,
       })
       update({ submitted: { result: r.result, correctAnswer: r.correctAnswer, userAnswer: st.answer } })
+      const gain = xpFor(r.result, st.hintUsed)
+      setGainedHere((g) => g + gain)
+      if (!batch) setLastGain((l) => ({ amount: gain, key: l.key + 1 }))
       if (!batch && Platform.OS !== "web") {
         Haptics.notificationAsync(
           r.result === "correct" ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning
@@ -221,6 +231,9 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
         problems={problems}
         states={states}
         title={MODE_TITLE[session.mode]}
+        startProgress={startProgress}
+        latestProgress={progressQ.data}
+        gainedHere={gainedHere}
         onClose={() => router.back()}
         onRetryWrong={(ids) => restart.mutate({ mode: "wrong", problemIds: ids })}
         onReview={(i) => {
@@ -233,53 +246,79 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
   }
 
   const imageSource = problem.image_path ? images.data?.[problem.image_path] : undefined
-  const showMark = st.submitted && !(batch && !allSubmitted)
-  const progressLabel = `${index + 1}/${problems.length}`
+  const showMark = !!st.submitted && !(batch && !allSubmitted)
 
+  // 맨 위: 닫기, 문제별 칸이 채워지는 진행 막대, 타이머
   const header = (
     <View
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: space.sm,
+        gap: space.md,
         paddingHorizontal: space.md,
         paddingTop: insets.top + space.sm,
         paddingBottom: space.sm,
-        backgroundColor: color.sheet,
-        borderBottomWidth: 1,
-        borderBottomColor: color.grid,
+        backgroundColor: color.surface,
+        borderBottomWidth: 2,
+        borderBottomColor: color.line,
       }}
     >
       <IconButton icon="close" label="풀이 그만하기" onPress={() => router.back()} />
-      <View style={{ flex: 1 }}>
-        <Text variant="small" tone="soft" numberOfLines={1}>
-          {MODE_TITLE[session.mode]}
-        </Text>
-        <Text weight="bold" tabular>
-          {String(problem.workbook_number ?? index + 1).padStart(3, "0")}번
-          <Text tone="soft" weight="regular">  {progressLabel}</Text>
+      <View style={{ flex: 1, gap: 6 }}>
+        <View style={{ flexDirection: "row", gap: 4 }}>
+          {problems.map((p, i) => {
+            const sub = states[p.id]?.submitted
+            const reveal = sub && !(batch && !allSubmitted)
+            const bg = i === index
+              ? color.primary
+              : !sub
+                ? color.line
+                : !reveal
+                  ? color.sky
+                  : sub.result === "correct"
+                    ? color.mint
+                    : sub.result === "pending"
+                      ? color.lineStrong
+                      : color.coral
+            return (
+              <Pressable
+                key={p.id}
+                onPress={() => setIndex(i)}
+                accessibilityRole="button"
+                accessibilityLabel={`${i + 1}번째 문제로`}
+                hitSlop={{ top: 10, bottom: 10 }}
+                style={{ flex: 1, height: 12, borderRadius: 6, backgroundColor: bg }}
+              />
+            )
+          })}
+        </View>
+        <Text variant="small" weight="display" tone="soft" numberOfLines={1}>
+          {MODE_TITLE[session.mode]}  {index + 1}/{problems.length}
         </Text>
       </View>
-      <IconButton icon="chevronLeft" label="이전 문제" disabled={index === 0} onPress={() => setIndex(index - 1)} style={{ opacity: index === 0 ? 0.3 : 1 }} />
-      <IconButton
-        icon="chevronRight"
-        label="다음 문제"
-        disabled={index === problems.length - 1}
-        onPress={() => setIndex(index + 1)}
-        style={{ opacity: index === problems.length - 1 ? 0.3 : 1 }}
-      />
-    </View>
-  )
-
-  const timer = (
-    <View accessibilityLabel={overtime ? `시간 ${formatDuration(-remaining)} 초과` : `남은 시간 ${formatDuration(remaining)}`} style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
-      <Icon name="clock" size={20} tint={overtime ? color.red : color.inkSoft} />
-      <Text variant="title" weight="bold" tabular tone={overtime ? "red" : "ink"}>
-        {overtime ? `+${formatDuration(-remaining)}` : formatDuration(remaining)}
-      </Text>
+      <Chip tone={overtime ? "coral" : "white"}>
+        <Icon name="clock" size={18} tint={overtime ? color.coral : color.inkSoft} strokeWidth={2.4} />
+        <Text
+          variant="body"
+          weight="display"
+          tone={overtime ? "coral" : "ink"}
+          tabular
+          accessibilityLabel={overtime ? `시간 ${formatDuration(-remaining)} 초과` : `남은 시간 ${formatDuration(remaining)}`}
+        >
+          {overtime ? `+${formatDuration(-remaining)}` : formatDuration(remaining)}
+        </Text>
+      </Chip>
       {!st.submitted ? (
-        <Pressable accessibilityRole="button" onPress={() => update({ extraSec: st.extraSec + 60 })} hitSlop={8} style={{ paddingHorizontal: space.sm, paddingVertical: 4, borderRadius: radius.pill, borderWidth: 1, borderColor: color.gridStrong }}>
-          <Text variant="small" weight="bold" tone="soft">+1분</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="1분 더"
+          onPress={() => update({ extraSec: st.extraSec + 60 })}
+          hitSlop={8}
+          style={{ paddingHorizontal: 10, height: 36, justifyContent: "center", borderRadius: radius.pill, backgroundColor: color.primarySoft }}
+        >
+          <Text variant="small" weight="display" tone="primary">
+            +1분
+          </Text>
         </Pressable>
       ) : null}
     </View>
@@ -289,44 +328,42 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
 
   const panel = (
     <View style={{ gap: sidePanel ? space.lg : space.md }}>
-      {sidePanel ? timer : null}
-
       {st.submitted && showMark ? (
-        <ResultNote submitted={st.submitted} choice={st.choice} />
-      ) : st.submitted ? (
-        <Text tone="soft">제출했어요. 다 풀면 한꺼번에 채점해요.</Text>
-      ) : (
-        <AnswerPad
+        <ResultCard
+          submitted={st.submitted}
           choice={st.choice}
-          value={st.answer}
-          onChange={(v) => update({ answer: v })}
-          onSubmit={() => submit()}
-          compact={!sidePanel}
-          onToggleType={() => update({ choice: !st.choice, answer: "" })}
+          gain={xpFor(st.submitted.result, st.hintUsed)}
+          popKey={lastGain.key}
+          last={allSubmitted}
+          onNext={allSubmitted ? finish : goNext}
         />
-      )}
-
-      {st.hintOpen ? (
-        <Sheet style={{ backgroundColor: color.highlighterSoft, borderColor: color.highlighter, gap: 4 }}>
-          <Text variant="small" weight="bold">힌트</Text>
-          <Text variant="small">{hintText || "이 문제에는 힌트가 없어요."}</Text>
+      ) : st.submitted ? (
+        <Sheet style={{ gap: space.md }}>
+          <Text weight="display">제출했어요! 다 풀면 한꺼번에 채점해요.</Text>
+          <Button label={allSubmitted ? "채점 결과 보기" : "다음 문제"} icon="chevronRight" onPress={allSubmitted ? finish : goNext} />
         </Sheet>
-      ) : null}
-
-      {st.submitted ? (
-        <View style={{ flexDirection: "row", gap: space.sm }}>
-          {allSubmitted ? (
-            <Button label="결과 보기" icon="check" style={{ flex: 1 }} onPress={finish} />
-          ) : (
-            <Button label="다음 문제" icon="chevronRight" style={{ flex: 1 }} onPress={goNext} />
-          )}
-        </View>
       ) : (
-        <View style={{ gap: space.sm }}>
-          <Button label={batch ? "제출" : "채점하기"} icon="check" size="lg" loading={submitting} onPress={() => submit()} />
+        <>
+          <AnswerPad
+            choice={st.choice}
+            value={st.answer}
+            onChange={(v) => update({ answer: v })}
+            onSubmit={() => submit()}
+            compact={!sidePanel}
+            onToggleType={() => update({ choice: !st.choice, answer: "" })}
+          />
+          {st.hintOpen ? (
+            <View style={{ backgroundColor: color.sunSoft, borderRadius: radius.control, padding: space.md, gap: 4 }}>
+              <Text variant="small" weight="display" tone="sun">
+                힌트
+              </Text>
+              <Text variant="small">{hintText || "이 문제에는 힌트가 없어요. 문제의 조건을 하나씩 식으로 써 보세요."}</Text>
+            </View>
+          ) : null}
+          <Button label={batch ? "제출" : "확인"} icon="check" size="lg" loading={submitting} disabled={!st.answer.trim()} onPress={() => submit()} />
           <View style={{ flexDirection: "row", gap: space.sm }}>
             <Button
-              label="힌트"
+              label={st.hintUsed ? "힌트 보기" : "힌트 (XP -5)"}
               kind="secondary"
               size="sm"
               icon="hint"
@@ -335,39 +372,21 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
             />
             <Button label="포기" kind="secondary" size="sm" icon="flag" style={{ flex: 1 }} disabled={submitting} onPress={() => submit(true)} />
           </View>
-        </View>
+        </>
       )}
-
-      {sidePanel ? (
-        <View style={{ marginTop: space.md }}>
-          <AnswerStrip
-            size={36}
-            cells={problems.map((p, i) => {
-              const s = states[p.id]?.submitted
-              return {
-                key: p.id,
-                label: String(p.workbook_number ?? i + 1),
-                result: s ? (batch && !allSubmitted ? "pending" : s.result) : null,
-                current: i === index,
-              }
-            })}
-          />
-        </View>
-      ) : null}
     </View>
   )
 
-  // 폰은 문제를 폭에 맞추고 도구 막대를 아래로 내린다
   const imageWidth: number | `${number}%` = isPhone ? `${Math.round(Math.min(100, 92 * imageScale))}%` : (sidePanel ? 560 : 520) * imageScale
 
   const board = (
-    <GraphPaper style={{ flex: 1, overflow: "hidden" }} base={color.sheet}>
+    <GraphPaper style={{ flex: 1, overflow: "hidden" }} base={color.surface}>
       {/* 문제는 왼쪽 위에 고정, 나머지 전부가 풀이 공간 */}
       <View
         style={{ position: "absolute", left: isPhone ? space.md : space.lg, top: isPhone ? space.md : space.lg, width: imageWidth, maxWidth: isPhone ? "92%" : "70%" }}
         pointerEvents="none"
       >
-        <View style={{ backgroundColor: "#FFFFFF", borderRadius: radius.sheet, borderWidth: 1, borderColor: color.grid, overflow: "hidden" }}>
+        <View style={{ backgroundColor: "#FFFFFF", borderRadius: radius.control, borderWidth: 2, borderColor: color.line, overflow: "hidden" }}>
           {imageSource ? (
             <Image
               source={imageSource}
@@ -421,9 +440,9 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
           onClear={() => update({ strokes: [] })}
         />
         {!isPhone ? (
-          <View style={{ flexDirection: sidePanel ? "column" : "row", gap: space.xs, backgroundColor: color.sheet, borderRadius: radius.control, borderWidth: 1, borderColor: color.grid }}>
-            <IconButton icon="plus" label="문제 크게" onPress={() => setImageScale((s) => Math.min(1.8, s + 0.2))} size={40} />
-            <IconButton icon="minus" label="문제 작게" onPress={() => setImageScale((s) => Math.max(0.6, s - 0.2))} size={40} />
+          <View style={{ flexDirection: sidePanel ? "column" : "row", gap: space.xs, backgroundColor: color.surface, borderRadius: radius.control, borderWidth: 2, borderColor: color.line }}>
+            <IconButton icon="plus" label="문제 크게" onPress={() => setImageScale((v) => Math.min(1.8, v + 0.2))} size={40} />
+            <IconButton icon="minus" label="문제 작게" onPress={() => setImageScale((v) => Math.max(0.6, v - 0.2))} size={40} />
           </View>
         ) : null}
       </View>
@@ -432,15 +451,27 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
 
   if (sidePanel) {
     return (
-      <View style={{ flex: 1, backgroundColor: color.paper }}>
+      <View style={{ flex: 1, backgroundColor: color.bg }}>
         {header}
         <View style={{ flex: 1, flexDirection: "row" }}>
           {board}
           <ScrollView
-            style={{ width: 340, flexGrow: 0, backgroundColor: color.paper, borderLeftWidth: 1, borderLeftColor: color.grid }}
-            contentContainerStyle={{ padding: space.xl, paddingBottom: insets.bottom + space.xl }}
+            style={{ width: 360, flexGrow: 0, backgroundColor: color.bg, borderLeftWidth: 2, borderLeftColor: color.line }}
+            contentContainerStyle={{ padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.lg }}
             keyboardShouldPersistTaps="handled"
           >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+              <Text variant="headline" weight="display" tabular>
+                {String(problem.workbook_number ?? index + 1).padStart(3, "0")}
+              </Text>
+              {problem.score ? (
+                <Chip tone="primary">
+                  <Text variant="small" weight="display" tone="primary">
+                    {problem.score}점
+                  </Text>
+                </Chip>
+              ) : null}
+            </View>
             {panel}
           </ScrollView>
         </View>
@@ -449,17 +480,16 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.paper }}>
+    <View style={{ flex: 1, backgroundColor: color.bg }}>
       {header}
-      <View style={{ paddingHorizontal: space.md, paddingVertical: space.sm, backgroundColor: color.paper }}>{timer}</View>
       {board}
       <View
         style={{
           padding: space.md,
           paddingBottom: insets.bottom + space.md,
-          backgroundColor: color.paper,
-          borderTopWidth: 1,
-          borderTopColor: color.grid,
+          backgroundColor: color.bg,
+          borderTopWidth: 2,
+          borderTopColor: color.line,
         }}
       >
         {panel}
@@ -468,28 +498,80 @@ function PracticeView({ bundle, settings, startAt }: { bundle: SessionBundle; se
   )
 }
 
-function ResultNote({ submitted, choice }: { submitted: Submitted; choice: boolean }) {
+/** 채점 결과: 맞으면 민트, 틀리면 코랄 카드에 마스코트와 XP */
+function ResultCard({
+  submitted,
+  choice,
+  gain,
+  popKey,
+  last,
+  onNext,
+}: {
+  submitted: Submitted
+  choice: boolean
+  gain: number
+  popKey: number
+  last: boolean
+  onNext: () => void
+}) {
   const answer = displayAnswer(submitted.correctAnswer, choice)
-  if (submitted.result === "pending") {
-    return (
-      <Sheet style={{ gap: 4 }}>
-        <Text weight="bold">채점 대기</Text>
-        <Text variant="small" tone="soft">이 문제는 아직 정답이 없어요. 답지를 올리거나 정답을 넣으면 채점돼요.</Text>
-      </Sheet>
-    )
-  }
+  const r = submitted.result
+  const tone: Tone = r === "correct" ? "mint" : r === "pending" ? "sky" : "coral"
+  const t = tones[tone]
+  const title =
+    r === "correct" ? "정답이에요!" : r === "gave_up" ? "괜찮아, 다음엔 끝까지!" : r === "pending" ? "채점 대기" : "아쉬워요"
+  const body =
+    r === "pending"
+      ? "아직 정답이 없는 문제예요. 답지를 올리면 채점돼요."
+      : r === "correct"
+        ? undefined
+        : answer
+          ? `정답은 ${answer}`
+          : undefined
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-      <PenText size={40}>{submitted.result === "correct" ? "맞았어요" : submitted.result === "gave_up" ? "다음엔 끝까지" : "아쉬워요"}</PenText>
-      {submitted.result !== "correct" && answer ? <PenText size={34}>정답 {answer}</PenText> : null}
+    <View style={{ backgroundColor: t.soft, borderRadius: radius.card, borderWidth: 2, borderColor: t.face, borderBottomWidth: 2 + LIP, padding: space.lg, gap: space.md }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+        <Mascot mood={r === "correct" ? "cheer" : r === "pending" ? "think" : "sad"} size={60} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="title" weight="display" style={{ color: t.lip }}>
+            {title}
+          </Text>
+          {body ? <Text weight="display">{body}</Text> : null}
+        </View>
+        <View>
+          {gain > 0 ? (
+            <Chip tone="sun">
+              <StarIcon size={18} />
+              <Text weight="display" tone="sun">
+                +{gain}
+              </Text>
+            </Chip>
+          ) : null}
+          <XpPop key={popKey} amount={gain} visible={popKey > 0} />
+        </View>
+      </View>
+      <Button
+        label={last ? "결과 보기" : "계속"}
+        kind={r === "correct" ? "success" : r === "pending" ? "primary" : "primary"}
+        size="lg"
+        icon="chevronRight"
+        onPress={onNext}
+      />
     </View>
   )
+}
+
+function IconDisc({ children }: { children: React.ReactNode }) {
+  return <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", marginBottom: 2 }}>{children}</View>
 }
 
 function Summary({
   problems,
   states,
   title,
+  startProgress,
+  latestProgress,
+  gainedHere,
   onClose,
   onRetryWrong,
   onReview,
@@ -498,6 +580,9 @@ function Summary({
   problems: Problem[]
   states: Record<string, ProblemState>
   title: string
+  startProgress?: ProgressData
+  latestProgress?: ProgressData
+  gainedHere: number
   onClose: () => void
   onRetryWrong: (ids: string[]) => void
   onReview: (index: number) => void
@@ -509,50 +594,160 @@ function Summary({
   const correct = graded.filter((r) => r === "correct").length
   const wrongIds = problems.filter((_, i) => graded[i] === "wrong" || graded[i] === "gave_up").map((p) => p.id)
   const time = problems.reduce((s, p) => s + (states[p.id]?.elapsedSec ?? 0), 0)
+  const sessionXp = problems.reduce((s, p) => {
+    const sub = states[p.id]?.submitted
+    return s + (sub ? xpFor(sub.result, states[p.id].hintUsed) : 0)
+  }, 0)
+  const ratio = problems.length ? correct / problems.length : 0
+  const great = ratio >= 0.6
+
+  const startXp = startProgress?.xp ?? 0
+  const before = levelInfo(startXp)
+  const after = levelInfo(startXp + gainedHere)
+  const leveledUp = startProgress !== undefined && after.level > before.level
+  const badges = startProgress && latestProgress ? newlyEarned(startProgress, latestProgress) : []
+  const streak = latestProgress?.streak ?? 0
 
   return (
-    <GraphPaper style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: isPhone ? space.lg : space.xxxl, paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.xxl, gap: space.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}>
-        <View style={{ gap: space.xs }}>
-          <Text tone="soft">{title} 채점 결과</Text>
-          <View style={{ flexDirection: "row", alignItems: "baseline", gap: space.md }}>
-            <Text style={{ fontSize: 64, lineHeight: 72 }} weight="bold" tabular>
-              {correct}/{problems.length}
-            </Text>
-            <PenText size={36}>{correct === problems.length ? "다 맞았어요" : correct >= problems.length / 2 ? "잘했어요" : "다시 보면 돼요"}</PenText>
-          </View>
-          {time ? <Text tone="soft">{formatDuration(time)} 동안 풀었어요</Text> : null}
+    <View style={{ flex: 1, backgroundColor: color.bg }}>
+      {great ? <Confetti /> : null}
+      <ScrollView
+        contentContainerStyle={{
+          padding: isPhone ? space.lg : space.xxxl,
+          paddingTop: insets.top + space.xl,
+          paddingBottom: insets.bottom + space.xxl,
+          gap: space.lg,
+          maxWidth: 720,
+          width: "100%",
+          alignSelf: "center",
+          alignItems: "stretch",
+        }}
+      >
+        <View style={{ alignItems: "center", gap: space.sm }}>
+          <PopIn>
+            <Mascot mood={great ? "cheer" : correct ? "happy" : "sad"} size={isPhone ? 120 : 150} />
+          </PopIn>
+          <Text tone="soft" weight="display">
+            {title} 결과
+          </Text>
+          <Text style={{ fontSize: isPhone ? 56 : 72, lineHeight: isPhone ? 62 : 80 }} weight="display" tabular>
+            {correct}/{problems.length}
+          </Text>
+          <Text variant="title" weight="display" tone={great ? "mint" : "primary"} align="center">
+            {correct === problems.length ? "전부 정답! 완벽해요" : great ? "잘했어요!" : correct ? "조금씩 늘고 있어요" : "오답노트로 다시 도전!"}
+          </Text>
         </View>
 
+        <View style={{ flexDirection: "row", gap: space.md }}>
+          <Sheet tone="sun" style={{ flex: 1, alignItems: "center", gap: 2 }}>
+            <IconDisc><StarIcon size={24} /></IconDisc>
+            <Text variant="headline" weight="display" tabular>
+              +{sessionXp}
+            </Text>
+            <Text variant="small" weight="display">
+              XP
+            </Text>
+          </Sheet>
+          <Sheet tone="flame" style={{ flex: 1, alignItems: "center", gap: 2 }}>
+            <IconDisc><FlameIcon size={24} /></IconDisc>
+            <Text variant="headline" weight="display" tone="white" tabular>
+              {streak}일
+            </Text>
+            <Text variant="small" weight="display" tone="white">
+              연속
+            </Text>
+          </Sheet>
+          <Sheet tone="sky" style={{ flex: 1, alignItems: "center", gap: 2 }}>
+            <IconDisc><Icon name="clock" tint={color.sky} size={22} strokeWidth={2.6} /></IconDisc>
+            <Text variant="headline" weight="display" tone="white" tabular>
+              {formatDuration(time)}
+            </Text>
+            <Text variant="small" weight="display" tone="white">
+              시간
+            </Text>
+          </Sheet>
+        </View>
+
+        {leveledUp ? (
+          <PopIn delay={400}>
+            <Sheet style={{ flexDirection: "row", alignItems: "center", gap: space.md, borderColor: color.sun, borderBottomColor: color.sunDeep }}>
+              <StarIcon size={36} />
+              <View style={{ flex: 1 }}>
+                <Text variant="title" weight="display">
+                  레벨 업! Lv.{after.level}
+                </Text>
+                <Text tone="soft">{levelTitle(after.level)}가 됐어요</Text>
+              </View>
+            </Sheet>
+          </PopIn>
+        ) : (
+          <Sheet>
+            <LevelBar xp={startXp + gainedHere} compact />
+          </Sheet>
+        )}
+
+        {badges.length ? (
+          <Sheet style={{ gap: space.md }}>
+            <Text variant="title" weight="display">
+              새 뱃지!
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.lg }}>
+              {badges.map((b, i) => (
+                <PopIn key={b.id} delay={600 + i * 150}>
+                  <BadgeTile {...b} earned current={b.goal} />
+                </PopIn>
+              ))}
+            </View>
+          </Sheet>
+        ) : null}
+
         <Sheet style={{ gap: space.md }}>
-          <Text variant="small" tone="soft">문제를 누르면 다시 볼 수 있어요</Text>
+          <Text variant="small" tone="soft" weight="bold">
+            문제를 누르면 다시 볼 수 있어요
+          </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-            {problems.map((p, i) => (
-              <Pressable
-                key={p.id}
-                onPress={() => onReview(i)}
-                accessibilityRole="button"
-                accessibilityLabel={`${p.workbook_number}번 다시 보기`}
-                style={{ width: 64, height: 64, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: color.gridStrong, backgroundColor: color.sheet }}
-              >
-                <Text weight="bold" tabular>{p.workbook_number ?? i + 1}</Text>
-                {graded[i] && graded[i] !== "pending" ? (
-                  <View style={{ position: "absolute" }}>
-                    <GradeMark kind={graded[i] as "correct" | "wrong" | "gave_up"} size={60} delay={i * 140} strokeWidth={3.5} />
-                  </View>
-                ) : null}
-              </Pressable>
-            ))}
+            {problems.map((p, i) => {
+              const r = graded[i]
+              const t = r === "correct" ? tones.mint : r === "wrong" || r === "gave_up" ? tones.coral : tones.white
+              return (
+                <Pressable
+                  key={p.id}
+                  onPress={() => onReview(i)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${p.workbook_number}번 다시 보기`}
+                  style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: 18,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: r && r !== "pending" ? t.soft : color.bg,
+                    borderWidth: 2,
+                    borderColor: r && r !== "pending" ? t.face : color.line,
+                    borderBottomWidth: 2 + LIP,
+                  }}
+                >
+                  <Text weight="display" tabular>
+                    {p.workbook_number ?? i + 1}
+                  </Text>
+                  {r && r !== "pending" ? (
+                    <View style={{ position: "absolute" }}>
+                      <GradeMark kind={r as "correct" | "wrong" | "gave_up"} size={54} delay={500 + i * 140} strokeWidth={3.5} />
+                    </View>
+                  ) : null}
+                </Pressable>
+              )
+            })}
           </View>
         </Sheet>
 
-        <View style={{ flexDirection: isPhone ? "column" : "row", gap: space.md }}>
+        <View style={{ gap: space.md }}>
           {wrongIds.length ? (
-            <Button label={`틀린 ${wrongIds.length}문제 다시 풀기`} icon="refresh" size="lg" loading={retrying} onPress={() => onRetryWrong(wrongIds)} style={{ flex: isPhone ? undefined : 1 }} />
+            <Button label={`틀린 ${wrongIds.length}문제 다시 도전`} icon="refresh" kind="primary" size="lg" loading={retrying} onPress={() => onRetryWrong(wrongIds)} />
           ) : null}
-          <Button label="끝내기" kind="secondary" size="lg" onPress={onClose} style={{ flex: isPhone ? undefined : 1 }} />
+          <Button label="끝내기" kind="secondary" size="lg" onPress={onClose} />
         </View>
       </ScrollView>
-    </GraphPaper>
+    </View>
   )
 }

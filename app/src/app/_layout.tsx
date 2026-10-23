@@ -3,6 +3,7 @@ import {
   IBMPlexSansKR_500Medium,
   IBMPlexSansKR_700Bold,
 } from "@expo-google-fonts/ibm-plex-sans-kr"
+import { Jua_400Regular } from "@expo-google-fonts/jua"
 import { NanumPenScript_400Regular } from "@expo-google-fonts/nanum-pen-script"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useFonts } from "expo-font"
@@ -52,6 +53,7 @@ export default function RootLayout() {
     IBMPlexSansKR_500Medium,
     IBMPlexSansKR_700Bold,
     NanumPenScript_400Regular,
+    Jua_400Regular,
   })
   const [queryClient] = useState(
     () =>

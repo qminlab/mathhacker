@@ -1,20 +1,23 @@
-// 앱 뼈대: 패드·컴퓨터는 왼쪽 레일, 폰은 아래 탭 막대
+// 앱 뼈대: 패드·컴퓨터는 왼쪽 메뉴, 폰은 아래에 떠 있는 탭 막대
 import { TabList, TabSlot, TabTrigger, Tabs, type TabTriggerSlotProps } from "expo-router/ui"
 import type { ComponentRef, Ref } from "react"
 import { Pressable, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useProfile } from "@/lib/data"
+import { useProfile, useProgress } from "@/lib/data"
+import { levelInfo } from "@/lib/progress"
 import type { PressState } from "@/ui/controls"
+import { StarIcon } from "@/ui/game"
 import { Icon, type IconName } from "@/ui/Icon"
 import { useFormFactor } from "@/ui/layout"
+import { Mascot } from "@/ui/Mascot"
 import { Text } from "@/ui/Text"
-import { color, font, space } from "@/ui/theme"
+import { color, LIP, radius, space } from "@/ui/theme"
 
 const TABS: { name: string; href: "/" | "/library" | "/wrong" | "/stats" | "/settings"; label: string; icon: IconName }[] = [
-  { name: "index", href: "/", label: "오늘", icon: "today" },
+  { name: "index", href: "/", label: "홈", icon: "today" },
   { name: "library", href: "/library", label: "문제집", icon: "books" },
-  { name: "wrong", href: "/wrong", label: "오답노트", icon: "wrong" },
-  { name: "stats", href: "/stats", label: "기록", icon: "stats" },
+  { name: "wrong", href: "/wrong", label: "오답", icon: "wrong" },
+  { name: "stats", href: "/stats", label: "성장", icon: "stats" },
   { name: "settings", href: "/settings", label: "설정", icon: "settings" },
 ]
 
@@ -28,7 +31,7 @@ type TabButtonProps = Omit<TabTriggerSlotProps, "ref"> & {
 }
 
 function TabButton({ label, icon, variant, isFocused, ref, ...props }: TabButtonProps) {
-  const tint = isFocused ? color.blue : color.inkSoft
+  const tint = isFocused ? color.primary : color.inkFaint
   if (variant === "bar") {
     return (
       <Pressable
@@ -36,10 +39,12 @@ function TabButton({ label, icon, variant, isFocused, ref, ...props }: TabButton
         {...props}
         accessibilityRole="tab"
         accessibilityState={{ selected: !!isFocused }}
-        style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 6, gap: 2 }}
+        style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 2, paddingVertical: 6 }}
       >
-        <Icon name={icon} tint={tint} size={24} />
-        <Text variant="caption" weight={isFocused ? "bold" : "medium"} style={{ color: tint }}>
+        <View style={{ width: 52, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: isFocused ? color.primarySoft : "transparent" }}>
+          <Icon name={icon} tint={tint} size={24} strokeWidth={2.3} />
+        </View>
+        <Text variant="caption" weight="display" style={{ color: tint, fontSize: 12 }}>
           {label}
         </Text>
       </Pressable>
@@ -56,15 +61,17 @@ function TabButton({ label, icon, variant, isFocused, ref, ...props }: TabButton
         flexDirection: wide ? "row" : "column",
         alignItems: "center",
         gap: wide ? space.md : 4,
-        paddingVertical: wide ? 11 : 10,
-        paddingHorizontal: wide ? space.md : 0,
-        borderRadius: 10,
-        backgroundColor: isFocused ? color.blueSoft : hovered ? color.paper : "transparent",
-        opacity: pressed ? 0.7 : 1,
+        paddingVertical: wide ? 12 : 10,
+        paddingHorizontal: wide ? space.lg : 0,
+        borderRadius: radius.control,
+        backgroundColor: isFocused ? color.primarySoft : hovered ? color.bg : "transparent",
+        borderWidth: 2,
+        borderColor: isFocused ? color.primarySoft : "transparent",
+        transform: [{ scale: pressed ? 0.97 : 1 }],
       })}
     >
-      <Icon name={icon} tint={tint} size={wide ? 22 : 24} />
-      <Text variant={wide ? "body" : "caption"} weight={isFocused ? "bold" : "medium"} style={{ color: tint }}>
+      <Icon name={icon} tint={tint} size={wide ? 24 : 26} strokeWidth={2.3} />
+      <Text variant={wide ? "bodyLarge" : "caption"} weight="display" style={{ color: isFocused ? color.primary : color.inkSoft }}>
         {label}
       </Text>
     </Pressable>
@@ -73,25 +80,53 @@ function TabButton({ label, icon, variant, isFocused, ref, ...props }: TabButton
 
 function RailHeader({ wide }: { wide: boolean }) {
   return (
-    <View style={{ paddingHorizontal: wide ? space.md : 0, paddingTop: space.sm, paddingBottom: space.xl, alignItems: wide ? "flex-start" : "center" }}>
-      <Text style={{ fontFamily: font.bold, fontSize: wide ? 22 : 18, color: color.blue, letterSpacing: -0.5 }}>
-        {wide ? "Math Hacker" : "MH"}
-      </Text>
+    <View style={{ flexDirection: wide ? "row" : "column", alignItems: "center", gap: space.sm, paddingHorizontal: wide ? space.sm : 0, paddingBottom: space.xl }}>
+      <Mascot size={wide ? 44 : 48} bounce={false} />
+      {wide ? (
+        <Text variant="title" weight="display" tone="primary">
+          Math Hacker
+        </Text>
+      ) : null}
     </View>
   )
 }
 
 function RailFooter({ wide }: { wide: boolean }) {
-  const { data } = useProfile()
-  if (!wide || !data) return null
+  const { data: profile } = useProfile()
+  const { data: progress } = useProgress()
+  if (!profile) return null
+  const level = levelInfo(progress?.xp ?? 0).level
+  if (!wide) {
+    return (
+      <View style={{ marginTop: "auto", alignItems: "center", gap: 2 }}>
+        <StarIcon size={22} />
+        <Text variant="caption" weight="display" tone="sun">
+          Lv.{level}
+        </Text>
+      </View>
+    )
+  }
   return (
-    <View style={{ marginTop: "auto", paddingHorizontal: space.md, paddingTop: space.lg, borderTopWidth: 1, borderTopColor: color.grid }}>
-      <Text weight="bold" numberOfLines={1}>
-        {data.nickname ?? "이름 없음"}
-      </Text>
-      <Text variant="small" tone="faint" numberOfLines={1}>
-        {data.email}
-      </Text>
+    <View
+      style={{
+        marginTop: "auto",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: space.sm,
+        padding: space.md,
+        borderRadius: radius.control,
+        backgroundColor: color.bg,
+      }}
+    >
+      <StarIcon size={26} />
+      <View style={{ flex: 1 }}>
+        <Text weight="display" numberOfLines={1}>
+          {profile.nickname ?? "이름 없음"}
+        </Text>
+        <Text variant="caption" tone="soft" numberOfLines={1}>
+          Lv.{level}  {progress?.xp ?? 0} XP
+        </Text>
+      </View>
     </View>
   )
 }
@@ -103,46 +138,59 @@ export default function AppLayout() {
   const side = variant !== "bar"
 
   return (
-    <Tabs style={{ flex: 1, flexDirection: side ? "row-reverse" : "column", backgroundColor: color.paper }}>
+    <Tabs style={{ flex: 1, flexDirection: side ? "row-reverse" : "column", backgroundColor: color.bg }}>
       <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
-        <View
-          style={
-            side
-              ? {
-                  flexDirection: "column",
-                  alignItems: "stretch",
-                  justifyContent: "flex-start",
-                  width: variant === "sidebar" ? 232 : 92,
-                  paddingTop: insets.top + space.lg,
-                  paddingBottom: insets.bottom + space.lg,
-                  paddingLeft: Math.max(insets.left, space.md),
-                  paddingRight: space.md,
-                  backgroundColor: color.sheet,
-                  borderRightWidth: 1,
-                  borderRightColor: color.grid,
-                  gap: space.xs,
-                }
-              : {
-                  flexDirection: "row",
-                  alignItems: "stretch",
-                  justifyContent: "space-around",
-                  paddingBottom: insets.bottom,
-                  paddingHorizontal: space.sm,
-                  backgroundColor: color.sheet,
-                  borderTopWidth: 1,
-                  borderTopColor: color.grid,
-                }
-          }
-        >
-          {side ? <RailHeader wide={variant === "sidebar"} /> : null}
-          {TABS.map((t) => (
-            <TabTrigger key={t.name} name={t.name} href={t.href} asChild resetOnFocus={t.name === "library"}>
-              <TabButton label={t.label} icon={t.icon} variant={variant} />
-            </TabTrigger>
-          ))}
-          {side ? <RailFooter wide={variant === "sidebar"} /> : null}
-        </View>
+        {side ? (
+          <View
+            style={{
+              flexDirection: "column",
+              alignItems: "stretch",
+              justifyContent: "flex-start",
+              width: variant === "sidebar" ? 240 : 100,
+              paddingTop: insets.top + space.lg,
+              paddingBottom: insets.bottom + space.lg,
+              paddingLeft: Math.max(insets.left, space.md),
+              paddingRight: space.md,
+              backgroundColor: color.surface,
+              borderRightWidth: 2,
+              borderRightColor: color.line,
+              gap: space.xs,
+            }}
+          >
+            <RailHeader wide={variant === "sidebar"} />
+            {TABS.map((t) => (
+              <TabTrigger key={t.name} name={t.name} href={t.href} asChild resetOnFocus={t.name === "library"}>
+                <TabButton label={t.label} icon={t.icon} variant={variant} />
+              </TabTrigger>
+            ))}
+            <RailFooter wide={variant === "sidebar"} />
+          </View>
+        ) : (
+          // 폰: 화면 아래에 떠 있는 둥근 막대
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "stretch",
+              justifyContent: "space-around",
+              marginHorizontal: space.md,
+              marginBottom: Math.max(insets.bottom, space.sm),
+              paddingHorizontal: space.xs,
+              paddingVertical: 4,
+              backgroundColor: color.surface,
+              borderRadius: 28,
+              borderWidth: 2,
+              borderColor: color.line,
+              borderBottomWidth: 2 + LIP,
+            }}
+          >
+            {TABS.map((t) => (
+              <TabTrigger key={t.name} name={t.name} href={t.href} asChild resetOnFocus={t.name === "library"}>
+                <TabButton label={t.label} icon={t.icon} variant={variant} />
+              </TabTrigger>
+            ))}
+          </View>
+        )}
       </TabList>
     </Tabs>
   )

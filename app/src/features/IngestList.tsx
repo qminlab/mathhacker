@@ -71,7 +71,7 @@ export function IngestList({ limit = 3 }: { limit?: number }) {
           <Sheet key={s.id} style={{ gap: space.sm }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
               {busy ? <ActivityIndicator color={color.blue} size="small" /> : null}
-              <Text weight="bold" style={{ flex: 1 }} numberOfLines={1}>
+              <Text weight="display" style={{ flex: 1 }} numberOfLines={1}>
                 {d.title}
               </Text>
               {s.status === "failed" || stuck ? (
@@ -81,7 +81,7 @@ export function IngestList({ limit = 3 }: { limit?: number }) {
             <Text variant="small" tone={s.status === "failed" ? "red" : s.status === "done" ? "mint" : "soft"}>
               {stuck ? "진행이 멈췄어요. 다시 시도하면 읽은 쪽 다음부터 이어서 해요." : d.body}
             </Text>
-            {busy && s.page_count ? <Progress value={s.processed_pages} total={s.page_count} height={4} /> : null}
+            {busy && s.page_count ? <Progress value={s.processed_pages} total={s.page_count} height={10} tone="primary" /> : null}
           </Sheet>
         )
       })}

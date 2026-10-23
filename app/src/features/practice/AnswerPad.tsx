@@ -2,7 +2,7 @@
 import { Pressable, TextInput, View } from "react-native"
 import { choiceLabels } from "@/lib/answers"
 import { Text } from "@/ui/Text"
-import { color, font, radius, space } from "@/ui/theme"
+import { color, font, LIP, radius, space } from "@/ui/theme"
 
 export function AnswerPad({
   choice,
@@ -21,15 +21,15 @@ export function AnswerPad({
   compact?: boolean
   onToggleType: () => void
 }) {
-  const size = compact ? 46 : 52
+  const size = compact ? 54 : 60
   return (
     <View style={{ gap: space.sm }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text variant="small" weight="medium" tone="soft">
+        <Text variant="small" weight="display" tone="soft">
           내 답
         </Text>
         <Pressable onPress={onToggleType} accessibilityRole="button" hitSlop={8} disabled={disabled}>
-          <Text variant="small" tone="blue" weight="medium">
+          <Text variant="small" tone="primary" weight="display">
             {choice ? "주관식으로 입력" : "객관식으로 입력"}
           </Text>
         </Pressable>
@@ -47,21 +47,28 @@ export function AnswerPad({
                 accessibilityState={{ checked: selected, disabled: !!disabled }}
                 accessibilityLabel={`${v}번`}
                 onPress={() => onChange(selected ? "" : v)}
-                style={({ pressed }) => ({
-                  width: size,
-                  height: size,
-                  borderRadius: radius.pill,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1.5,
-                  borderColor: selected ? color.blue : color.gridStrong,
-                  backgroundColor: selected ? color.blue : color.sheet,
-                  opacity: disabled && !selected ? 0.5 : pressed ? 0.8 : 1,
-                })}
+                style={{ flex: 1, maxWidth: 76, opacity: disabled && !selected ? 0.5 : 1 }}
               >
-                <Text variant="title" weight="bold" tone={selected ? "white" : "ink"}>
-                  {label}
-                </Text>
+                {({ pressed }) => (
+                  <View style={{ paddingTop: pressed ? LIP : 0 }}>
+                    <View
+                      style={{
+                        height: size,
+                        borderRadius: 18,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderWidth: 2,
+                        borderColor: selected ? color.primaryDeep : color.line,
+                        borderBottomWidth: pressed ? 2 : 2 + LIP,
+                        backgroundColor: selected ? color.primary : color.surface,
+                      }}
+                    >
+                      <Text variant="headline" weight="display" tone={selected ? "white" : "ink"}>
+                        {label}
+                      </Text>
+                    </View>
+                  </View>
+                )}
               </Pressable>
             )
           })}
@@ -80,13 +87,14 @@ export function AnswerPad({
           style={{
             height: size,
             borderRadius: radius.control,
-            borderWidth: 1.5,
-            borderColor: value ? color.blue : color.gridStrong,
-            backgroundColor: color.sheet,
+            borderWidth: 2,
+            borderBottomWidth: 2 + LIP,
+            borderColor: value ? color.primary : color.line,
+            backgroundColor: color.surface,
             paddingHorizontal: space.md,
-            fontFamily: font.bold,
-            fontSize: 20,
-            color: color.blue,
+            fontFamily: font.display,
+            fontSize: 24,
+            color: color.primary,
           }}
         />
       )}

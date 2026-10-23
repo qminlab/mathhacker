@@ -5,7 +5,7 @@ import type { Result } from "@/lib/types"
 import type { PressState } from "@/ui/controls"
 import { GradeMark } from "@/ui/GradeMark"
 import { Text } from "@/ui/Text"
-import { color, radius, space } from "@/ui/theme"
+import { color, LIP, radius, space, tones } from "@/ui/theme"
 
 export function ProblemThumb({
   number,
@@ -27,14 +27,18 @@ export function ProblemThumb({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${number ?? ""}번 문제 ${result === "correct" ? "맞음" : result === "wrong" ? "틀림" : result === "gave_up" ? "포기" : "안 풂"}`}
-      style={({ pressed, hovered }: PressState) => ({
-        backgroundColor: color.sheet,
-        borderRadius: radius.sheet,
-        borderWidth: 1,
-        borderColor: hovered ? color.blue : color.grid,
-        overflow: "hidden",
-        opacity: pressed ? 0.85 : 1,
-      })}
+      style={({ pressed, hovered }: PressState) => {
+        const t = result === "correct" ? tones.mint : result === "wrong" || result === "gave_up" ? tones.coral : null
+        return {
+          backgroundColor: color.surface,
+          borderRadius: radius.card,
+          borderWidth: 2,
+          borderColor: hovered ? color.primary : t ? t.face : color.line,
+          borderBottomWidth: pressed ? 2 : 2 + LIP,
+          marginTop: pressed ? LIP : 0,
+          overflow: "hidden",
+        }
+      }}
     >
       <View style={{ height, backgroundColor: "#FFFFFF" }}>
         {source ? (
@@ -53,11 +57,11 @@ export function ProblemThumb({
           justifyContent: "space-between",
           paddingHorizontal: space.md,
           paddingVertical: space.sm,
-          borderTopWidth: 1,
-          borderTopColor: color.grid,
+          borderTopWidth: 2,
+          borderTopColor: color.line,
         }}
       >
-        <Text weight="bold" tabular>
+        <Text weight="display" tabular>
           {number != null ? String(number).padStart(3, "0") : "–"}
         </Text>
         {!hasAnswer ? (
