@@ -10,6 +10,7 @@
   <a href="https://tailwindcss.com"><img alt="Tailwind CSS 4" src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white"></a>
   <a href="https://www.python.org"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white"></a>
   <img alt="status: MVP" src="https://img.shields.io/badge/status-MVP-f59e0b">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-64748b"></a>
 </p>
 
 <p align="center">
@@ -164,3 +165,8 @@ supabase/schema.sql      테이블 · RLS · 트리거 · 버킷
 
 Math Hacker는 **본인이 가진 문제지를 개인 학습용으로 정리하는 도구**입니다.
 시중 문제집 PDF나 그 OCR 결과를 다른 사람과 공유하거나 공개 배포하지 마세요. 이 레포에는 예제 문제지를 포함하지 않습니다.
+
+## 📜 라이선스
+
+코드는 [MIT License](LICENSE)로 공개합니다. 자유롭게 쓰고 고치고 배포할 수 있으며, 저작권 표시만 남겨 주세요.
+(위 저작권 안내대로, 앱으로 정리한 문제지 콘텐츠는 이 라이선스에 포함되지 않습니다.)
