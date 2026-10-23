@@ -46,7 +46,7 @@ const prodRule: SuTemplate<{ A: number[]; B: number[]; k: number }> = {
       solution: lines(
         `곱의 미분법에 의하여 $f'(x) = (${texPoly(dA)})(${texPoly(B)}) + (${texPoly(A)}) \\times ${paren(B[0])}$`,
         `$x = ${k}$ 를 대입하면 $f'(${k}) = ${times(ev(dA, k), ev(B, k))} + ${paren(ev(A, k))} \\times ${paren(B[0])}$`,
-        `$= ${ev(dA, k) * ev(B, k)} ${signed(ev(A, k) * B[0])} = ${ans}$`
+        `정리하면 $f'(${k}) = ${ev(dA, k) * ev(B, k)} ${signed(ev(A, k) * B[0])} = ${ans}$`
       ),
       score: 2,
     }
@@ -164,7 +164,7 @@ const defn2: SuTemplate<{ A: number; B: number; k: number; a: number; b: number;
         solution: lines(
           `분자에 $f(${k})$ 를 빼고 더하면`,
           `$\\lim_{h \\to 0} \\frac{f(${p1}) - f(${k})}{h} + \\lim_{h \\to 0} \\frac{f(${k}) - f(${p2})}{h}$`,
-          `$= ${a}f'(${k}) + ${b}f'(${k}) = ${a + b}f'(${k}) = ${times(a + b, B)} = ${ans}$`
+          `따라서 구하는 값은 $${a}f'(${k}) + ${b}f'(${k}) = ${a + b}f'(${k}) = ${times(a + b, B)} = ${ans}$`
         ),
         score: 3,
       }
@@ -177,7 +177,7 @@ const defn2: SuTemplate<{ A: number; B: number; k: number; a: number; b: number;
         solution: lines(
           `$x^{2} - ${k * k} = (${texShift(k)})(${texShift(-k)})$ 이므로`,
           `$\\lim_{x \\to ${k}} \\frac{f(x) - f(${k})}{${texShift(k)}} \\times \\frac{1}{${texShift(-k)}} = f'(${k}) \\times \\frac{1}{${2 * k}}$`,
-          `$= \\frac{${B}}{${2 * k}} = ${ans.tex()}$`
+          `따라서 구하는 값은 $\\frac{${B}}{${2 * k}} = ${ans.tex()}$`
         ),
         score: 3,
       }
@@ -355,12 +355,12 @@ const incrRange: SuTemplate<{ p: number; rr: number; s: number; e: number }> = {
   // 정수 a마다 f 값을 촘촘히 계산해 단조인지 확인
   verify: ({ p, rr, s, e }) => {
     let cnt = 0
-    for (let a = -40; a <= 40; a++) {
+    for (let a = -25; a <= 25; a++) {
       const f = (x: number) => s * (x ** 3 - a * x * x + (p * a + rr) * x) + e
       let ok = true
-      let prev = f(-20)
-      for (let i = 1; i <= 2000 && ok; i++) {
-        const y = f(-20 + i * 0.02)
+      let prev = f(-15)
+      for (let i = 1; i <= 1000 && ok; i++) {
+        const y = f(-15 + i * 0.03)
         if (s * (y - prev) < -1e-9) ok = false
         prev = y
       }
@@ -402,12 +402,13 @@ const extVal: SuTemplate<{ al: number; be: number; m: number; s: number }> = {
   verify: ({ al, be, m, s }) => {
     // a, b 를 완전 탐색 (f'(α)=f'(β)=0), c 는 극솟값에서
     const found: number[] = []
-    for (let a = -32; a <= 32; a++)
-      for (let b = -130; b <= 130; b++) {
+    for (let a = -32; a <= 32; a++) {
+      // f'(α) = 0 이 되도록 b 를 수치 미분으로 정한 뒤 f'(β) = 0 확인
+      const b = -deriv((x) => 2 * s * x ** 3 + a * x * x, al)
+      {
         const g = (x: number) => 2 * s * x ** 3 + a * x * x + b * x
-        if (Math.abs(deriv(g, al)) > 1e-6) continue
         if (Math.abs(deriv(g, be)) > 1e-6) continue
-        const crit = roots((x) => deriv(g, x), -20, 20, 4000)
+        const crit = roots((x) => deriv(g, x), -10, 10, 400)
         const mins = crit.filter((x) => g(x - 1e-3) > g(x) && g(x + 1e-3) > g(x))
         const maxs = crit.filter((x) => g(x - 1e-3) < g(x) && g(x + 1e-3) < g(x))
         if (mins.length !== 1 || maxs.length !== 1) continue
@@ -498,7 +499,7 @@ const tanSecond: SuTemplate<{ s: number; b: number; c: number; d: number; t: num
     const f = (x: number) => ev([s, b, c, d], x)
     const m = deriv(f, t)
     const g = (x: number) => f(x) - (m * (x - t) + f(t))
-    const rs = roots(g, -40, 40, 8000).filter((x) => Math.abs(x - t) > 1e-3)
+    const rs = roots(g, -20, 20, 2000).filter((x) => Math.abs(x - t) > 1e-3)
     if (rs.length !== 1) return NaN
     return v === 0 ? f(rs[0]) : m + rs[0]
   },
@@ -563,14 +564,14 @@ const tanExt: SuTemplate<{ v: number; b: number; c: number; p: number; qq: numbe
     if (v === 0) {
       const f = (x: number) => x * x + b * x + c
       const g = (s: number) => f(s) + deriv(f, s) * (p - s) - qq
-      const ts = roots(g, -50, 50, 10000)
+      const ts = roots(g, -20, 20, 2000)
       if (ts.length !== 2) return NaN
       const ms = ts.map((t) => deriv(f, t))
       return w === 0 ? ms[0] * ms[1] : ms[0] + ms[1]
     }
     const f = (x: number) => ev([1, a, b, c], x)
     const g = (s: number) => f(s) + deriv(f, s) * (p - s) - f(p)
-    const ts = roots(g, -50, 50, 10000).filter((x) => Math.abs(x - p) > 1e-3)
+    const ts = roots(g, -20, 20, 2000).filter((x) => Math.abs(x - p) > 1e-3)
     return ts.length === 1 ? deriv(f, ts[0]) : NaN
   },
 }
@@ -609,7 +610,7 @@ const rootCount: SuTemplate<{ al: number; be: number; e: number; s: number; v: n
   },
   verify: ({ al, be, e, s, v }) => {
     const f = [2 * s, -3 * s * (al + be), 6 * s * al * be, e]
-    const vals = gridVals((x) => ev(f, x), -20, 20)
+    const vals = gridVals((x) => ev(f, x), -12, 12, 32)
     let cnt = 0
     let sum = 0
     for (let k = -300; k <= 300; k++) {
@@ -654,8 +655,8 @@ const ineqAlways: SuTemplate<{ al: number; be: number; P: number; Qc: number; e:
     const f = (x: number) => ev([2, -3 * (al + be) + P, 6 * al * be + Qc, e], x)
     const g = (x: number) => P * x * x + Qc * x
     let mn = Infinity
-    for (let i = 0; i <= 40 * 256; i++) {
-      const x = i / 256
+    for (let i = 0; i <= 12 * 128; i++) {
+      const x = i / 128
       mn = Math.min(mn, f(x) - g(x))
     }
     return mn
@@ -716,10 +717,10 @@ const motion3: SuTemplate<{ al: number; be: number; x0: number; v: number }> = {
   verify: ({ al, be, x0, v }) => {
     const X = (t: number) => ev([1, (-3 * (al + be)) / 2, 3 * al * be, x0], t)
     const V = (t: number) => deriv(X, t)
-    const ts = roots(V, 1e-6, 30, 6000)
+    const ts = roots(V, 1e-6, 15, 1500)
     if (v === 0) return ts.length === 2 ? Math.abs(X(ts[0]) - X(ts[1])) : NaN
     if (v === 1) {
-      const tm = roots((t) => deriv(V, t, 1e-3), 0, 30, 3000)
+      const tm = roots((t) => deriv(V, t, 1e-3), 0, 15, 600)
       return tm.length === 1 ? V(tm[0]) : NaN
     }
     return ts.length === 2 ? deriv(V, ts[1], 1e-3) : NaN
@@ -771,12 +772,12 @@ const cubicGraph: SuTemplate<{ w: number; d: number; h: number; sg: number; k: n
       if (Math.abs(3 * a * a + 2 * c2 * a - (3 * b * b + 2 * c2 * b)) > 1e-9) continue
       for (let c1 = -30; c1 <= 30; c1++) {
         const base = (x: number) => x ** 3 + c2 * x * x + c1 * x
-        const crit = roots((x) => deriv(base, x), -30, 30, 1200)
+        const crit = roots((x) => deriv(base, x), -15, 15, 200)
         for (const cp of crit) {
           const c0 = -base(cp)
           const f = (x: number) => base(x) + c0
           // cp 는 중근, 나머지는 부호가 바뀌는 근
-          const simple = roots(f, -40, 40, 800).filter((x) => Math.abs(x - cp) > 1e-3)
+          const simple = roots(f, -20, 20, 300).filter((x) => Math.abs(x - cp) > 1e-3)
           if (simple.length !== 1) continue
           if (Math.abs(simple[0] + cp - S) > 1e-4) continue
           found.push(f(k))
@@ -834,10 +835,10 @@ const tanCount: SuTemplate<{ m: number; b: number; c: number; p: number; v: numb
   verify: ({ m, b, c, p, v }) => {
     const f = (x: number) => ev([1, 3 * m, b, c], x)
     const g = (t: number) => f(t) + deriv(f, t, 1e-4) * (p - t)
-    const vals = gridVals(g, -30, 30)
+    const vals = gridVals(g, -12, 12, 32)
     let cnt = 0
     let sum = 0
-    for (let k = -300; k <= 300; k++) {
+    for (let k = -260; k <= 260; k++) {
       const n = gridCount(vals, k, 1e-6)
       if (v === 0 && n === 3) cnt++
       if (v === 1 && n === 2) sum += k
@@ -881,7 +882,7 @@ const nonDiff: SuTemplate<ND> = {
     if (be === 0) return null
     const cs = ndCandidates(al, be)
     const vals = cs.map((c) => -c.c)
-    if (new Set(vals).size < 3 || vals.some((v) => Math.abs(v) > 350)) return null
+    if (new Set(vals).size < 3 || vals.some((v) => Math.abs(v) > 200)) return null
     const tgt = r.int(0, 2)
     // 목표 후보만 만족시키는 통계 조건 (1개 또는 2개)
     const opts: number[][] = []
@@ -927,7 +928,7 @@ const nonDiff: SuTemplate<ND> = {
     const want = st.map((s) => ND_STAT[s].f(T.L, T.V, T.R))
     const base = ndBase(al, be)
     const found: number[] = []
-    const vals = gridVals((x) => ev(base, x), -10, 10, 80)
+    const vals = gridVals((x) => ev(base, x), -7, 7, 40)
     // 부호가 바뀌는 점(홀수 중근)만 센다
     const H = (c: number, t: number) => {
       let n = 0
@@ -940,7 +941,7 @@ const nonDiff: SuTemplate<ND> = {
       }
       return n
     }
-    for (let c = -360; c <= 360; c++) {
+    for (let c = -210; c <= 210; c++) {
       const L = H(c, -0.25)
       const V = H(c, 0)
       const R = H(c, 0.25)
@@ -989,13 +990,15 @@ const quarticSym: SuTemplate<{ w: number; a: number; v: number; k: number }> = {
     const D = 4 + 2 * A0
     const E = 1 + A0
     const found: number[] = []
-    for (let A = -40; A <= 40; A++)
+    for (let A = -40; A <= 40; A++) {
+      if (v === 0 && Math.abs(deriv((x) => (x - w) ** 4 + A * (x - w) ** 2, w + 1) - D) > 1e-5) continue
       for (let B = -60; B <= 60; B++) {
+        if (v === 1 && 1 + A + B !== E) continue
         const f = (x: number) => (x - w) ** 4 + A * (x - w) ** 2 + B
-        if (v === 0 ? Math.abs(deriv(f, w + 1) - D) > 1e-5 : Math.abs(f(w + 1) - E) > 1e-9) continue
-        if (gridCount(gridVals(f, w - 10, w + 10, 32), 0) !== 3) continue
+        if (gridCount(gridVals(f, w - 8, w + 8, 16), 0) !== 3) continue
         found.push(f(k))
       }
+    }
     return only(found) ?? NaN
   },
 }

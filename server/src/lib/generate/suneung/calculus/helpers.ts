@@ -133,11 +133,52 @@ export const cx = (c: number, v = "x") => texPoly([c, 0]).replace(/x/g, v)
 /** 분수 x를 TeX로 */
 export const fr = (n: number, d = 1) => q(n, d).tex()
 
-/** 해설 줄 묶기: 수식으로 끝난 줄 다음 줄이 수식으로 시작하면 마침표를 찍어 "$ $" 붙음을 막는다 */
+/**
+ * 해설 줄 묶기
+ * - 다음 줄이 "$= …" 로 시작하면 앞 줄에 이어 쓴다
+ * - 수식으로 끝난 줄 다음 줄이 수식으로 시작하면 마침표를 찍어 "$ $" 붙음을 막는다
+ */
 export const lines = (...ls: (string | false | null | undefined)[]) => {
-  const xs = ls.filter((l): l is string => !!l)
+  const xs: string[] = []
+  for (const l of ls) {
+    if (!l) continue
+    if (xs.length && /^\s*\$?\s*=/.test(l)) {
+      const prev = xs[xs.length - 1].replace(/\.\s*$/, "")
+      xs[xs.length - 1] = prev.endsWith("$") && l.trimStart().startsWith("$") ? `${prev.slice(0, -1)} ${l.trimStart().slice(1)}` : `${prev} ${l}`
+    }
+    else xs.push(l)
+  }
   return xs.map((l, i) => (l.endsWith("$") && i + 1 < xs.length && xs[i + 1].startsWith("$") ? `${l}.` : l)).join("\n")
 }
+
+/** 숫자를 읽은 마지막 소리의 받침 (0영 1일 3삼 6육 7칠 8팔, 10·100… 받침 있음) */
+export function numSound(num: string) {
+  const d = num.replace(/\D/g, "")
+  if (!d || /^0+$/.test(d)) return { batchim: true, rieul: false }
+  const nzs = d.replace(/0+$/, "")
+  if (nzs.length < d.length) return { batchim: true, rieul: false }
+  const last = nzs[nzs.length - 1]
+  return { batchim: "013678".includes(last), rieul: "178".includes(last) }
+}
+/** 숫자 뒤 조사 고르기: josa(3, "을") → "을", josa(2, "을") → "를" */
+export function josa(num: number | string, j: string) {
+  const { batchim, rieul } = numSound(String(num))
+  const pairs: [string, string][] = [["을", "를"], ["은", "는"], ["이", "가"], ["과", "와"], ["이었", "였"]]
+  if (j === "으로" || j === "로") return batchim && !rieul ? "으로" : "로"
+  for (const [a, b] of pairs) if (j === a || j === b) return batchim ? a : b
+  return j
+}
+/** 문장 안에서 숫자로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다 */
+export const fixJosa = (s: string) =>
+  s.replace(/(\d+(?:\.\d+)?)\$(\s?)(으로|로|을|를|은|는|이었|였|이|가|과|와)(?=[\s,.)]|$)/g, (_m, n: string, sp: string, j: string) => `${n}$${sp}${josa(n, j)}`)
+/** 템플릿의 문제·보기·해설에 조사 교정을 적용 */
+export const withJosa = <P>(t: SuTemplate<P>): SuTemplate<P> => ({
+  ...t,
+  build: (p, r) => {
+    const b = t.build(p, r)
+    return { ...b, text: fixJosa(b.text), solution: fixJosa(b.solution), ...(b.choices ? { choices: b.choices.map(fixJosa) } : {}) }
+  },
+})
 
 /** 격자 위 함숫값 (verify 전용) */
 export const gridVals = (f: (x: number) => number, lo: number, hi: number, perUnit = 64) => {
@@ -168,4 +209,10 @@ export function gridCount(vals: ArrayLike<number>, k: number, tol = 1e-9) {
     zeroRun = false
   }
   return n
+}
+
+/** "+ 다항식" 을 부호에 맞게: [−12, −2, 0] → "- 12x^{2} - 2x" */
+export const plusPoly = (cs: (number | Q)[], x = "x") => {
+  const t = texPoly(cs, x)
+  return t.startsWith("-") ? `- ${t.slice(1)}` : `+ ${t}`
 }

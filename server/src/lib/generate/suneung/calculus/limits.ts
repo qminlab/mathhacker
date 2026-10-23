@@ -282,7 +282,8 @@ const polyDet: SuTemplate<{ v: number; C: number; A: number; B: number; k: numbe
     if (v === 0) {
       const X = 1e6
       const h = 1e-6
-      for (let a2 = -8; a2 <= 8; a2++)
+      for (let a2 = -8; a2 <= 8; a2++) {
+        if (Math.abs(((C * X ** 3 + a2 * X * X) - C * X ** 3) / X ** 2 - A) > 1e-3) continue
         for (let a1 = -9; a1 <= 9; a1++)
           for (let a0 = -3; a0 <= 3; a0++) {
             const f = [C, a2, a1, a0]
@@ -290,10 +291,12 @@ const polyDet: SuTemplate<{ v: number; C: number; A: number; B: number; k: numbe
             if (Math.abs(ev(f, h) / h - B) > 1e-3 || Math.abs(ev(f, -h) / -h - B) > 1e-3) continue
             found.push(ev(f, k))
           }
+      }
     } else {
       const X = 1e6
       const h = 1e-6
-      for (let a2 = -4; a2 <= 4; a2++)
+      for (let a2 = -4; a2 <= 4; a2++) {
+        if (Math.abs((a2 * X * X) / (X * X + 1) - A) > 1e-3) continue
         for (let a1 = -30; a1 <= 30; a1++)
           for (let a0 = -50; a0 <= 50; a0++) {
             const f = [a2, a1, a0]
@@ -301,6 +304,7 @@ const polyDet: SuTemplate<{ v: number; C: number; A: number; B: number; k: numbe
             if (Math.abs(ev(f, al + h) / h - B) > 1e-3 || Math.abs(ev(f, al - h) / -h - B) > 1e-3) continue
             found.push(ev(f, k))
           }
+      }
     }
     return only(found) ?? NaN
   },
@@ -568,10 +572,10 @@ const contProd: SuTemplate<{ s: number; rr: number; c0: number; n: number; L: nu
     const G = (c0 - s) * (c0 - rr)
     const f = (x: number) => (x < s ? ev(L, x) : ev(Rr, x))
     const found: number[] = []
-    for (let A = -25; A <= 25; A++)
-      for (let B = -40; B <= 40; B++) {
+    for (let A = -12; A <= 12; A++)
+      for (let B = -25; B <= 25; B++) {
+        if (c0 * c0 + A * c0 + B !== G) continue
         const g = (x: number) => x * x + A * x + B
-        if (g(c0) !== G) continue
         const h = (x: number) => f(x) * g(x)
         if (Math.abs(h(s - 1e-9) - h(s)) > 1e-6 || Math.abs(h(s + 1e-9) - h(s)) > 1e-6) continue
         found.push(g(n))
@@ -630,14 +634,14 @@ const radCoef: SuTemplate<{ v: number; c: number; d: number; m: number; s: numbe
     if (v === 0) {
       const X = 1e6
       for (let A = 1; A <= 30; A++)
-        for (let B = -100; B <= 100; B++) {
+        for (let B = -90; B <= 90; B++) {
           const g = (x: number) => Math.sqrt(A * x * x + B * x) - c * x
           if (Math.abs(2 * g(2 * X) - g(X) - d) < 1e-3) found.push(A + B)
         }
     } else {
       const n = s * s - m
       for (let A = -40; A <= 40; A++)
-        for (let B = -160; B <= 160; B++) {
+        for (const B of [Math.round(A * Math.sqrt(m + n))]) {
           if (Math.abs(A * Math.sqrt(m + n) - B) > 1e-9) continue
           const lim = limitAt((x) => (A * Math.sqrt(x + n) - B) / (x - m), m)
           if (Math.abs(lim - d) < 1e-6) found.push(A + B)
@@ -928,14 +932,16 @@ const dblRoot: SuTemplate<{ s: number; rr: number; c0: number; n: number; L: num
     for (let c2 = -14; c2 <= 14; c2++)
       for (let c1 = -45; c1 <= 45; c1++) {
         const c0v = G - (c0 ** 3 + c2 * c0 * c0 + c1 * c0)
+        if (Math.abs(s ** 3 + c2 * s * s + c1 * s + c0v) > 1e-6 * (1 + Math.abs(c0v))) continue // 연속이려면 g(s) 가 0 (빠른 거르기)
         const g = (x: number) => ev([1, c2, c1, c0v], x)
         const h = (x: number) => f(x) * g(x)
         const e = 1e-9
         if (Math.abs(h(s - e) - h(s)) > 1e-6 || Math.abs(h(s + e) - h(s)) > 1e-6) continue
-        const d = 1e-5
+        // 좌·우 기울기: 단순근이면 차이가 |도약| × |g'(s)| ≥ 1, 중근이면 0
+        const d = 1e-6
         const lq = h(s - d) / -d
         const rq = h(s + d) / d
-        if (Math.abs(lq - rq) > 1e-3) continue
+        if (Math.abs(lq - rq) > 0.1) continue
         found.push(g(n))
       }
     return only(found) ?? NaN

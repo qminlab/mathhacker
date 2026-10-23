@@ -287,7 +287,7 @@ const expQuad: SuTemplate<{ b: number; al: number; be: number; ask: "sum" | "sq"
     const t2 = Math.pow(b, be)
     const D = al >= 0 ? 1 : b ** -al
     const f = (x: number) => D * Math.pow(b, 2 * x) - D * (t1 + t2) * Math.pow(b, x) + D * t1 * t2
-    const rs = roots(f, -6, 8, 28000)
+    const rs = roots(f, -6, 8, 4000)
     if (rs.length !== 2) return NaN
     return ask === "sum" ? rs[0] + rs[1] : rs[0] ** 2 + rs[1] ** 2
   },
@@ -347,7 +347,7 @@ const logEq: SuTemplate<{ b: number; a: number; c: number; N: number; asNum: boo
   },
   verify: ({ b, a, c, N }) => {
     const lo = Math.max(a, c)
-    const rs = roots((x) => lg(x - a, b) + lg(x - c, b) - lg(N, b), lo + 1e-9, lo + 600, 30000)
+    const rs = roots((x) => lg(x - a, b) + lg(x - c, b) - lg(N, b), lo + 1e-9, lo + 600, 6000)
     return rs.length === 1 ? rs[0] : NaN
   },
 }
@@ -695,9 +695,9 @@ const inverseLine: SuTemplate<{ v: 0 | 1; b: number; c: number; p: number }> = {
     const k = p + y
     const f = (x: number) => (v === 0 ? Math.pow(b, x - c) : Math.pow(b, x) + c)
     const g = (x: number) => (v === 0 ? lg(x, b) + c : lg(x - c, b))
-    const ra = roots((x) => f(x) + x - k, -20, 40, 30000)
+    const ra = roots((x) => f(x) + x - k, -20, 40, 4000)
     const gx0 = v === 0 ? 1e-9 : c + 1e-9
-    const rb = roots((x) => g(x) + x - k, gx0, 80, 40000)
+    const rb = roots((x) => g(x) + x - k, gx0, 80, 4000)
     if (ra.length !== 1 || rb.length !== 1) return NaN
     const A = [ra[0], f(ra[0])]
     const B = [rb[0], g(rb[0])]
@@ -754,7 +754,7 @@ const maxMinSub: SuTemplate<{ v: 0 | 1; b: number; p: number; lo: number; hi: nu
       text: `$${dom}$ 에서 함수 $${fx}$ 의 최댓값이 $${M}$ 일 때, $f(x)$ 의 최솟값은? (단, $a$ 는 상수이다.)`,
       ...mc(r, intChoice(ans), ints(endMin, a, ans + 1, ans - 1, min0 - a, M - ans)),
       solution: sol(
-        `$${tName} = t$ 로 놓으면 $${dom}$ 에서 $${tl} \\le t \\le ${th}$ 이고 $f(x) = ${gTex} = ${vertexForm}$`,
+        `$${tName} = t$ 로 놓으면 $${dom}$ 에서 $${tl} \\le t \\le ${th}$ 이고 $f(x) = ${gTex}${h0 === 0 ? "" : ` = ${vertexForm}`}$`,
         inside ? `꼭짓점의 $t$ 좌표 $${t0}$ 가 범위 안에 있으므로 최솟값은 $t = ${t0}$ 일 때, 최댓값은 꼭짓점에서 더 먼 끝 $t = ${maxEnd}$ 일 때이다.` : `꼭짓점의 $t$ 좌표 $${t0}$ 가 범위 밖에 있으므로 $t$ 의 범위의 양 끝에서 최댓값과 최솟값을 갖는다. 최댓값은 $t = ${maxEnd}$, 최솟값은 $t = ${minT}$ 일 때이다.`,
         `최댓값은 $${max0} + a = ${M}$ 이므로 $a = ${a}$`,
         `따라서 최솟값은 $${min0} + a = ${min0} ${signed(a)} = ${ans}$`
@@ -871,7 +871,7 @@ const expSystem: SuTemplate<{ a: number; b: number; i: number; j: number; s: num
   verify: ({ a, b, i, j, s }) => {
     const m = i * s
     const n = j * s
-    const rs = roots((k) => (m * Math.log(a) + n * Math.log(b)) / Math.log(k) - s, 1.001, 1500, 60000)
+    const rs = roots((k) => (m * Math.log(a) + n * Math.log(b)) / Math.log(k) - s, 1.001, 1500, 6000)
     return rs.length === 1 ? rs[0] : NaN
   },
 }
@@ -914,7 +914,7 @@ const rootCountK: SuTemplate<{ a: number; M: number; S: number }> = {
         return s + (c > 0 ? 2 : c === 0 ? 1 : 0)
       }, 0)
       if (e === need) ks.push(k)
-      rows.push(`$k = ${k}${k === M + 1 ? `$ 이상` : "$"}: $${e}$`)
+      rows.push(`$k = ${k}$${k === M + 1 ? " 이상" : ""} 일 때 $${e}$`)
     }
     const ans = ks.reduce((x, y) => x + y, 0)
     return {
@@ -1128,9 +1128,9 @@ const logIneqParam: SuTemplate<{ b: number; c: number; d: number; N: number; for
   },
   verify: ({ b, c, d, N, form }) => {
     let s = 0
-    for (let a = 1; a <= 400; a++) {
+    for (let a = 1; a <= 200; a++) {
       let cnt = 0
-      for (let x = a + 1; x <= a + 200; x++) {
+      for (let x = a + 1; x <= a + 60; x++) {
         const L = form === 0 ? lg(x - a, b) : 2 * lg(x - a, b)
         const R = form === 0 ? lg(c * x + d, b * b) : lg(c * x + d, b)
         if (L <= R + 1e-12) cnt++

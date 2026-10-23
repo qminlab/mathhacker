@@ -191,7 +191,7 @@ const sigmaProps: SuTemplate<{ mode: "lin" | "pm"; n: number; A: number; B: numb
         ...autoInt(r, ans, [p * A + qq * B + c, p * A - qq * B + c * n, ans + n, ans - c * n + c, p * A + qq * B]),
         solution: sol(
           `Σ 의 성질에 의하여 $${S(n, body)} = ${p === 1 ? "" : p}${S(n, "a_k")} ${qq < 0 ? "-" : "+"} ${Math.abs(qq) === 1 ? "" : Math.abs(qq)}${S(n, "b_k")}${c ? ` ${signed(c)} \\times ${n}` : ""}$`,
-          `$= ${p} \\times ${pr(A)} ${signed(qq * B)}${c ? ` ${signed(c * n)}` : ""} = ${ans}$`
+          `계산하면 $${p} \\times ${pr(A)} ${signed(qq * B)}${c ? ` ${signed(c * n)}` : ""} = ${ans}$`
         ),
         score: 2,
       }
@@ -334,7 +334,7 @@ const geoSum: SuTemplate<{ a: number; r: number; k: number; ask: "s3" | "tail" }
       text: `등비수열 $\\{a_n\\}$ 의 첫째항부터 제$n$항까지의 합을 $S_n$ 이라 하자. $S_{${k}} = ${Sk}$, $S_{${2 * k}} = ${S2}$ 일 때, $${target}$ 의 값${isShortOk(ans) ? "을 구하시오." : "은?"}`,
       ...autoInt(r, ans, [S2 * t, Sk * t, s3 - Sk, S2 + Sk * t, ans + Sk]),
       solution: sol(
-        `공비를 $r$ 라 하면 $a_{${k + 1}} + \\cdots + a_{${2 * k}} = r^{${k}}(a_1 + \\cdots + a_{${k}})$ 이므로 $S_{${2 * k}} - S_{${k}} = r^{${k}} S_{${k}}$`,
+        `공비를 $r$ 라 하면 $${k === 2 ? "a_{3} + a_{4}" : `a_{${k + 1}} + \\cdots + a_{${2 * k}}`} = r^{${k}}(${k === 2 ? "a_1 + a_2" : `a_1 + \\cdots + a_{${k}}`})$ 이므로 $S_{${2 * k}} - S_{${k}} = r^{${k}} S_{${k}}$`,
         `$${S2 - Sk} = ${pr(Sk)} r^{${k}}$ 에서 $r^{${k}} = ${t}$`,
         ask === "s3"
           ? `$S_{${3 * k}} = S_{${2 * k}} + r^{${2 * k}} S_{${k}} = ${S2} ${signed(t * t * Sk)} = ${ans}$`
@@ -404,8 +404,8 @@ const telescope: SuTemplate<{ mode: "frac" | "sqrt" | "log"; a: number; b: numbe
         text: `$${S(n, `\\frac{1}{${f1}${f2}}`)}$ 의 값은?`,
         ...mc(r, qChoice(ans), wr.map(qChoice), qFill(ans)),
         solution: sol(
-          `$\\frac{1}{${f1}${f2}} = \\frac{1}{${a}}\\left(\\frac{1}{${texPoly([a, b], "k")}} - \\frac{1}{${texPoly([a, a + b], "k")}}\\right)$`,
-          `$k = 1, 2, \\cdots, ${n}$ 을 대입하여 더하면 가운데 항이 모두 지워져 $\\frac{1}{${a}}\\left(\\frac{1}{${a + b}} - \\frac{1}{${a * n + a + b}}\\right)$ 만 남는다.`,
+          `$\\frac{1}{${f1}${f2}} = ${a === 1 ? "" : `\\frac{1}{${a}}`}\\left(\\frac{1}{${texPoly([a, b], "k")}} - \\frac{1}{${texPoly([a, a + b], "k")}}\\right)$`,
+          `$k = 1, 2, \\cdots, ${n}$ 을 대입하여 더하면 가운데 항이 모두 지워져 $${a === 1 ? "" : `\\frac{1}{${a}}`}\\left(\\frac{1}{${a + b}} - \\frac{1}{${a * n + a + b}}\\right)$ 만 남는다.`,
           `따라서 구하는 값은 $${ans.tex()}$`
         ),
         score: 3,
@@ -827,7 +827,7 @@ const geoCond: SuTemplate<{ A: number; ri: number; c: number; s: number; t: numb
     const R = RATIOS[ri].value
     const Y = A * R - A / R
     const ac = Math.sqrt(A * A)
-    const rs = roots((x) => ac * (x - 1 / x) - Y, 0.01, 20, 40000)
+    const rs = roots((x) => ac * (x - 1 / x) - Y, 0.01, 20, 4000)
     if (rs.length !== 1) return NaN
     return ac * rs[0] ** t
   },
@@ -1096,9 +1096,9 @@ const snMax: SuTemplate<{ k: number; m: number; N: number; d: number }> = {
     const Y = absT(q(k + 1 + m, 2), N).value * -d
     let best = NaN
     let cnt = 0
-    for (let ds = 1; ds <= 30; ds++) {
+    for (let ds = 1; ds <= 14; ds++) {
       const D = -ds / 2
-      for (let as = 1; as <= 300; as++) {
+      for (let as = 1; as <= 160; as++) {
         const A = as / 2
         const t = (n: number) => A + (n - 1) * D
         const Sn = (n: number) => (n * (2 * A + (n - 1) * D)) / 2
@@ -1161,7 +1161,7 @@ const floorLog: SuTemplate<{ b: number; m: number }> = {
       text: `자연수 $n$ 에 대하여 $${b}^{k} \\le n < ${b}^{k+1}$ 을 만족시키는 정수 $k$ 를 $f(n)$ 이라 하자. $\\sum_{n=1}^{m} f(n) = ${Sv}$ 를 만족시키는 자연수 $m$ 의 값을 구하시오.`,
       ...short(m),
       solution: sol(
-        `$1 \\le n \\le ${b - 1}$ 이면 $f(n) = 0$ 이고, $n \\ge ${b}$ 이면 $f(n) \\ge 1$ 이므로 $\\sum_{n=1}^{m} f(n)$ 은 $m \\ge ${b - 1}$ 에서 증가하고 $m$ 은 하나로 정해진다.`,
+        `${b === 2 ? "$n = 1$" : `$1 \\le n \\le ${b - 1}$`} 이면 $f(n) = 0$ 이고, $n \\ge ${b}$ 이면 $f(n) \\ge 1$ 이므로 $\\sum_{n=1}^{m} f(n)$ 은 $m \\ge ${b - 1}$ 에서 증가하고 $m$ 은 하나로 정해진다.`,
         ...groups,
         `$n = ${b ** (K + 1) - 1}$ 까지 더하면 $${cum + K * (b - 1) * b ** K}$ 이고, $n = ${b ** K - 1}$ 까지의 합은 $${cum}$ 이므로 $m$ 은 $${b ** K}$ 이상 $${b ** (K + 1) - 1}$ 이하이다.`,
         `$${cum} + ${K}(m - ${b ** K - 1}) = ${Sv}$ 에서 $m - ${b ** K - 1} = ${remCnt}$, 즉 $m = ${m}$`

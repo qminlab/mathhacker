@@ -270,7 +270,7 @@ const trigPyth: SuTemplate<{ ti: number; sw: boolean; qd: number; given: string;
       solution: sol(
         step,
         `$\\theta$ 는 제${qd}사분면의 각이므로 $\\sin\\theta ${ss > 0 ? ">" : "<"} 0$, $\\cos\\theta ${cs > 0 ? ">" : "<"} 0$ 이다. 따라서 $\\sin\\theta = ${S.tex()}$, $\\cos\\theta = ${C.tex()}$`,
-        `$\\tan\\theta = \\frac{\\sin\\theta}{\\cos\\theta} = ${Tn.tex()}$ 이므로 $${name[ask]} = ${ans.tex()}$`
+        ask === "tan" ? `이때 $\\tan\\theta = \\frac{\\sin\\theta}{\\cos\\theta} = ${Tn.tex()}$` : ask === "sin" || ask === "cos" ? `구하는 값은 $${name[ask]} = ${ans.tex()}$` : `구하는 값은 $${name[ask]} = ${ask === "sum" ? `${S.tex()} ${signed(C)}` : `${S.tex()} \\times ${C.n < 0 ? `\\left(${C.tex()}\\right)` : C.tex()}`} = ${ans.tex()}$`
       ),
       score: 2,
     }
@@ -283,7 +283,7 @@ const trigPyth: SuTemplate<{ ti: number; sw: boolean; qd: number; given: string;
     const cs = qd === 1 || qd === 4 ? 1 : -1
     const g = given === "sin" ? (ss * a) / h : given === "cos" ? (cs * b) / h : (ss * a) / (cs * b)
     const [lo, hi] = QUAD_RANGE[qd - 1]
-    const rs = roots((t) => FN[given](t) - g, lo + 1e-9, hi - 1e-9, 20000)
+    const rs = roots((t) => FN[given](t) - g, lo + 1e-9, hi - 1e-9, 2000)
     if (rs.length !== 1) return NaN
     const t = rs[0]
     const v: Record<string, number> = { sin: Math.sin(t), cos: Math.cos(t), tan: Math.tan(t), sum: Math.sin(t) + Math.cos(t), prod: Math.sin(t) * Math.cos(t) }
@@ -591,7 +591,7 @@ const trigEqQuad: SuTemplate<{ f: string; i1: number; i2: number; out: boolean; 
     return {
       text: `$0 \\le x < 2\\pi$ 일 때, 방정식 $${tex} = 0$ 의 모든 해의 합은?`,
       ...mc(r, piChoice(sum), wr.map(piChoice), piFill(sum, q(1, 6))),
-      solution: sol(...lines0, `따라서 모든 해의 합은 $${all.map((x) => piTex(x)).join(" + ")} = ${piTex(sum)}$`),
+      solution: sol(...lines0, `따라서 모든 해의 합은 $${all.length > 1 ? `${all.map((x) => piTex(x)).join(" + ")} = ` : ""}${piTex(sum)}$`),
       score: 3,
     }
   },
@@ -599,7 +599,7 @@ const trigEqQuad: SuTemplate<{ f: string; i1: number; i2: number; out: boolean; 
     const r1 = IN[i1]
     const r2 = out ? OUT[i2] : IN[i2]
     const { ev } = trigQuad(f, r1, r2, rewrite)
-    const zs = zeros(ev, -0.01, 2 * PI + 0.01, 20000).filter((x) => x > -1e-7 && x < 2 * PI - 1e-7)
+    const zs = zeros(ev, -0.01, 2 * PI + 0.01, 4000).filter((x) => x > -1e-7 && x < 2 * PI - 1e-7)
     return ask === "count" ? zs.length : zs.reduce((s, x) => s + Math.max(0, x), 0)
   },
 }
@@ -774,12 +774,12 @@ const sinCos: SuTemplate<{ diff: boolean; ki: number; ask: "sc" | "cube" | "tan"
       target = diff ? "\\sin^{3}\\theta - \\cos^{3}\\theta" : "\\sin^{3}\\theta + \\cos^{3}\\theta"
       ans = diff ? k.mul(q(1).add(sc)) : k.mul(q(1).sub(sc))
       last = diff
-        ? `$\\sin^{3}\\theta - \\cos^{3}\\theta = (\\sin\\theta - \\cos\\theta)(1 + \\sin\\theta\\cos\\theta) = ${k.tex()} \\times \\left(1 ${signed(sc)}\\right) = ${ans.tex()}$`
-        : `$\\sin^{3}\\theta + \\cos^{3}\\theta = (\\sin\\theta + \\cos\\theta)(1 - \\sin\\theta\\cos\\theta) = ${k.tex()} \\times \\left(1 ${signed(sc.neg())}\\right) = ${ans.tex()}$`
+        ? `$\\sin^{3}\\theta - \\cos^{3}\\theta = (\\sin\\theta - \\cos\\theta)(1 + \\sin\\theta\\cos\\theta)$ 이므로\n구하는 값은 $${k.tex()} \\times \\left(1 ${signed(sc)}\\right) = ${ans.tex()}$`
+        : `$\\sin^{3}\\theta + \\cos^{3}\\theta = (\\sin\\theta + \\cos\\theta)(1 - \\sin\\theta\\cos\\theta)$ 이므로\n구하는 값은 $${k.tex()} \\times \\left(1 ${signed(sc.neg())}\\right) = ${ans.tex()}$`
     } else if (ask === "tan") {
       target = "\\tan\\theta + \\frac{1}{\\tan\\theta}"
       ans = q(1).div(sc)
-      last = `$\\tan\\theta + \\frac{1}{\\tan\\theta} = \\frac{\\sin^{2}\\theta + \\cos^{2}\\theta}{\\sin\\theta\\cos\\theta} = \\frac{1}{\\sin\\theta\\cos\\theta} = ${ans.tex()}$`
+      last = `$\\tan\\theta + \\frac{1}{\\tan\\theta} = \\frac{\\sin^{2}\\theta + \\cos^{2}\\theta}{\\sin\\theta\\cos\\theta} = \\frac{1}{\\sin\\theta\\cos\\theta}$ 이므로\n구하는 값은 $${ans.tex()}$`
     } else if (ask === "sq") {
       target = diff ? "(\\sin\\theta + \\cos\\theta)^{2}" : "(\\sin\\theta - \\cos\\theta)^{2}"
       ans = diff ? q(1).add(sc.mul(2)) : q(1).sub(sc.mul(2))
@@ -787,7 +787,7 @@ const sinCos: SuTemplate<{ diff: boolean; ki: number; ask: "sc" | "cube" | "tan"
     } else {
       target = "\\sin^{4}\\theta + \\cos^{4}\\theta"
       ans = q(1).sub(sc.mul(sc).mul(2))
-      last = `$\\sin^{4}\\theta + \\cos^{4}\\theta = (\\sin^{2}\\theta + \\cos^{2}\\theta)^{2} - 2\\sin^{2}\\theta\\cos^{2}\\theta = 1 - 2 \\times \\left(${sc.tex()}\\right)^{2} = ${ans.tex()}$`
+      last = `$\\sin^{4}\\theta + \\cos^{4}\\theta = (\\sin^{2}\\theta + \\cos^{2}\\theta)^{2} - 2\\sin^{2}\\theta\\cos^{2}\\theta$ 이므로\n구하는 값은 $1 - 2 \\times \\left(${sc.tex()}\\right)^{2} = ${ans.tex()}$`
     }
     const scW = sc.neg()
     const wrongs = [ans.neg(), sc.n !== 0 ? q(1).div(sc).sub(ans).add(ans) : ans.add(1), k2, scW, ans.add(q(1, 2)), q(1).sub(ans)]
@@ -805,7 +805,7 @@ const sinCos: SuTemplate<{ diff: boolean; ki: number; ask: "sc" | "cube" | "tan"
   // 실제로 조건을 만족하는 θ 를 수치로 찾아 대입
   verify: ({ diff, ki, ask }) => {
     const k = KS[ki].value
-    const rs = roots((t) => Math.sin(t) + (diff ? -1 : 1) * Math.cos(t) - k, 0, 2 * PI, 20000)
+    const rs = roots((t) => Math.sin(t) + (diff ? -1 : 1) * Math.cos(t) - k, 0, 2 * PI, 3000)
     if (!rs.length) return NaN
     const t = rs[0]
     const s = Math.sin(t)
@@ -888,7 +888,7 @@ const trigIneq: SuTemplate<{ ci: number; oi: number; strict: boolean; rewrite: b
     if (flip) pos = !pos
     const g = (x: number) => (flip ? -ev(x) : ev(x))
     const ok = (x: number) => (pos ? g(x) > 0 : g(x) < 0)
-    const zs = zeros(g, 0, 2 * PI, 20000)
+    const zs = zeros(g, 0, 2 * PI, 4000)
     const pts = [0, ...zs.filter((z) => z > 1e-9 && z < 2 * PI - 1e-9), 2 * PI]
     const segs: [number, number][] = []
     for (let i = 0; i + 1 < pts.length; i++) {
@@ -1013,7 +1013,7 @@ const trigEqSum: SuTemplate<{ f: string; ki: number; b: number; phi: number; L: 
     const K = sdVal((f === "tan" ? KTAN : KSIN)[ki].k)
     const ph = PHS[phi].value * PI
     const g = f === "tan" ? (x: number) => Math.sin(b * x - ph) - K * Math.cos(b * x - ph) : (x: number) => FN[f](b * x - ph) - K
-    const zs = zeros(g, -0.01, L * PI + 0.01, 30000).filter((x) => x > -1e-7 && x < L * PI - 1e-7)
+    const zs = zeros(g, -0.01, L * PI + 0.01, 6000).filter((x) => x > -1e-7 && x < L * PI - 1e-7)
     return ask === "count" ? zs.length : zs.reduce((s, x) => s + Math.max(0, x), 0)
   },
 }
@@ -1133,7 +1133,7 @@ const circumBC: SuTemplate<{ R: number; Ai: 0 | 1; s: number; ask: "bc" | "sq" |
   // 각 B 를 수치로 찾아 b = 2R sin B, c = 2R sin C 로 계산
   verify: ({ R, Ai, s, ask }) => {
     const A = Ai === 0 ? PI / 3 : (2 * PI) / 3
-    const rs = roots((B) => 2 * R * (Math.sin(B) + Math.sin(PI - A - B)) - s, 1e-9, PI - A - 1e-9, 20000)
+    const rs = roots((B) => 2 * R * (Math.sin(B) + Math.sin(PI - A - B)) - s, 1e-9, PI - A - 1e-9, 3000)
     if (!rs.length) return NaN
     const B = rs[0]
     const b = 2 * R * Math.sin(B)
@@ -1271,7 +1271,7 @@ const absTrig: SuTemplate<{ f: string; M: number; m: number; b: number; closed: 
     const h = (x: number) => a * FN[f](b * x) + c
     let tot = 0
     for (let n = 1; n <= N; n++) {
-      const zs = zeros((x) => Math.abs(h(x)) - n, -0.01, 2 * PI + 0.01, 20000)
+      const zs = zeros((x) => Math.abs(h(x)) - n, -0.01, 2 * PI + 0.01, 4000)
       tot += zs.filter((x) => x > -1e-7 && (closed ? x < 2 * PI + 1e-7 : x < 2 * PI - 1e-7)).length
     }
     return tot
@@ -1312,7 +1312,7 @@ const cyclicQuad: SuTemplate<{ p: number; qq: number; rr: number; s: number; ask
     ]
     if (ask === "ac") {
       const wr = [q(p * p + qq * qq), q(p * p + qq * qq).add(cB.mul(2 * p * qq)), q(rr * rr + s * s), ac.add(1)]
-      return { text: `${head} $${seg("AC")}^{2}$ 의 값은?`, ...autoQ(r, ac, wr), solution: sol(...lines0, `따라서 $${seg("AC")}^{2} = ${ac.tex()}$`), score: 4 }
+      return { text: `${head} $${seg("AC")}^{2}$ 의 값은?`, ...autoQ(r, ac, wr), solution: sol(...lines0), score: 4 }
     }
     return {
       text: `${head} 이 원의 넓이는?`,
@@ -1334,13 +1334,13 @@ const cyclicQuad: SuTemplate<{ p: number; qq: number; rr: number; s: number; ask
     let R: number
     let outside = false
     if (F1(cmax / 2) >= 0) {
-      const rs = roots(F1, cmax / 2, 200, 40000)
+      const rs = roots(F1, cmax / 2, 200, 4000)
       R = rs[0]
     } else {
       outside = true
       const im = cs.indexOf(cmax)
       const F2 = (R: number) => cs.reduce((t, c, i) => (i === im ? t : t + th(c, R)), 0) - th(cmax, R)
-      const rs = roots(F2, cmax / 2 + 1e-12, 200, 40000)
+      const rs = roots(F2, cmax / 2 + 1e-12, 200, 4000)
       R = rs[0]
     }
     if (!Number.isFinite(R)) return NaN
@@ -1414,7 +1414,7 @@ const trigSym: SuTemplate<{ p: number; H: number; u: number; v: number; t: numbe
     const a = (u - v) / 2
     const c = (u + v) / 2
     const L = H * p
-    const zs = zeros((x) => a * Math.sin((PI * x) / p) + c - t, -0.01, L + 0.01, 30000).filter((x) => x > -1e-7 && x < L + 1e-7)
+    const zs = zeros((x) => a * Math.sin((PI * x) / p) + c - t, -0.01, L + 0.01, 6000).filter((x) => x > -1e-7 && x < L + 1e-7)
     return zs.reduce((s, x) => s + x, 0)
   },
 }

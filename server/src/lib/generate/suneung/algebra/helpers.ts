@@ -221,8 +221,49 @@ export function extrema(f: (x: number) => number, a: number, b: number, n = 4000
 /** 정수에 가까우면 그 정수 */
 export const nearInt = (x: number, tol = 1e-9) => Math.abs(x - Math.round(x)) < tol
 
-/** 해설 줄 묶기: 수식으로 끝나는 줄 다음 줄이 수식으로 시작하면 마침표를 찍어 "$ $" 가 붙지 않게 한다 */
+/**
+ * 해설 줄 묶기: 수식으로 끝나는 줄 다음 줄이 수식으로 시작하면 "$ $" 가 붙지 않게
+ * 다음 줄이 "$= …" 이면 한 줄로 잇고, 아니면 마침표를 찍는다.
+ */
 export function sol(...ls: (string | false | null | undefined)[]) {
   const xs = ls.filter((x): x is string => !!x)
-  return xs.map((l, i) => (i < xs.length - 1 && /\$\s*$/.test(l) && /^\s*\$/.test(xs[i + 1]) ? `${l.trimEnd()}.` : l)).join("\n")
+  const out: string[] = []
+  for (const l of xs) {
+    const prev = out[out.length - 1]
+    if (prev !== undefined && /\$\s*$/.test(prev) && /^\s*\$/.test(l)) {
+      if (/^\s*\$\s*=/.test(l)) out[out.length - 1] = `${prev.trimEnd().slice(0, -1)} ${l.trimStart().slice(1)}`
+      else out[out.length - 1] = `${prev.trimEnd()}.`
+      if (!/^\s*\$\s*=/.test(l)) out.push(l)
+    } else out.push(l)
+  }
+  return out.join("\n")
+}
+
+// ───────── 숫자 뒤 조사 ─────────
+
+/** 숫자를 읽었을 때 마지막 소리에 받침이 있는지, 그 받침이 ㄹ 인지 */
+export function numSound(num: string) {
+  const d = num.replace(/\D/g, "")
+  if (!d || /^0+$/.test(d)) return { batchim: true, rieul: false }
+  const nz = d.replace(/0+$/, "")
+  if (d.length > nz.length) return { batchim: true, rieul: false }
+  const last = nz[nz.length - 1]
+  return { batchim: "013678".includes(last), rieul: "178".includes(last) }
+}
+const JOSA: [string, string][] = [
+  ["을", "를"],
+  ["은", "는"],
+  ["이었", "였"],
+  ["이", "가"],
+  ["과", "와"],
+]
+/** 숫자로 끝나는 수식 바로 뒤의 조사를 받침에 맞게 고친다 ("$9$ 을" → "$9$ 를") */
+export function fixJosa(s: string) {
+  return s.replace(/(\d+(?:\.\d+)?)\$(\s?)(으로|로|을|를|은|는|이었|였|이|가|과|와)(?=[\s,.)]|$)/g, (m, num: string, sp: string, j: string) => {
+    const { batchim, rieul } = numSound(num)
+    let out = j
+    if (j === "으로" || j === "로") out = batchim && !rieul ? "으로" : "로"
+    else for (const [w, wo] of JOSA) if (j === w || j === wo) out = batchim ? w : wo
+    return `${num}$${sp}${out}`
+  })
 }
