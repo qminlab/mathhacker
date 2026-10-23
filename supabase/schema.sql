@@ -1,4 +1,4 @@
--- Math Hacker · Supabase 스키마
+-- Squoo · Supabase 스키마
 --
 -- Supabase 대시보드 > SQL Editor에 전체를 붙여넣고 Run 하면 된다.
 -- 처음 설치와 업그레이드 모두 이 파일 하나로 한다. 여러 번 실행해도 안전하다

@@ -29,7 +29,7 @@ function Brand({ compact }: { compact: boolean }) {
       </View>
       <View style={{ gap: space.xs, alignItems: compact ? "center" : "flex-start" }}>
         <Text style={{ fontSize: compact ? 40 : 60, lineHeight: compact ? 46 : 68 }} weight="display" tone="white">
-          Math Hacker
+          Squoo
         </Text>
         <Text variant={compact ? "body" : "bodyLarge"} weight="display" align={compact ? "center" : "left"} style={{ color: "#E3DCFF", maxWidth: 380 }}>
           내 문제지로 매일 퀘스트 깨기

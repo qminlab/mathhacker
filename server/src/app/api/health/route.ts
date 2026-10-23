@@ -6,7 +6,7 @@ export const OPTIONS = preflight
 export function GET() {
   return json({
     ok: true,
-    service: "mathhacker",
+    service: "squoo",
     ocr: Boolean(process.env.MATHPIX_APP_ID && process.env.MATHPIX_APP_KEY),
   })
 }

@@ -1,4 +1,4 @@
-// 마스코트 "모눈이": 모눈종이 한 칸이 살아난 친구. 채점·레벨업 때 표정이 바뀐다.
+// 마스코트 "스쿠(Squoo)": 모눈종이 한 칸(square)이 살아난 친구. 앱 이름이기도 하다. 채점·레벨업 때 표정이 바뀐다.
 // 직접 그린 캐릭터 (다른 작품의 캐릭터가 아님)
 import { useEffect } from "react"
 import { View } from "react-native"
@@ -91,7 +91,7 @@ export function Mascot({ mood = "happy", size = 96, bounce = true }: { mood?: Mo
   const arms = mood === "cheer"
 
   return (
-    <Animated.View style={[{ width: size, height: size }, style]} accessible accessibilityLabel="마스코트 모눈이">
+    <Animated.View style={[{ width: size, height: size }, style]} accessible accessibilityLabel="마스코트 스쿠">
       <Svg width={size} height={size} viewBox="0 0 100 100">
         <Defs>
           <LinearGradient id="mn-body" x1="0" y1="0" x2="0" y2="1">

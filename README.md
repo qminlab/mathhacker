@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="docs/banner.svg" alt="Math Hacker — 문제지 PDF를 문제 단위로 쪼개서, 매일 풀고 기록하는 수학 연습 앱" width="100%">
+  <img src="docs/banner.svg" alt="Squoo — 내 문제지로 매일 퀘스트 깨는 수학 앱" width="100%">
 </p>
 
 <p align="center">
   <a href="https://expo.dev"><img alt="Expo SDK 58" src="https://img.shields.io/badge/Expo-SDK_58-000020?logo=expo&logoColor=white"></a>
-  <img alt="iPadOS · iOS · Android · Web" src="https://img.shields.io/badge/iPad%20%7C%20iOS%20%7C%20Android%20%7C%20Web-2443A8">
+  <img alt="iPadOS · iOS · Android · Web" src="https://img.shields.io/badge/iPad%20%7C%20iOS%20%7C%20Android%20%7C%20Web-6D4AFF">
   <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white"></a>
   <a href="https://supabase.com"><img alt="Supabase" src="https://img.shields.io/badge/Supabase-Auth%20%7C%20Postgres%20%7C%20Storage-3FCF8E?logo=supabase&logoColor=white"></a>
   <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white"></a>
@@ -14,7 +14,8 @@
 
 <p align="center">
   <b>문제집은 많은데, 오늘 뭘 풀지 고르는 데만 10분.</b><br>
-  가진 문제지를 한 번 올려 두면 문제가 한 장씩 잘려 쌓이고, 매일 몇 문제씩 꺼내 펜으로 풀고 채점까지 됩니다.
+  가진 문제지를 한 번 올려 두거나 학년만 고르면, 마스코트 스쿠가 매일 퀘스트를 꺼내 줍니다.<br>
+  펜으로 풀고, 바로 채점되고, 불꽃·XP·뱃지가 쌓여요.
 </p>
 
 <p align="center">
@@ -123,7 +124,7 @@ npx expo start                 # i: iOS 시뮬레이터, a: 안드로이드, w: 
 
 ## 📦 스토어 출시 (EAS)
 
-앱 ID는 iOS `com.qminlab.mathhacker`, Android `com.qminlab.mathhacker`입니다 ([`app/app.json`](app/app.json)).
+앱 ID는 iOS `com.qminlab.squoo`, Android `com.qminlab.squoo`입니다 ([`app/app.json`](app/app.json)).
 
 ```bash
 cd app
@@ -183,7 +184,7 @@ supabase/schema.sql          테이블 · RLS · 함수 · Storage 정책
 
 ## ⚖️ 저작권 안내
 
-Math Hacker는 **본인이 가진 문제지를 개인 학습용으로 정리하는 도구**입니다. 올린 문제지와 잘라 낸 문제 이미지는 올린 사람만 볼 수 있습니다.
+Squoo는 **본인이 가진 문제지를 개인 학습용으로 정리하는 도구**입니다. 올린 문제지와 잘라 낸 문제 이미지는 올린 사람만 볼 수 있습니다.
 시중 문제집 PDF나 그 OCR 결과를 다른 사람과 공유하거나 공개 배포하지 마세요. 이 레포의 예제 문제(`app/assets/demo`)와 공용 문제(`server/src/lib/generate`)는 직접 만든 문제입니다. 수능·모의고사 기출은 평가원·교육청에 저작권이 있어 공용으로 넣지 않으며, 가진 사람이 직접 올려 혼자 보는 용도로만 쓰세요.
 문제 그림에 쓰는 글꼴 IBM Plex Sans KR은 [SIL OFL](server/assets/fonts/OFL.txt)을 따릅니다.
 

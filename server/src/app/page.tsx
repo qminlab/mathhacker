@@ -3,7 +3,7 @@ export default function Home() {
   return (
     <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
       <div style={{ maxWidth: 420, textAlign: "center", lineHeight: 1.6 }}>
-        <h1 style={{ fontSize: 28, margin: "0 0 8px" }}>Math Hacker API</h1>
+        <h1 style={{ fontSize: 28, margin: "0 0 8px" }}>Squoo API</h1>
         <p style={{ color: "#94a3b8", margin: 0 }}>
           서버가 동작 중입니다. 앱의 설정에서 이 주소를 서버 주소로 쓰면 됩니다.
         </p>

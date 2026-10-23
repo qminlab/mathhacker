@@ -159,7 +159,7 @@ function newSession(mode: PracticeSession["mode"], ids: string[]): PracticeSessi
 export const demoBackend: Backend = {
   async profile() {
     await wait()
-    return { id: "demo", email: "demo@mathhacker.app", nickname: state.nickname, role: "user" }
+    return { id: "demo", email: "demo@squoo.app", nickname: state.nickname, role: "user" }
   },
   async updateNickname(n) {
     state.nickname = n

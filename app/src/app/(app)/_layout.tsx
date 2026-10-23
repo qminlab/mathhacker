@@ -86,7 +86,7 @@ function RailHeader({ wide }: { wide: boolean }) {
       <Mascot size={wide ? 44 : 48} bounce={false} />
       {wide ? (
         <Text variant="title" weight="display" tone="primary">
-          Math Hacker
+          Squoo
         </Text>
       ) : null}
     </View>

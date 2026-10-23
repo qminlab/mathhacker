@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Math Hacker API",
-  description: "Math Hacker 앱의 서버 (OCR·문제 분리·채점)",
+  title: "Squoo API",
+  description: "Squoo 앱의 서버 (OCR·문제 분리·채점)",
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
