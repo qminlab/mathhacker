@@ -77,7 +77,7 @@ const logChain: SuTemplate<{ p: number; m: number; k: number; x: number; swap: b
       ...mc(r, qChoice(ans), [qChoice(q(m, k)), qChoice(q(k * m)), qChoice(q(k + m)), qChoice(ans.add(1)), qChoice(q(k - 1, m))], qFill(ans)),
       solution: sol(
         `밑을 $${p}$ 로 바꾸면 $${A} = \\frac{\\log_{${p}} ${p ** k}}{\\log_{${p}} ${x}} = \\frac{${k}}{\\log_{${p}} ${x}}$`,
-        `$${B} = \\frac{\\log_{${p}} ${x}}{\\log_{${p}} ${p ** m}} = \\frac{\\log_{${p}} ${x}}{${m}}$`,
+        m === 1 ? `$${B}$ 는 이미 밑이 $${p}$ 이다.` : `$${B} = \\frac{\\log_{${p}} ${x}}{\\log_{${p}} ${p ** m}} = \\frac{\\log_{${p}} ${x}}{${m}}$`,
         `두 식을 곱하면 $\\log_{${p}} ${x}$ 가 약분되어 $${ans.d === m && ans.n === k ? ans.tex() : `\\frac{${k}}{${m}} = ${ans.tex()}`}$`
       ),
       score: 2,
@@ -851,7 +851,10 @@ const expSystem: SuTemplate<{ a: number; b: number; i: number; j: number; s: num
     const j = r.int(1, 3)
     const k = a ** i * b ** j
     if (k > 999) return null
-    return { a, b, i, j, s: r.pick([1, 1, 2, 3]) }
+    // m/x + n/y = s 에서 m, n, s 가 공약수를 가지면 약분되므로 쓰지 않는다
+    const s = r.pick([1, 1, 2, 3])
+    if (gcd(gcd(i * s, j * s), s) > 1) return null
+    return { a, b, i, j, s }
   },
   build: ({ a, b, i, j, s }) => {
     const k = a ** i * b ** j
@@ -863,7 +866,7 @@ const expSystem: SuTemplate<{ a: number; b: number; i: number; j: number; s: num
       solution: sol(
         `$${a}^{x} = k$ 에서 $x = \\log_{${a}} k$ 이므로 $\\frac{1}{x} = \\log_{k} ${a}$, 같은 방법으로 $\\frac{1}{y} = \\log_{k} ${b}$`,
         `$\\frac{${m}}{x} + \\frac{${n}}{y} = ${m}\\log_{k} ${a} + ${n}\\log_{k} ${b} = \\log_{k} (${a}^{${m}} \\times ${b}^{${n}}) = ${s}$`,
-        `따라서 $k^{${s}} = ${a}^{${m}} \\times ${b}^{${n}} = (${a}^{${i}} \\times ${b}^{${j}})^{${s}}$ 이고 $k > 1$ 이므로 $k = ${k}$`
+        `따라서 $k = ${a}^{${m}} \\times ${b}^{${n}} = ${k}$`
       ),
       score: 3,
     }
@@ -1119,7 +1122,7 @@ const logIneqParam: SuTemplate<{ b: number; c: number; d: number; N: number; for
           ? `$\\log_{${b * b}}(${lin}) = \\frac{1}{2}\\log_{${b}}(${lin})$ 이므로 부등식은 $2\\log_{${b}}(x - a) \\le \\log_{${b}}(${lin})$ 과 같다.`
           : `진수 조건에서 $x > a$ 이고, 이때 $${lin} > 0$ 도 성립한다.`,
         `$x > a$ 에서 $(x - a)^{2} \\le ${lin}$. $x - a = u$ ($u$ 는 양의 정수) 로 놓으면 $u^{2} ${c === 1 ? "- u" : `- ${c}u`} \\le ${c === 1 ? "a" : `${c}a`}${d ? ` + ${d}` : ""}$`,
-        `$u^{2} ${c === 1 ? "- u" : `- ${c}u`}$ 는 $u \\ge 1$ 에서 증가하므로 정수해가 $${N}$ 개이려면 $u = ${N}$ 은 만족하고 $u = ${N + 1}$ 은 만족하지 않아야 한다.`,
+        `${c === 1 ? `$u^{2} - u$ 는 $u \\ge 1$ 에서 증가하므로` : `$1 \\le u \\le ${c}$ 이면 $u^{2} - ${c}u \\le 0$ 이므로 항상 성립하고, $u \\ge ${c}$ 에서 $u^{2} - ${c}u$ 는 증가하므로`} 정수해가 $${N}$ 개이려면 $u = ${N}$ 은 만족하고 $u = ${N + 1}$ 은 만족하지 않아야 한다.`,
         `$${lo} \\le ${c === 1 ? "a" : `${c}a`}${d ? ` + ${d}` : ""} \\le ${hi}$ 이므로 자연수 $a$ 는 $${as.join(", ")}$`,
         `따라서 구하는 합은 $${ans}$`
       ),

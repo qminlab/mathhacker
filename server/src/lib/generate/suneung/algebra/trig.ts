@@ -1257,7 +1257,7 @@ const absTrig: SuTemplate<{ f: string; M: number; m: number; b: number; closed: 
       solution: sol(
         `$a + c = ${M}$, $-a + c = ${m}$ 에서 $a = ${a.tex()}$, $c = ${c.tex()}$`,
         `$|f(x)| = n$ 은 $f(x) = n$ 또는 $f(x) = -n$ 이다. $${dom}$ 에서 $y = f(x)$ 는 ${b === 1 ? "한" : `${b}`} 주기${b === 1 ? "" : "만큼"} 그려지므로, 직선 $y = k$ 와의 교점은 $${m} < k < ${M}$ 일 때 $${2 * b}$ 개, $k = ${M}$ 또는 $k = ${m}$ 일 때 $${b}$ 개이다.`,
-        closed ? `구간의 오른쪽 끝 $x = 2\\pi$ 에서 $f(2\\pi) = f(0) = ${f === "sin" ? c.tex() : M}$ 이므로 $k = ${f === "sin" ? c.tex() : M}$ 일 때는 교점이 하나 더 있다.` : `$x = 2\\pi$ 는 포함되지 않으므로 한 주기 안의 교점만 센다.`,
+        closed ? `구간의 오른쪽 끝 $x = 2\\pi$ 에서 $f(2\\pi) = f(0) = ${f === "sin" ? c.tex() : M}$ 이므로 $k = ${f === "sin" ? c.tex() : M}$ 일 때는 교점이 하나 더 있다.` : `$x = 2\\pi$ 는 구간에 포함되지 않으므로 위의 교점의 개수를 그대로 쓴다.`,
         ...rows,
         `따라서 구하는 값은 $${total}$`
       ),
@@ -1312,7 +1312,7 @@ const cyclicQuad: SuTemplate<{ p: number; qq: number; rr: number; s: number; ask
     ]
     if (ask === "ac") {
       const wr = [q(p * p + qq * qq), q(p * p + qq * qq).add(cB.mul(2 * p * qq)), q(rr * rr + s * s), ac.add(1)]
-      return { text: `${head} $${seg("AC")}^{2}$ 의 값은?`, ...autoQ(r, ac, wr), solution: sol(...lines0), score: 4 }
+      return { text: `${head} $${seg("AC")}^{2}$ 의 값${ac.isInt && isShortOk(ac.n) ? "을 구하시오." : "은?"}`, ...autoQ(r, ac, wr), solution: sol(...lines0), score: 4 }
     }
     return {
       text: `${head} 이 원의 넓이는?`,
@@ -1466,7 +1466,7 @@ const midArc: SuTemplate<{ a: number; c: number; ci: number; ask: "ad" | "area" 
     if (ask === "ad") {
       const wr = [b2.div(q(1).sub(cB).mul(2)), b2.div(2), b2.div(4), ad.add(1)]
       return {
-        text: `${head} ${tri} 의 외접원 위의 점 $${T("D")}$ 가 $${seg("AD")} = ${seg("CD")}$ 를 만족시키고, 점 $${T("D")}$ 는 점 $${T("B")}$ 를 포함하지 않는 호 $${T("AC")}$ 위에 있을 때, $${seg("AD")}^{2}$ 의 값은?`,
+        text: `${head} ${tri} 의 외접원 위의 점 $${T("D")}$ 가 $${seg("AD")} = ${seg("CD")}$ 를 만족시키고, 점 $${T("D")}$ 는 점 $${T("B")}$ 를 포함하지 않는 호 $${T("AC")}$ 위에 있을 때, $${seg("AD")}^{2}$ 의 값${ad.isInt && isShortOk(ad.n) ? "을 구하시오." : "은?"}`,
         ...autoQ(r, ad, wr),
         solution: sol(
           l1,
