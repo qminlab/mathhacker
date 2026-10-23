@@ -11,7 +11,8 @@
     "test": "vitest run",
     "seed:public": "node --env-file-if-exists=.env.local --import tsx scripts/seed-public.ts",
     "preview:public": "node --import tsx scripts/preview-public.ts",
-    "export:demo": "node --import tsx scripts/export-demo.ts"
+    "export:demo": "node --import tsx scripts/export-demo.ts",
+    "preview:suneung": "node --import tsx scripts/preview-suneung.ts"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.13",
